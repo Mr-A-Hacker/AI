@@ -368,6 +368,17 @@ header {
 .btn-clear-mem:hover{background:rgba(239,68,68,.12)}
 #memory-overlay{display:none;position:fixed;inset:0;z-index:29;background:rgba(30,16,48,.2);backdrop-filter:blur(2px)}
 #memory-overlay.show{display:block}
+
+/* IMAGE MESSAGES */
+.img-bubble { padding: 6px; background: white; border: 1.5px solid var(--border); border-radius: 20px; border-bottom-left-radius: 6px; box-shadow: 0 2px 14px rgba(0,0,0,.08); overflow: hidden; max-width: 360px; }
+.img-bubble img { width: 100%; border-radius: 14px; display: block; cursor: pointer; transition: transform .2s; }
+.img-bubble img:hover { transform: scale(1.02); }
+.img-caption { font-size: .72rem; color: var(--text-light); padding: 6px 8px 2px; }
+.img-lightbox { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(10,6,20,.85); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px; }
+.img-lightbox.show { display: flex; }
+.img-lightbox img { max-width: 90vw; max-height: 88vh; border-radius: 18px; box-shadow: 0 16px 80px rgba(0,0,0,.6); }
+.img-lightbox-close { position: fixed; top: 20px; right: 24px; background: rgba(255,255,255,.15); border: none; color: white; font-size: 1.4rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .2s; }
+.img-lightbox-close:hover { background: rgba(255,255,255,.25); }
 </style>
 </head>
 <body>
@@ -801,6 +812,41 @@ function escHtml(t) {
 
 function quickSend(btn) { inputEl.value = btn.textContent.replace(/^\S+\s/,'').trim(); sendMessage(); }
 
+
+function isImageRequest(text) {
+  return /^(draw|generate|create|make|paint|show|imagine|design|render|sketch|illustrate|produce)\s+(me\s+)?(a|an|the|some)?\s*(image|picture|photo|illustration|artwork|painting|portrait|wallpaper|logo|icon|scene|drawing|sketch|visual|poster|banner|avatar|cartoon|realistic|anime|fantasy|pixel|art)?/i.test(text.trim())
+    || /^(can you|please|could you).*(draw|generate|create|make|paint|design|render|illustrate)/i.test(text.trim())
+    || /\b(generate|create|draw|make|paint|render)\s+(an?|the|some|me|us)?\s*(image|picture|photo|illustration|artwork|painting|portrait)/i.test(text);
+}
+
+function addImageMsg(prompt, url) {
+  const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const d = document.createElement('div');
+  d.className = 'msg ai';
+  d.innerHTML = `
+    <div class="av" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
+    <div class="bubble-wrap">
+      <div class="img-bubble">
+        <img src="${url}" alt="${escHtml(prompt)}" onclick="openLightbox(this.src)" />
+        <div class="img-caption">🎨 ${escHtml(prompt.length > 80 ? prompt.slice(0,80)+'…' : prompt)}</div>
+      </div>
+      <div class="msg-time">${now}</div>
+    </div>`;
+  chatEl.insertBefore(d, typingEl);
+  scrollBot();
+}
+
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('img-lightbox').classList.add('show');
+}
+
+function closeLightbox() {
+  document.getElementById('img-lightbox').classList.remove('show');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
 function isWeatherQuery(text) {
   return /weather|temperature|forecast|rain|sunny|cloudy|snow|wind|humidity|hot outside|cold outside|degrees/i.test(text);
 }
@@ -829,6 +875,34 @@ async function sendMessage() {
   busy = true;
   typingEl.classList.add('show');
   scrollBot();
+
+  // ── Image generation ──
+  if (isImageRequest(text)) {
+    try {
+      const res = await fetch('/api/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: text })
+      });
+      const data = await res.json();
+      typingEl.classList.remove('show');
+      if (data.error) {
+        addMsg('ai', '⚠️ Image error: ' + data.error);
+      } else {
+        addImageMsg(text, data.url);
+        history.push({ role: 'assistant', content: `[Generated image for: "${text}"]` });
+        await saveChatIfNeeded();
+        const session = getSession();
+        if (session?.email) renderHistory(session.email);
+      }
+    } catch (err) {
+      typingEl.classList.remove('show');
+      addMsg('ai', '⚠️ Image error: ' + err.message);
+    }
+    busy = false;
+    inputEl.focus();
+    return;
+  }
 
   let coords = null;
   if (isWeatherQuery(text)) coords = await getBrowserLocation();
@@ -1064,6 +1138,12 @@ function closeAdminPopup() {
   <div class="memory-footer">
     <button class="btn-clear-mem" onclick="clearAllMemories()">🗑 Clear All Memories</button>
   </div>
+</div>
+
+<!-- IMAGE LIGHTBOX -->
+<div class="img-lightbox" id="img-lightbox" onclick="closeLightbox()">
+  <button class="img-lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="Generated image" onclick="event.stopPropagation()" />
 </div>
 
 </body>
