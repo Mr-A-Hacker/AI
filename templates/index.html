@@ -380,6 +380,37 @@ header {
 .img-lightbox img { max-width: 90vw; max-height: 88vh; border-radius: 18px; box-shadow: 0 16px 80px rgba(0,0,0,.6); }
 .img-lightbox-close { position: fixed; top: 20px; right: 24px; background: rgba(255,255,255,.15); border: none; color: white; font-size: 1.4rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .2s; }
 .img-lightbox-close:hover { background: rgba(255,255,255,.25); }
+
+/* UPLOAD & DEEP SEARCH BUTTONS */
+.btn-upload { width: 34px; height: 34px; border-radius: 10px; border: 1.5px solid var(--border); background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-mid); transition: all .2s; flex-shrink: 0; }
+.btn-upload:hover { border-color: var(--violet-light); color: var(--violet); }
+.btn-upload svg { width: 15px; height: 15px; }
+.btn-deep { display: flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border); background: white; font-family: var(--font-body); font-size: .72rem; font-weight: 700; color: var(--text-mid); cursor: pointer; transition: all .2s; flex-shrink: 0; }
+.btn-deep:hover { border-color: var(--violet-light); color: var(--violet); background: rgba(124,58,237,.04); }
+.btn-deep.active { border-color: var(--violet); color: var(--violet); background: rgba(124,58,237,.08); }
+.btn-deep-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-light); transition: background .2s; }
+.btn-deep.active .btn-deep-dot { background: var(--violet); box-shadow: 0 0 6px rgba(124,58,237,.6); animation: pdot 1.5s ease-in-out infinite; }
+.input-actions { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+
+/* IMAGE PREVIEW */
+#img-preview-wrap { display: none; padding: 8px 20px 0; }
+#img-preview-wrap.show { display: flex; align-items: center; gap: 10px; }
+.img-preview-thumb { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; border: 1.5px solid var(--border); }
+.img-preview-remove { width: 22px; height: 22px; border-radius: 50%; border: none; background: rgba(239,68,68,.1); color: var(--red); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: .75rem; transition: all .15s; }
+.img-preview-remove:hover { background: rgba(239,68,68,.2); }
+.img-preview-label { font-size: .75rem; color: var(--text-mid); }
+
+/* DEEP SEARCH BUBBLE */
+.deep-bubble { background: white; border: 1.5px solid var(--border); border-radius: 22px; border-bottom-left-radius: 6px; padding: 18px 22px; box-shadow: 0 2px 14px rgba(0,0,0,.06); max-width: 85%; }
+.deep-bubble h1,.deep-bubble h2,.deep-bubble h3 { font-family: var(--font-head); margin: 14px 0 6px; }
+.deep-bubble h1 { font-size: 1.1rem; font-weight: 800; background: linear-gradient(135deg, var(--grad-a), var(--grad-b)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.deep-bubble h2 { font-size: .95rem; font-weight: 700; color: var(--violet); border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.deep-bubble h3 { font-size: .88rem; font-weight: 700; color: var(--text); }
+.deep-bubble p { font-size: .88rem; line-height: 1.7; color: var(--text); margin: 6px 0; }
+.deep-bubble ul,.deep-bubble ol { padding-left: 20px; margin: 6px 0; }
+.deep-bubble li { font-size: .88rem; line-height: 1.7; color: var(--text); margin: 3px 0; }
+.deep-bubble strong { font-weight: 700; color: var(--text); }
+.deep-badge { display: inline-flex; align-items: center; gap: 5px; font-size: .68rem; font-weight: 700; color: var(--violet); background: rgba(124,58,237,.08); border: 1px solid rgba(124,58,237,.2); border-radius: 20px; padding: 2px 10px; margin-bottom: 10px; }
 </style>
 </head>
 <body>
@@ -488,7 +519,22 @@ header {
     </div>
 
     <div id="input-area">
+      <div id="img-preview-wrap">
+        <img id="img-preview-thumb" class="img-preview-thumb" src="" alt="preview" />
+        <div>
+          <div class="img-preview-label">Image attached</div>
+          <button class="img-preview-remove" onclick="removeImage()">✕</button>
+        </div>
+      </div>
       <div class="input-card" id="input-card">
+        <div class="input-actions">
+          <button class="btn-upload" onclick="document.getElementById('img-file-input').click()" title="Upload image">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </button>
+          <button class="btn-deep" id="btn-deep" onclick="toggleDeepSearch()" title="Deep Search mode">
+            <div class="btn-deep-dot"></div>Deep
+          </button>
+        </div>
         <textarea id="user-input" rows="1" placeholder="Ask Viora anything…" maxlength="4000"></textarea>
         <button id="send-btn" onclick="sendMessage()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -499,6 +545,7 @@ header {
         <span id="char-count">0 / 4000</span>
       </div>
     </div>
+    <input type="file" id="img-file-input" accept="image/*" style="display:none" onchange="handleImageUpload(event)" />
   </div>
 </div>
 
@@ -848,6 +895,67 @@ function closeLightbox() {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
+// ── Deep Search ──
+let deepSearchMode = false;
+
+function toggleDeepSearch() {
+  deepSearchMode = !deepSearchMode;
+  document.getElementById('btn-deep').classList.toggle('active', deepSearchMode);
+  document.getElementById('user-input').placeholder = deepSearchMode
+    ? 'Deep search: What topic do you want researched?'
+    : 'Ask Viora anything…';
+}
+
+// ── Image Upload ──
+let attachedImage = null; // base64 data URL
+
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    attachedImage = reader.result; // data:image/...;base64,...
+    document.getElementById('img-preview-thumb').src = attachedImage;
+    document.getElementById('img-preview-wrap').classList.add('show');
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function removeImage() {
+  attachedImage = null;
+  document.getElementById('img-preview-wrap').classList.remove('show');
+  document.getElementById('img-preview-thumb').src = '';
+}
+
+function addDeepSearchMsg(query, text) {
+  const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const d = document.createElement('div');
+  d.className = 'msg ai';
+  // Convert markdown-style to HTML
+  const html = text
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, s => `<ul>${s}</ul>`)
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+  d.innerHTML = `
+    <div class="av" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
+    <div class="bubble-wrap" style="max-width:85%">
+      <div class="deep-bubble">
+        <div class="deep-badge">🔍 Deep Search</div>
+        <div>${html}</div>
+      </div>
+      <div class="msg-time">${now}</div>
+    </div>`;
+  chatEl.insertBefore(d, typingEl);
+  scrollBot();
+}
+
 function isWeatherQuery(text) {
   return /weather|temperature|forecast|rain|sunny|cloudy|snow|wind|humidity|hot outside|cold outside|degrees/i.test(text);
 }
@@ -877,12 +985,58 @@ async function sendMessage() {
 
   welcomeEl.style.display = 'none';
   inputEl.value = ''; inputEl.style.height = 'auto'; charEl.textContent = '0 / 4000';
-  addMsg('user', text);
+
+  // Show user message — with image thumbnail if attached
+  if (attachedImage) {
+    const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const session = getSession();
+    const initials = session?.name ? session.name[0].toUpperCase() : 'U';
+    const d = document.createElement('div');
+    d.className = 'msg user';
+    d.innerHTML = `<div class="av">${initials}</div><div class="bubble-wrap"><div class="bubble" style="padding:8px"><img src="${attachedImage}" style="max-width:200px;border-radius:12px;display:block;margin-bottom:6px"/>${escHtml(text)}</div><div class="msg-time">${now}</div></div>`;
+    chatEl.insertBefore(d, typingEl);
+    scrollBot();
+  } else {
+    addMsg('user', text);
+  }
+
+  const imgToSend = attachedImage;
+  removeImage();
   history.push({ role: 'user', content: text });
 
   busy = true;
   typingEl.classList.add('show');
   scrollBot();
+
+  // ── Deep Search ──
+  if (deepSearchMode || /^deep search:\s*/i.test(text)) {
+    const query = text.replace(/^deep search:\s*/i, '').trim();
+    try {
+      const res = await fetch('/api/deepsearch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, email: getSession()?.email || null })
+      });
+      const data = await res.json();
+      typingEl.classList.remove('show');
+      if (data.error) {
+        addMsg('ai', '⚠️ ' + data.error);
+      } else {
+        const reply = data.content?.[0]?.text || '';
+        addDeepSearchMsg(query, reply);
+        history.push({ role: 'assistant', content: reply });
+        await saveChatIfNeeded();
+        const session = getSession();
+        if (session?.email) renderHistory(session.email);
+      }
+    } catch (err) {
+      typingEl.classList.remove('show');
+      addMsg('ai', '⚠️ Deep search error: ' + err.message);
+    }
+    busy = false;
+    inputEl.focus();
+    return;
+  }
 
   // ── Image generation ──
   if (isImageRequest(text)) {
@@ -923,7 +1077,8 @@ async function sendMessage() {
         system: 'You are Viora, a friendly, warm and helpful AI assistant. Be clear, concise and encouraging. Avoid excessive markdown unless the user asks for it.',
         messages: history,
         coords,
-        email: getSession()?.email || null
+        email: getSession()?.email || null,
+        image: imgToSend || null
       })
     });
 
