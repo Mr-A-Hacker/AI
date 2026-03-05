@@ -600,7 +600,28 @@ function doSignup() {
   openChat(name, false);
 }
 
-function startTrial() {
+async function startTrial() {
+  const btn = document.querySelector('.btn-try');
+  if (btn) { btn.textContent = 'Checking…'; btn.disabled = true; }
+
+  try {
+    const res = await fetch('/api/trial-start', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    const data = await res.json();
+
+    if (!data.allowed) {
+      // Show limit message on whichever error el is visible
+      const errEl = document.getElementById('login-error').closest('.auth-form:not(.hidden)')
+        ? document.getElementById('login-error')
+        : document.getElementById('signup-error');
+      errEl.textContent = '⚠️ Sorry, you have already used your free trial.';
+      if (btn) { btn.innerHTML = '⚡ Try for free <span class="try-badge">5 min</span>'; btn.disabled = false; }
+      return;
+    }
+  } catch(e) {
+    // If server check fails, allow trial anyway
+  }
+
+  if (btn) { btn.innerHTML = '⚡ Try for free <span class="try-badge">5 min</span>'; btn.disabled = false; }
   saveSession({ name: 'Guest', isTrial: true });
   openChat('Guest', true);
 }
