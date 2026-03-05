@@ -888,7 +888,7 @@ async function sendMessage() {
       const data = await res.json();
       typingEl.classList.remove('show');
       if (data.error) {
-        addMsg('ai', '⚠️ Image error: ' + data.error);
+        addMsg('ai', '⚠️ You ran out of free image generation. Please try again in a moment!');
       } else {
         addImageMsg(text, data.url);
         history.push({ role: 'assistant', content: `[Generated image for: "${text}"]` });
