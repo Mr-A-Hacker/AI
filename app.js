@@ -252,6 +252,57 @@ function callOpenRouter(allMessages) {
   });
 }
 
+// ── Image Generation via OpenRouter ──
+function callOpenRouterImage(prompt) {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify({
+      model: 'openai/dall-e-3',
+      prompt: prompt,
+      n: 1,
+      size: '1024x1024'
+    });
+    const options = {
+      hostname: 'openrouter.ai',
+      path: '/api/v1/images/generations',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'HTTP-Referer': 'https://ai-1x5q.onrender.com',
+        'X-Title': 'Viora AI',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    };
+    const req = https.request(options, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => {
+        try {
+          const p = JSON.parse(d);
+          if (p.error) return reject({ message: p.error.message || JSON.stringify(p.error) });
+          const url = p.data?.[0]?.url;
+          if (!url) return reject({ message: 'No image URL returned: ' + d });
+          resolve(url);
+        } catch { reject({ message: 'Parse error: ' + d }); }
+      });
+    });
+    req.on('error', err => reject({ message: err.message }));
+    req.write(payload); req.end();
+  });
+}
+
+app.post('/api/image', async (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
+  if (!OPENROUTER_API_KEY) return res.status(500).json({ error: 'OPENROUTER_API_KEY not set.' });
+  try {
+    const url = await callOpenRouterImage(prompt);
+    res.json({ url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 app.post('/api/chat', async (req,res)=>{
   const {messages,system,coords,email}=req.body;
   if (!OPENROUTER_API_KEY) return res.status(500).json({error:'OPENROUTER_API_KEY not set.'});
