@@ -10,12 +10,3 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-```
-
-**Your repo structure should look like this:**
-```
-AI/
-├── package.json      ← new
-├── app.js            ← new
-└── templates/
-    └── index.html    ← your chatbot HTML (rename ai-chatbot.html to index.html)
