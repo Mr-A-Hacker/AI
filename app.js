@@ -8,58 +8,11 @@ app.use(express.static(path.join(__dirname, 'templates')));
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 
-// Free models in priority order — tries next if one fails
-const FREE_MODELS = [
-  'meta-llama/llama-3.1-8b-instruct:free',
-  'mistralai/mistral-7b-instruct:free',
-  'google/gemma-3-4b-it:free',
-  'qwen/qwen2.5-7b-instruct:free'
-];
-
-function callOpenRouter(model, allMessages) {
-  return new Promise((resolve, reject) => {
-    const payload = JSON.stringify({ model, messages: allMessages });
-
-    const options = {
-      hostname: 'openrouter.ai',
-      path: '/api/v1/chat/completions',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'https://ai-1x5q.onrender.com',
-        'X-Title': 'AXIOM AI',
-        'Content-Length': Buffer.byteLength(payload)
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.error || res.statusCode !== 200) {
-            reject({ status: res.statusCode, error: parsed.error });
-          } else {
-            resolve(parsed.choices?.[0]?.message?.content || '');
-          }
-        } catch (e) {
-          reject({ status: 500, error: e.message });
-        }
-      });
-    });
-
-    req.on('error', (err) => reject({ status: 500, error: err.message }));
-    req.write(payload);
-    req.end();
-  });
-}
-
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', (req, res) => {
   const { messages, system } = req.body;
 
   if (!OPENROUTER_API_KEY) {
+    console.error('ERROR: OPENROUTER_API_KEY is not set');
     return res.status(500).json({ error: 'OPENROUTER_API_KEY not set on server.' });
   }
 
@@ -68,19 +21,52 @@ app.post('/api/chat', async (req, res) => {
     ...messages
   ];
 
-  for (const model of FREE_MODELS) {
-    try {
-      console.log(`Trying model: ${model}`);
-      const text = await callOpenRouter(model, allMessages);
-      console.log(`Success with model: ${model}`);
-      return res.json({ content: [{ text }] });
-    } catch (err) {
-      console.warn(`Model ${model} failed (${err.status}):`, err.error?.message || err.error);
-      // Try next model
-    }
-  }
+  const payload = JSON.stringify({
+    model: 'openrouter/auto',   // auto-selects best available free model
+    messages: allMessages
+  });
 
-  res.status(500).json({ error: 'All models are currently unavailable. Please try again in a moment.' });
+  const options = {
+    hostname: 'openrouter.ai',
+    path: '/api/v1/chat/completions',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      'HTTP-Referer': 'https://ai-1x5q.onrender.com',
+      'X-Title': 'AXIOM AI',
+      'Content-Length': Buffer.byteLength(payload)
+    }
+  };
+
+  const apiReq = https.request(options, (apiRes) => {
+    let data = '';
+    apiRes.on('data', chunk => data += chunk);
+    apiRes.on('end', () => {
+      console.log('OpenRouter status:', apiRes.statusCode);
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.error) {
+          console.error('OpenRouter error:', parsed.error.message);
+          return res.status(500).json({ error: parsed.error.message });
+        }
+        const text = parsed.choices?.[0]?.message?.content || 'No response received.';
+        console.log('Model used:', parsed.model);
+        res.json({ content: [{ text }] });
+      } catch (e) {
+        console.error('Parse error:', e);
+        res.status(500).json({ error: 'Invalid response from API' });
+      }
+    });
+  });
+
+  apiReq.on('error', (err) => {
+    console.error('Request error:', err.message);
+    res.status(500).json({ error: err.message });
+  });
+
+  apiReq.write(payload);
+  apiReq.end();
 });
 
 app.get('/', (req, res) => {
