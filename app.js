@@ -313,6 +313,49 @@ app.post('/api/image', async (req, res) => {
 });
 
 
+// ── URL Fetcher ──
+function fetchUrl(url) {
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith('https') ? https : http;
+    const options = {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; VioraAI/1.0)',
+        'Accept': 'text/html,application/xhtml+xml,*/*'
+      }
+    };
+    mod.get(url, options, res => {
+      // Follow redirects
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return fetchUrl(res.headers.location).then(resolve).catch(reject);
+      }
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => resolve(data));
+    }).on('error', reject);
+  });
+}
+
+function extractTextFromHtml(html) {
+  // Remove scripts, styles, nav, footer etc
+  let text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+    .replace(/<header[\s\S]*?<\/header>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim();
+  // Limit to ~6000 chars to stay within context
+  return text.slice(0, 6000);
+}
+
+
 // ── Deep Search ──
 app.post('/api/deepsearch', async (req, res) => {
   const { query, email } = req.body;
@@ -387,6 +430,21 @@ app.post('/api/chat', async (req,res)=>{
       memoryCtx = '\n\n[THINGS YOU REMEMBER ABOUT THIS USER:\n' + memories.map(m=>`- ${m.text}`).join('\n') + '\nUse this naturally without announcing it every time.]';
     }
   }
+  // Auto-detect URLs in last user message and fetch content
+  let urlCtx = '';
+  if (lastUserMsg) {
+    const urlMatch = (typeof lastUserMsg.content === 'string' ? lastUserMsg.content : '').match(/https?:\/\/[^\s]+/);
+    if (urlMatch) {
+      try {
+        const html = await fetchUrl(urlMatch[0]);
+        const text = extractTextFromHtml(html);
+        if (text.length > 100) {
+          urlCtx = `\n\n[WEBPAGE CONTENT from ${urlMatch[0]}:\n${text}\n(End of page content)]`;
+        }
+      } catch(e) { urlCtx = `\n\n[Could not fetch ${urlMatch[0]}: ${e.message}]`; }
+    }
+  }
+
   // Auto-detect "remember: ..." and save to memory
   const lastUserMsg = [...messages].reverse().find(m=>m.role==='user');
   if (email && lastUserMsg) {
@@ -413,7 +471,7 @@ app.post('/api/chat', async (req,res)=>{
       };
     }
   }
-  const allMessages=[{role:'system',content:(system||'You are Viora, a friendly helpful AI.')+weatherCtx+locationCtx+memoryCtx},...builtMessages];
+  const allMessages=[{role:'system',content:(system||'You are Viora, a friendly helpful AI.')+weatherCtx+locationCtx+memoryCtx+urlCtx},...builtMessages];
   try { const text=await callOpenRouter(allMessages); res.json({content:[{text}]}); }
   catch(err){ res.status(500).json({error:err.message}); }
 });
