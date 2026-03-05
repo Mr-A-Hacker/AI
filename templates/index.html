@@ -738,6 +738,23 @@ function quickSend(btn) {
   sendMessage();
 }
 
+// ── Weather detection ──
+function isWeatherQuery(text) {
+  return /weather|temperature|forecast|rain|sunny|cloudy|snow|wind|humidity|hot outside|cold outside|degrees/i.test(text);
+}
+
+// ── Get GPS coords from browser ──
+function getBrowserLocation() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) { resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      ()  => resolve(null),
+      { timeout: 6000 }
+    );
+  });
+}
+
 async function sendMessage() {
   const text = inputEl.value.trim();
   if (!text || busy) return;
@@ -752,13 +769,20 @@ async function sendMessage() {
   typingEl.classList.add('show');
   scrollBot();
 
+  // Get GPS coords if weather query
+  let coords = null;
+  if (isWeatherQuery(text)) {
+    coords = await getBrowserLocation();
+  }
+
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         system: 'You are Viora, a friendly, warm and helpful AI assistant. Be clear, concise and encouraging. Avoid excessive markdown unless the user asks for it.',
-        messages: history
+        messages: history,
+        coords: coords   // null if not a weather query or user denied
       })
     });
 
