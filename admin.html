@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Viora Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0a1a;--surface:#1a1228;--card:#221834;--border:#2e2048;
+  --violet:#7c3aed;--violet-light:#8b5cf6;--pink:#ec4899;--orange:#f97316;
+  --green:#22c55e;--red:#ef4444;--yellow:#eab308;
+  --text:#f1eeff;--text-mid:#9d8ec0;--text-light:#5a4d7a;
+  --grad-a:#7c3aed;--grad-b:#ec4899;--grad-c:#f97316;
+  --font-head:'Syne',sans-serif;--font-body:'Plus Jakarta Sans',sans-serif;
+}
+html,body{height:100%;background:var(--bg);font-family:var(--font-body);color:var(--text);overflow:hidden}
+
+/* BG */
+.mesh{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 50% 40% at 10% 10%,rgba(124,58,237,.15) 0%,transparent 70%),
+    radial-gradient(ellipse 40% 50% at 90% 80%,rgba(236,72,153,.1) 0%,transparent 70%)}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:var(--card);border:1.5px solid var(--border);border-radius:24px;padding:44px 40px;width:100%;max-width:380px;text-align:center;animation:fadeUp .5s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.login-icon{width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto 20px;box-shadow:0 6px 24px rgba(124,58,237,.4)}
+.login-title{font-family:var(--font-head);font-size:1.5rem;font-weight:800;margin-bottom:6px;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.login-sub{font-size:.82rem;color:var(--text-mid);margin-bottom:28px}
+.field{width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:.9rem;outline:none;margin-bottom:12px;transition:border-color .2s}
+.field:focus{border-color:var(--violet-light)}
+.field::placeholder{color:var(--text-light)}
+.login-err{font-size:.78rem;color:var(--red);min-height:18px;margin-bottom:10px}
+.btn-login{width:100%;padding:13px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));color:white;font-family:var(--font-head);font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 18px rgba(124,58,237,.35)}
+.btn-login:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(124,58,237,.5)}
+
+/* DASHBOARD */
+#dashboard{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column}
+#dashboard.hidden{display:none}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--surface);border-bottom:1.5px solid var(--border);flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));display:flex;align-items:center;justify-content:center;font-family:var(--font-head);color:white;font-size:.9rem;font-weight:800}
+.topbar-title{font-family:var(--font-head);font-size:1.1rem;font-weight:800;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.topbar-badge{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:var(--red);font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.05em}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.btn-sm{padding:7px 16px;border-radius:10px;font-family:var(--font-body);font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;border:none}
+.btn-danger{background:rgba(239,68,68,.12);color:var(--red);border:1.5px solid rgba(239,68,68,.2)}
+.btn-danger:hover{background:rgba(239,68,68,.2)}
+.btn-primary{background:linear-gradient(135deg,var(--grad-a),var(--grad-b));color:white;box-shadow:0 3px 12px rgba(124,58,237,.3)}
+.btn-primary:hover{transform:translateY(-1px)}
+
+/* MAIN LAYOUT */
+.dash-body{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR NAV */
+.dash-nav{width:200px;background:var(--surface);border-right:1.5px solid var(--border);padding:20px 12px;display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;cursor:pointer;font-size:.83rem;font-weight:600;color:var(--text-mid);transition:all .18s;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(124,58,237,.08);color:var(--text)}
+.nav-item.active{background:rgba(124,58,237,.12);color:var(--violet-light)}
+.nav-icon{font-size:1rem;width:20px;text-align:center}
+
+/* CONTENT PANELS */
+.dash-content{flex:1;overflow-y:auto;padding:28px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.dash-content::-webkit-scrollbar{width:4px}
+.dash-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+.panel{display:none}
+.panel.active{display:block;animation:fadeUp .3s ease both}
+
+/* STAT CARDS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:20px 22px}
+.stat-label{font-size:.72rem;font-weight:600;color:var(--text-mid);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.stat-value{font-family:var(--font-head);font-size:2rem;font-weight:800;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-sub{font-size:.72rem;color:var(--text-light);margin-top:4px}
+
+/* SECTION HEADER */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.section-title{font-family:var(--font-head);font-size:1.1rem;font-weight:700}
+.section-count{font-size:.75rem;color:var(--text-mid);background:var(--card);border:1px solid var(--border);padding:3px 10px;border-radius:20px}
+
+/* USER TABLE */
+.user-table{width:100%;border-collapse:collapse}
+.user-table th{text-align:left;font-size:.7rem;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;padding:10px 16px;border-bottom:1.5px solid var(--border)}
+.user-table td{padding:12px 16px;border-bottom:1px solid rgba(46,32,72,.5);font-size:.85rem;vertical-align:middle}
+.user-table tr:hover td{background:rgba(124,58,237,.04)}
+.user-table tr:last-child td{border-bottom:none}
+.user-av-sm{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:white;margin-right:8px;vertical-align:middle}
+.user-name-cell{display:flex;align-items:center;gap:8px}
+.badge-date{font-size:.7rem;color:var(--text-light)}
+.btn-del-user{padding:5px 12px;border-radius:8px;border:1.5px solid rgba(239,68,68,.25);background:rgba(239,68,68,.07);color:var(--red);font-size:.75rem;font-weight:600;cursor:pointer;transition:all .18s}
+.btn-del-user:hover{background:rgba(239,68,68,.18);border-color:var(--red)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-mid);font-size:.88rem}
+.empty-icon{font-size:2.5rem;margin-bottom:12px}
+
+/* POPUP PANEL */
+.popup-form{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:24px;max-width:600px}
+.form-label{font-size:.78rem;font-weight:600;color:var(--text-mid);display:block;margin-bottom:8px}
+.form-textarea{width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:.9rem;resize:vertical;min-height:80px;outline:none;transition:border-color .2s;margin-bottom:14px}
+.form-textarea:focus{border-color:var(--violet-light)}
+.popup-types{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.type-btn{padding:7px 16px;border-radius:10px;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .18s;border:2px solid transparent}
+.type-btn.selected{transform:scale(1.05)}
+.type-info{background:rgba(139,92,246,.12);color:var(--violet-light);border-color:rgba(139,92,246,.3)}
+.type-info.selected{background:rgba(139,92,246,.25);border-color:var(--violet-light)}
+.type-success{background:rgba(34,197,94,.1);color:var(--green);border-color:rgba(34,197,94,.25)}
+.type-success.selected{background:rgba(34,197,94,.22);border-color:var(--green)}
+.type-warning{background:rgba(234,179,8,.1);color:var(--yellow);border-color:rgba(234,179,8,.25)}
+.type-warning.selected{background:rgba(234,179,8,.22);border-color:var(--yellow)}
+.type-error{background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.25)}
+.type-error.selected{background:rgba(239,68,68,.22);border-color:var(--red)}
+
+.active-popup-card{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:20px 22px;margin-top:20px;max-width:600px}
+.active-popup-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.active-popup-label{font-size:.72rem;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em}
+.active-popup-msg{font-size:.9rem;color:var(--text);line-height:1.6;padding:12px 14px;border-radius:10px;background:var(--surface)}
+
+/* CONFIRM MODAL */
+#confirm-modal{display:none;position:fixed;inset:0;z-index:100;background:rgba(15,10,26,.7);backdrop-filter:blur(6px);align-items:center;justify-content:center}
+#confirm-modal.show{display:flex}
+.confirm-card{background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:32px 36px;max-width:360px;width:90%;text-align:center;animation:fadeUp .3s ease both}
+.confirm-icon{font-size:2.5rem;margin-bottom:14px}
+.confirm-title{font-family:var(--font-head);font-size:1.2rem;font-weight:800;margin-bottom:8px}
+.confirm-msg{font-size:.84rem;color:var(--text-mid);line-height:1.6;margin-bottom:24px}
+.confirm-actions{display:flex;gap:10px;justify-content:center}
+.btn-cancel{padding:10px 24px;border-radius:12px;border:1.5px solid var(--border);background:none;color:var(--text-mid);font-family:var(--font-body);font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-cancel:hover{border-color:var(--text-mid)}
+.btn-confirm-del{padding:10px 24px;border-radius:12px;border:none;background:var(--red);color:white;font-family:var(--font-head);font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 3px 12px rgba(239,68,68,.35)}
+.btn-confirm-del:hover{transform:translateY(-1px)}
+
+/* TOAST */
+#toast{position:fixed;bottom:28px;right:28px;z-index:200;background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:13px 20px;font-size:.84rem;font-weight:600;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.toast-success{border-color:rgba(34,197,94,.35);color:var(--green)}
+#toast.toast-error{border-color:rgba(239,68,68,.35);color:var(--red)}
+
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="mesh"></div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-icon">🛡️</div>
+    <div class="login-title">Admin Panel</div>
+    <p class="login-sub">Viora AI — Restricted Access</p>
+    <input class="field" type="text" id="admin-user" placeholder="Username" />
+    <input class="field" type="password" id="admin-pass" placeholder="Password" onkeydown="if(event.key==='Enter')doAdminLogin()" />
+    <div class="login-err" id="login-err"></div>
+    <button class="btn-login" onclick="doAdminLogin()">Enter Dashboard →</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="hidden">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">V</div>
+      <span class="topbar-title">Viora Admin</span>
+      <span class="topbar-badge">ADMIN</span>
+    </div>
+    <div class="topbar-right">
+      <span id="topbar-time" style="font-size:.75rem;color:var(--text-mid)"></span>
+      <button class="btn-sm btn-danger" onclick="adminLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="dash-body">
+    <!-- Sidebar nav -->
+    <nav class="dash-nav">
+      <button class="nav-item active" onclick="showPanel('overview')" id="nav-overview"><span class="nav-icon">📊</span>Overview</button>
+      <button class="nav-item" onclick="showPanel('users')" id="nav-users"><span class="nav-icon">👥</span>Users</button>
+      <button class="nav-item" onclick="showPanel('popups')" id="nav-popups"><span class="nav-icon">📢</span>Broadcasts</button>
+    </nav>
+
+    <!-- Content -->
+    <div class="dash-content">
+
+      <!-- OVERVIEW -->
+      <div class="panel active" id="panel-overview">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Total Users</div>
+            <div class="stat-value" id="stat-users">—</div>
+            <div class="stat-sub">Registered accounts</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Trial IPs Used</div>
+            <div class="stat-value" id="stat-trials">—</div>
+            <div class="stat-sub">Since last deploy</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active Broadcast</div>
+            <div class="stat-value" id="stat-popup">—</div>
+            <div class="stat-sub" id="stat-popup-sub">No active popup</div>
+          </div>
+        </div>
+        <div class="section-head"><div class="section-title">Recent Users</div></div>
+        <table class="user-table">
+          <thead><tr><th>User</th><th>Email</th><th>Joined</th></tr></thead>
+          <tbody id="overview-user-list"></tbody>
+        </table>
+      </div>
+
+      <!-- USERS -->
+      <div class="panel" id="panel-users">
+        <div class="section-head">
+          <div class="section-title">All Users</div>
+          <span class="section-count" id="user-count">0 users</span>
+        </div>
+        <table class="user-table">
+          <thead><tr><th>User</th><th>Email</th><th>Joined</th><th>Action</th></tr></thead>
+          <tbody id="user-list"></tbody>
+        </table>
+      </div>
+
+      <!-- POPUPS -->
+      <div class="panel" id="panel-popups">
+        <div class="section-title" style="margin-bottom:20px">Send Broadcast Popup</div>
+        <div class="popup-form">
+          <label class="form-label">Message</label>
+          <textarea class="form-textarea" id="popup-msg" placeholder="Type your message to all online users…"></textarea>
+          <label class="form-label">Type</label>
+          <div class="popup-types">
+            <button class="type-btn type-info selected" onclick="selectType('info',this)">ℹ️ Info</button>
+            <button class="type-btn type-success" onclick="selectType('success',this)">✅ Success</button>
+            <button class="type-btn type-warning" onclick="selectType('warning',this)">⚠️ Warning</button>
+            <button class="type-btn type-error" onclick="selectType('error',this)">🚨 Alert</button>
+          </div>
+          <button class="btn-sm btn-primary" style="padding:11px 24px;font-size:.88rem" onclick="sendPopup()">📢 Broadcast to All Users</button>
+        </div>
+
+        <div class="active-popup-card" id="active-popup-card" style="display:none">
+          <div class="active-popup-header">
+            <span class="active-popup-label">🟢 Currently Active</span>
+            <button class="btn-sm btn-danger" onclick="clearPopup()">Clear Popup</button>
+          </div>
+          <div class="active-popup-msg" id="active-popup-msg"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div id="confirm-modal">
+  <div class="confirm-card">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">Delete User?</div>
+    <div class="confirm-msg" id="confirm-msg">This will permanently delete this user and all their data.</div>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-confirm-del" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+let adminToken = null;
+let selectedType = 'info';
+let pendingDeleteEmail = null;
+let usersCache = [];
+
+// ── Clock ──
+function updateClock() {
+  document.getElementById('topbar-time').textContent = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ── Login ──
+async function doAdminLogin() {
+  const u = document.getElementById('admin-user').value.trim();
+  const p = document.getElementById('admin-pass').value;
+  const err = document.getElementById('login-err');
+  err.textContent = '';
+  if (!u || !p) { err.textContent = 'Enter username and password.'; return; }
+  try {
+    const res = await fetch('/api/admin/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username:u,password:p}) });
+    const data = await res.json();
+    if (!res.ok) { err.textContent = data.error || 'Login failed.'; return; }
+    adminToken = data.token;
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    loadStats();
+    loadUsers();
+    setInterval(loadStats, 15000);
+  } catch { err.textContent = 'Network error.'; }
+}
+
+function adminLogout() {
+  adminToken = null;
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('admin-user').value='';
+  document.getElementById('admin-pass').value='';
+}
+
+function authHeaders() {
+  return { 'Content-Type':'application/json', 'x-admin-token': adminToken };
+}
+
+// ── Stats ──
+async function loadStats() {
+  try {
+    const res = await fetch('/api/admin/stats', { headers: authHeaders() });
+    const data = await res.json();
+    document.getElementById('stat-users').textContent = data.totalUsers ?? '0';
+    document.getElementById('stat-trials').textContent = data.trialIPCount ?? '0';
+    if (data.activePopup) {
+      document.getElementById('stat-popup').textContent = '1';
+      document.getElementById('stat-popup-sub').textContent = data.activePopup.type.toUpperCase();
+      document.getElementById('active-popup-card').style.display='block';
+      document.getElementById('active-popup-msg').textContent = data.activePopup.message;
+    } else {
+      document.getElementById('stat-popup').textContent = '0';
+      document.getElementById('stat-popup-sub').textContent = 'No active popup';
+      document.getElementById('active-popup-card').style.display='none';
+    }
+  } catch {}
+}
+
+// ── Users ──
+async function loadUsers() {
+  try {
+    const res = await fetch('/api/admin/users', { headers: authHeaders() });
+    usersCache = await res.json();
+    renderUsers();
+    renderOverviewUsers();
+    document.getElementById('user-count').textContent = usersCache.length + ' user' + (usersCache.length !== 1 ? 's' : '');
+  } catch {}
+}
+
+function renderUsers() {
+  const tbody = document.getElementById('user-list');
+  tbody.innerHTML = '';
+  if (!usersCache.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">👤</div>No users yet.</div></td></tr>`;
+    return;
+  }
+  usersCache.forEach(u => {
+    const tr = document.createElement('tr');
+    const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+    tr.innerHTML = `
+      <td><div class="user-name-cell"><div class="user-av-sm">${u.name[0].toUpperCase()}</div><span>${escHtml(u.name)}</span></div></td>
+      <td style="color:var(--text-mid)">${escHtml(u.email)}</td>
+      <td><span class="badge-date">${date}</span></td>
+      <td><button class="btn-del-user" onclick="promptDelete('${escHtml(u.email)}','${escHtml(u.name)}')">🗑 Delete</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderOverviewUsers() {
+  const tbody = document.getElementById('overview-user-list');
+  tbody.innerHTML = '';
+  const recent = usersCache.slice(-5).reverse();
+  if (!recent.length) { tbody.innerHTML = `<tr><td colspan="3" style="color:var(--text-light);padding:20px;text-align:center">No users yet</td></tr>`; return; }
+  recent.forEach(u => {
+    const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><div class="user-name-cell"><div class="user-av-sm">${u.name[0].toUpperCase()}</div><span>${escHtml(u.name)}</span></div></td>
+      <td style="color:var(--text-mid)">${escHtml(u.email)}</td>
+      <td><span class="badge-date">${date}</span></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Delete user ──
+function promptDelete(email, name) {
+  pendingDeleteEmail = email;
+  document.getElementById('confirm-msg').textContent = `Permanently delete "${name}" (${email}) and all their data?`;
+  document.getElementById('confirm-modal').classList.add('show');
+}
+
+function closeConfirm() {
+  pendingDeleteEmail = null;
+  document.getElementById('confirm-modal').classList.remove('show');
+}
+
+async function confirmDelete() {
+  if (!pendingDeleteEmail) return;
+  closeConfirm();
+  try {
+    const res = await fetch(`/api/admin/users/${encodeURIComponent(pendingDeleteEmail)}`, { method:'DELETE', headers: authHeaders() });
+    if (res.ok) { showToast('✓ User deleted', 'success'); loadUsers(); loadStats(); }
+    else showToast('Failed to delete user', 'error');
+  } catch { showToast('Network error', 'error'); }
+}
+
+// ── Popups ──
+function selectType(type, btn) {
+  selectedType = type;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+async function sendPopup() {
+  const msg = document.getElementById('popup-msg').value.trim();
+  if (!msg) { showToast('Enter a message first', 'error'); return; }
+  try {
+    const res = await fetch('/api/admin/popup', { method:'POST', headers: authHeaders(), body: JSON.stringify({message:msg, type:selectedType}) });
+    if (res.ok) {
+      showToast('📢 Broadcast sent to all users!', 'success');
+      document.getElementById('popup-msg').value = '';
+      loadStats();
+    } else showToast('Failed to send popup', 'error');
+  } catch { showToast('Network error', 'error'); }
+}
+
+async function clearPopup() {
+  try {
+    await fetch('/api/admin/popup', { method:'DELETE', headers: authHeaders() });
+    showToast('Popup cleared', 'success');
+    loadStats();
+  } catch {}
+}
+
+// ── Nav ──
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(`panel-${name}`).classList.add('active');
+  document.getElementById(`nav-${name}`).classList.add('active');
+  if (name==='users') loadUsers();
+}
+
+// ── Toast ──
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show toast-${type}`;
+  setTimeout(()=>t.className='', 3000);
+}
+
+function escHtml(t) {
+  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('admin-pass').addEventListener('keydown', e => { if(e.key==='Enter') doAdminLogin(); });
+</script>
+</body>
+</html>
