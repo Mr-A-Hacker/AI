@@ -336,6 +336,38 @@ header {
 #admin-popup.pop-error   .popup-text { color: #991b1b; }
 .popup-close { background: none; border: none; cursor: pointer; font-size: 1rem; opacity: .6; transition: opacity .15s; padding: 2px; flex-shrink: 0; }
 .popup-close:hover { opacity: 1; }
+
+/* MEMORY BUTTON */
+.btn-memory{padding:6px 14px;border:1.5px solid rgba(124,58,237,.25);border-radius:20px;background:rgba(124,58,237,.07);font-family:var(--font-body);font-size:.72rem;font-weight:600;color:var(--violet);cursor:pointer;transition:all .2s}
+.btn-memory:hover{background:rgba(124,58,237,.14);border-color:var(--violet-light)}
+
+/* MEMORY PANEL */
+#memory-panel{position:fixed;top:0;right:0;bottom:0;width:360px;max-width:90vw;background:white;border-left:1.5px solid var(--border);z-index:30;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 40px rgba(124,58,237,.1)}
+#memory-panel.open{transform:translateX(0)}
+.memory-header{padding:18px 20px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.memory-title{font-family:var(--font-head);font-size:1rem;font-weight:800;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.memory-close{width:32px;height:32px;border-radius:10px;border:1.5px solid var(--border);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-mid);transition:all .15s}
+.memory-close:hover{background:var(--bg);color:var(--text)}
+.memory-add{padding:14px 16px;border-bottom:1.5px solid var(--border);flex-shrink:0}
+.memory-input-row{display:flex;gap:8px}
+.memory-input{flex:1;padding:9px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);font-family:var(--font-body);font-size:.85rem;color:var(--text);outline:none;transition:border-color .2s}
+.memory-input:focus{border-color:var(--violet-light)}
+.memory-input::placeholder{color:var(--text-light)}
+.btn-add-mem{padding:9px 14px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));color:white;font-family:var(--font-head);font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s}
+.btn-add-mem:hover{transform:translateY(-1px)}
+.memory-hint{font-size:.7rem;color:var(--text-light);margin-top:8px;line-height:1.5}
+.memory-list{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.memory-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:14px;animation:fadeUp .25s ease both}
+.memory-item-text{flex:1;font-size:.84rem;color:var(--text);line-height:1.5}
+.memory-item-date{font-size:.65rem;color:var(--text-light);margin-top:3px}
+.btn-del-mem{width:24px;height:24px;border-radius:7px;border:none;background:none;color:var(--text-light);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.75rem;transition:all .15s;flex-shrink:0}
+.btn-del-mem:hover{background:rgba(239,68,68,.1);color:var(--red)}
+.memory-empty{text-align:center;padding:40px 20px;color:var(--text-light);font-size:.84rem;line-height:1.7}
+.memory-footer{padding:12px 16px;border-top:1.5px solid var(--border);flex-shrink:0}
+.btn-clear-mem{width:100%;padding:10px;border-radius:12px;border:1.5px solid rgba(239,68,68,.2);background:rgba(239,68,68,.05);color:var(--red);font-family:var(--font-body);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-clear-mem:hover{background:rgba(239,68,68,.12)}
+#memory-overlay{display:none;position:fixed;inset:0;z-index:29;background:rgba(30,16,48,.2);backdrop-filter:blur(2px)}
+#memory-overlay.show{display:block}
 </style>
 </head>
 <body>
@@ -420,6 +452,7 @@ header {
       <div class="header-right">
         <div id="timer-pill"><span>⏱</span><span id="timer-display">5:00</span></div>
         <div class="status-badge"><div class="status-dot"></div><span id="user-label">Online</span></div>
+        <button class="btn-memory" id="btn-memory" onclick="toggleMemoryPanel()" title="My Memory" style="display:none">🧠 Memory</button>
         <button class="btn-logout" id="header-logout-btn" onclick="doLogout()">Log out</button>
       </div>
     </header>
@@ -553,6 +586,8 @@ function doLogout() {
   document.getElementById('welcome').style.display = '';
   document.getElementById('expired-overlay').classList.remove('show');
   document.getElementById('chat-screen').classList.add('hidden');
+  document.getElementById('btn-memory').style.display = 'none';
+  if (memoryOpen) toggleMemoryPanel();
   document.getElementById('auth-screen').classList.remove('hidden');
   document.getElementById('input-card').classList.remove('disabled');
   document.getElementById('input-hint-text').textContent = 'Enter to send · Shift+Enter for new line';
@@ -575,6 +610,7 @@ function openChat(name, isTrial, email) {
     startTimer();
   } else {
     document.getElementById('welcome-sub').textContent = 'Your AI assistant — ask me anything. Writing, coding, ideas, and more.';
+    document.getElementById('btn-memory').style.display = '';
     document.getElementById('header-logout-btn').style.display = 'none'; // sidebar has logout
     document.querySelector('.btn-toggle-sidebar').style.visibility = '';
     renderHistory(email);
@@ -804,7 +840,8 @@ async function sendMessage() {
       body: JSON.stringify({
         system: 'You are Viora, a friendly, warm and helpful AI assistant. Be clear, concise and encouraging. Avoid excessive markdown unless the user asks for it.',
         messages: history,
-        coords
+        coords,
+        email: getSession()?.email || null
       })
     });
 
@@ -868,6 +905,90 @@ setInterval(() => {
   if (getSession() && !getSession().isTrial) pollPopup();
 }, 8000);
 
+// ── Memory Panel ──
+let memoryOpen = false;
+
+function toggleMemoryPanel() {
+  memoryOpen = !memoryOpen;
+  document.getElementById('memory-panel').classList.toggle('open', memoryOpen);
+  document.getElementById('memory-overlay').classList.toggle('show', memoryOpen);
+  if (memoryOpen) loadMemories();
+}
+
+async function loadMemories() {
+  const session = getSession();
+  if (!session?.email) return;
+  try {
+    const res = await fetch(`/api/memory?email=${encodeURIComponent(session.email)}`);
+    const memories = await res.json();
+    renderMemories(memories);
+  } catch {}
+}
+
+function renderMemories(memories) {
+  const list = document.getElementById('memory-list');
+  const empty = document.getElementById('memory-empty');
+  list.querySelectorAll('.memory-item').forEach(el => el.remove());
+  if (!memories || memories.length === 0) { empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  memories.slice().reverse().forEach(m => {
+    const d = document.createElement('div');
+    d.className = 'memory-item';
+    const date = m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+    d.innerHTML = `
+      <div style="flex:1">
+        <div class="memory-item-text">${escHtml(m.text)}</div>
+        <div class="memory-item-date">${date}</div>
+      </div>
+      <button class="btn-del-mem" onclick="deleteMemory('${m.id}')" title="Delete">✕</button>`;
+    list.appendChild(d);
+  });
+}
+
+async function addMemory() {
+  const session = getSession();
+  if (!session?.email) return;
+  const input = document.getElementById('memory-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  try {
+    await fetch('/api/memory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: session.email, text })
+    });
+    loadMemories();
+  } catch {}
+}
+
+async function deleteMemory(id) {
+  const session = getSession();
+  if (!session?.email) return;
+  try {
+    await fetch(`/api/memory/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: session.email })
+    });
+    loadMemories();
+  } catch {}
+}
+
+async function clearAllMemories() {
+  const session = getSession();
+  if (!session?.email) return;
+  if (!confirm('Clear all memories? Viora will forget everything about you.')) return;
+  try {
+    await fetch('/api/memory', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: session.email })
+    });
+    loadMemories();
+  } catch {}
+}
+
 window.addEventListener('load', () => {
   const s = getSession();
   if (s) { openChat(s.name, s.isTrial, s.email || null); checkAdminPopup(); }
@@ -923,5 +1044,27 @@ function closeAdminPopup() {
   </div>
   <button class="popup-close" onclick="dismissPopup()">✕</button>
 </div>
+<!-- MEMORY PANEL -->
+<div id="memory-overlay" onclick="toggleMemoryPanel()"></div>
+<div id="memory-panel">
+  <div class="memory-header">
+    <span class="memory-title">🧠 Viora's Memory</span>
+    <button class="memory-close" onclick="toggleMemoryPanel()">✕</button>
+  </div>
+  <div class="memory-add">
+    <div class="memory-input-row">
+      <input class="memory-input" id="memory-input" type="text" placeholder="e.g. I like spicy food" maxlength="200" onkeydown="if(event.key==='Enter')addMemory()" />
+      <button class="btn-add-mem" onclick="addMemory()">+ Add</button>
+    </div>
+    <div class="memory-hint">💡 You can also type <strong>remember: I love sushi</strong> in chat and Viora will save it automatically.</div>
+  </div>
+  <div class="memory-list" id="memory-list">
+    <div class="memory-empty" id="memory-empty">No memories yet.<br>Add things you want Viora to always know about you!</div>
+  </div>
+  <div class="memory-footer">
+    <button class="btn-clear-mem" onclick="clearAllMemories()">🗑 Clear All Memories</button>
+  </div>
+</div>
+
 </body>
 </html>
