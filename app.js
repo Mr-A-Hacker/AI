@@ -321,6 +321,17 @@ app.post('/api/chat', async (req,res)=>{
     const [place,weather]=await Promise.all([reverseGeocode(coords.lat,coords.lon),getWeatherFromCoords(coords.lat,coords.lon)]);
     if (weather) { const loc=place?`${place.city}, ${place.country}`:`${coords.lat},${coords.lon}`; weatherCtx=`\n\n[LIVE WEATHER (${loc}): ${weather}]`; }
   }
+  // Inject location context
+  let locationCtx='';
+  if (coords?.lat && coords?.lon) {
+    const place = await reverseGeocode(coords.lat, coords.lon);
+    if (place) {
+      locationCtx = `\n\n[USER LOCATION: ${place.city ? place.city + ', ' : ''}${place.country} (coordinates: ${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}). Use this to answer questions about their location, nearest places, local services, etc. When they ask for nearest stores or places, tell them to search Google Maps for "[place] near ${place.city || 'their location'}" and provide a direct Google Maps link like: https://www.google.com/maps/search/[place]+near+${encodeURIComponent((place.city||'') + ' ' + (place.country||'')).replace(/%20/g,'+')}]`;
+    } else {
+      locationCtx = `\n\n[USER COORDINATES: ${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}. Use this for location-based questions.]`;
+    }
+  }
+
   // Inject memories into system prompt
   let memoryCtx='';
   if (email) {
@@ -340,7 +351,7 @@ app.post('/api/chat', async (req,res)=>{
       await saveMemory(email, existing);
     }
   }
-  const allMessages=[{role:'system',content:(system||'You are Viora, a friendly helpful AI.')+weatherCtx+memoryCtx},...messages];
+  const allMessages=[{role:'system',content:(system||'You are Viora, a friendly helpful AI.')+weatherCtx+locationCtx+memoryCtx},...messages];
   try { const text=await callOpenRouter(allMessages); res.json({content:[{text}]}); }
   catch(err){ res.status(500).json({error:err.message}); }
 });
