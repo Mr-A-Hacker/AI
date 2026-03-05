@@ -335,6 +335,7 @@ app.post('/api/chat', async (req,res)=>{
   catch(err){ res.status(500).json({error:err.message}); }
 });
 
+app.get('/V.png', (req,res) => res.sendFile(path.join(__dirname,'templates','V.png')));
 app.get('/', (req,res) => res.sendFile(path.join(__dirname,'templates','index.html')));
 const PORT = process.env.PORT||3000;
 app.listen(PORT, ()=>console.log(`Server running on port ${PORT}`));
