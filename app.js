@@ -12,6 +12,7 @@ app.post('/api/chat', (req, res) => {
   const { messages, system } = req.body;
 
   if (!OPENROUTER_API_KEY) {
+    console.error('ERROR: OPENROUTER_API_KEY is not set');
     return res.status(500).json({ error: 'OPENROUTER_API_KEY not set on server.' });
   }
 
@@ -42,17 +43,25 @@ app.post('/api/chat', (req, res) => {
     let data = '';
     apiRes.on('data', chunk => data += chunk);
     apiRes.on('end', () => {
+      console.log('OpenRouter status:', apiRes.statusCode);
+      console.log('OpenRouter response:', data);
       try {
         const parsed = JSON.parse(data);
+        if (parsed.error) {
+          console.error('OpenRouter error:', parsed.error);
+          return res.status(500).json({ error: parsed.error.message || 'API error' });
+        }
         const text = parsed.choices?.[0]?.message?.content || 'Signal lost. Please try again.';
         res.json({ content: [{ text }] });
-      } catch {
+      } catch (e) {
+        console.error('Parse error:', e);
         res.status(500).json({ error: 'Invalid response from API' });
       }
     });
   });
 
   apiReq.on('error', (err) => {
+    console.error('Request error:', err);
     res.status(500).json({ error: err.message });
   });
 
