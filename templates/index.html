@@ -965,19 +965,80 @@ function isImageRequest(text) {
     || /\b(generate|create|draw|make|paint|render)\s+(an?|the|some|me|us)?\s*(image|picture|photo|illustration|artwork|painting|portrait)/i.test(text);
 }
 
-function addImageMsg(prompt, url) {
+function addCodeImageMsg(prompt, svgCode) {
   const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const msgId = 'img_' + Date.now();
   const d = document.createElement('div');
   d.className = 'msg ai';
-  d.innerHTML = `
-    <div class="av" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
-    <div class="bubble-wrap">
-      <div class="img-bubble">
-        <img src="${url}" alt="${escHtml(prompt)}" onclick="openLightbox(this.src)" />
-        <div class="img-caption">🎨 ${escHtml(prompt.length > 80 ? prompt.slice(0,80)+'…' : prompt)}</div>
-      </div>
-      <div class="msg-time">${now}</div>
-    </div>`;
+
+  // Create wrapper
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;align-items:flex-start;gap:10px;';
+
+  const av = document.createElement('div');
+  av.className = 'av';
+  av.style.cssText = 'background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+  av.textContent = 'V';
+
+  const bwrap = document.createElement('div');
+  bwrap.className = 'bubble-wrap';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'img-bubble';
+  bubble.style.cssText = 'padding:10px;max-width:360px;';
+
+  // Render SVG into canvas for PNG download
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 512;
+  canvas.style.cssText = 'width:100%;border-radius:14px;display:block;cursor:pointer;';
+  canvas.title = 'Click to enlarge';
+
+  const img = new Image();
+  const svgBlob = new Blob([svgCode], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(svgBlob);
+  img.onload = () => {
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, 512, 512);
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+
+  canvas.addEventListener('click', () => {
+    const lb = document.getElementById('img-lightbox');
+    const lbImg = document.getElementById('lightbox-img');
+    lbImg.src = canvas.toDataURL('image/png');
+    lb.classList.add('show');
+  });
+
+  const caption = document.createElement('div');
+  caption.className = 'img-caption';
+  caption.textContent = '🎨 ' + (prompt.length > 80 ? prompt.slice(0,80)+'…' : prompt);
+
+  // Download button
+  const dlBtn = document.createElement('button');
+  dlBtn.textContent = '⬇️ Download image';
+  dlBtn.style.cssText = 'margin-top:8px;padding:6px 14px;border-radius:10px;border:1.5px solid var(--border);background:none;color:var(--text-mid);font-family:var(--font-body);font-size:.74rem;font-weight:600;cursor:pointer;transition:all .2s;';
+  dlBtn.onmouseenter = () => dlBtn.style.borderColor = 'var(--violet-light)';
+  dlBtn.onmouseleave = () => dlBtn.style.borderColor = 'var(--border)';
+  dlBtn.onclick = () => {
+    const link = document.createElement('a');
+    link.download = 'viora-image.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
+
+  const timeEl = document.createElement('div');
+  timeEl.className = 'msg-time';
+  timeEl.textContent = now;
+
+  bubble.appendChild(canvas);
+  bubble.appendChild(caption);
+  bubble.appendChild(dlBtn);
+  bwrap.appendChild(bubble);
+  bwrap.appendChild(timeEl);
+  d.appendChild(av);
+  d.appendChild(bwrap);
+
   chatEl.insertBefore(d, typingEl);
   scrollBot();
 }
@@ -1254,24 +1315,40 @@ async function sendMessage() {
     return;
   }
 
-  // ── Image generation ──
+  // ── Image generation (code-rendered) ──
   if (isImageRequest(text)) {
     try {
-      const res = await fetch('/api/image', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: text })
+        body: JSON.stringify({
+          system: `You are an expert SVG artist. When given an image prompt, respond with ONLY a complete, self-contained SVG that visually represents the prompt. Requirements:
+- Output ONLY the raw SVG code, nothing else — no explanation, no markdown, no backticks
+- Start with <svg and end with </svg>
+- Use viewBox="0 0 512 512" width="512" height="512"
+- Make it visually rich, colorful, detailed and beautiful
+- Use gradients, patterns, shapes, paths creatively
+- No external images or fonts`,
+          messages: [{ role: 'user', content: text }],
+          email: getSession()?.email || null
+        })
       });
       const data = await res.json();
       typingEl.classList.remove('show');
       if (data.error) {
-        addMsg('ai', '⚠️ You ran out of free image generation. Please try again in a moment!');
+        addMsg('ai', '⚠️ Image error: ' + data.error);
       } else {
-        addImageMsg(text, data.url);
-        history.push({ role: 'assistant', content: `[Generated image for: "${text}"]` });
-        await saveChatIfNeeded();
-        const session = getSession();
-        if (session?.email) renderHistory(session.email);
+        const svgCode = data.content?.[0]?.text || '';
+        const cleaned = svgCode.trim().replace(/^```[a-z]*\n?/i,'').replace(/```$/,'').trim();
+        if (cleaned.startsWith('<svg')) {
+          addCodeImageMsg(text, cleaned);
+          history.push({ role: 'assistant', content: `[Generated image for: "${text}"]` });
+          await saveChatIfNeeded();
+          const session = getSession();
+          if (session?.email) renderHistory(session.email);
+        } else {
+          addMsg('ai', cleaned);
+        }
       }
     } catch (err) {
       typingEl.classList.remove('show');
