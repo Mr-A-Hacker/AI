@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Viora AI</title>
 <link rel="icon" type="image/png" href="/V.png" />
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#7c3aed" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Viora AI" />
+<link rel="apple-touch-icon" href="/icon-192.png" />
+<meta name="msapplication-TileColor" content="#7c3aed" />
+<meta name="msapplication-TileImage" content="/icon-192.png" />
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -2095,5 +2105,68 @@ function closeAdminPopup() {
 })();
 </script>
 
+<script>
+// ── PWA: Service Worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+// ── PWA: Install prompt ──
+let deferredPrompt = null;
+const installBanner = document.getElementById('pwa-install-banner');
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show banner after 3 seconds if not already installed
+  setTimeout(() => {
+    if (deferredPrompt && getSession()) {
+      installBanner.classList.add('show');
+    }
+  }, 3000);
+});
+
+window.addEventListener('appinstalled', () => {
+  installBanner.classList.remove('show');
+  deferredPrompt = null;
+});
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
+    installBanner.classList.remove('show');
+  });
+}
+
+function dismissInstall() {
+  installBanner.classList.remove('show');
+  sessionStorage.setItem('pwa_dismissed', '1');
+}
+</script>
+
+<!-- PWA Install Banner -->
+<div id="pwa-install-banner" style="
+  display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  z-index:200; width:calc(100% - 32px); max-width:400px;
+  background:white; border:1.5px solid var(--border); border-radius:20px;
+  padding:14px 16px; box-shadow:0 8px 40px rgba(124,58,237,.18);
+  align-items:center; gap:12px; animation:slideUp .4s cubic-bezier(.34,1.56,.64,1) both;
+">
+  <div style="width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:1.1rem;font-weight:900;color:white;flex-shrink:0;">V</div>
+  <div style="flex:1;min-width:0;">
+    <div style="font-family:var(--font-head);font-size:.85rem;font-weight:800;color:var(--text);">Install Viora AI</div>
+    <div style="font-size:.72rem;color:var(--text-light);margin-top:1px;">Add to home screen for the best experience</div>
+  </div>
+  <button onclick="installPWA()" style="padding:8px 16px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-family:var(--font-head);font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 3px 12px rgba(124,58,237,.3);">Install</button>
+  <button onclick="dismissInstall()" style="width:28px;height:28px;border-radius:8px;border:none;background:none;color:var(--text-light);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+</div>
+<style>
+#pwa-install-banner.show { display:flex; }
+@keyframes slideUp { from{opacity:0;transform:translateX(-50%) translateY(20px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+</style>
 </body>
 </html>
