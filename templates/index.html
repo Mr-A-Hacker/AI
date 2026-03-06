@@ -549,7 +549,8 @@ header {
     <div id="chat-history-list">
       <div class="sidebar-empty" id="history-empty">No chats yet.<br>Start a conversation!</div>
     </div>
-    <div style="padding:0 0 4px;">
+    <div style="padding:0 0 4px;display:flex;flex-direction:column;gap:6px;">
+      <button class="btn-other-ais" id="sidebar-memory-btn" onclick="toggleMemoryPanel()" style="display:none;">🧠 Memory</button>
       <button class="btn-other-ais" onclick="openAiModal()">🤖 View other AIs</button>
     </div>
     <div class="sidebar-footer">
@@ -734,6 +735,7 @@ function doLogout() {
   document.getElementById('expired-overlay').classList.remove('show');
   document.getElementById('chat-screen').classList.add('hidden');
   document.getElementById('btn-memory').style.display = 'none';
+  document.getElementById('sidebar-memory-btn').style.display = 'none';
   if (memoryOpen) toggleMemoryPanel();
   document.getElementById('auth-screen').classList.remove('hidden');
   document.getElementById('input-card').classList.remove('disabled');
@@ -758,6 +760,7 @@ function openChat(name, isTrial, email) {
   } else {
     document.getElementById('welcome-sub').textContent = 'Your AI assistant — ask me anything. Writing, coding, ideas, and more.';
     document.getElementById('btn-memory').style.display = '';
+    document.getElementById('sidebar-memory-btn').style.display = '';
     document.getElementById('header-logout-btn').style.display = 'none'; // sidebar has logout
     document.querySelector('.btn-toggle-sidebar').style.visibility = '';
     renderHistory(email);
