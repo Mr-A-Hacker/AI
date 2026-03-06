@@ -139,15 +139,27 @@ app.get('/api/admin/users', adminAuth, async (req, res) => {
 app.delete('/api/admin/users/:email', adminAuth, async (req, res) => {
   const email = decodeURIComponent(req.params.email).toLowerCase();
   const eKey  = emailToKey(email);
-  // Delete user file
-  await b2Delete(`users/${eKey}.json`);
-  // Delete chat index + files would be ideal but skip for now
-  await b2Delete(`chats/${eKey}/index.json`);
-  // Remove from user index
-  let index = await getUserIndex();
-  index = index.filter(u => u.email !== email);
-  await saveUserIndex(index);
-  res.json({ success: true });
+  try {
+    // Delete user profile
+    await b2Delete(`users/${eKey}.json`);
+    // Delete memory
+    await b2Delete(`memory/${eKey}.json`);
+    // Delete all individual chat files
+    const chatIndex = await b2Get(`chats/${eKey}/index.json`) || [];
+    for (const chat of chatIndex) {
+      await b2Delete(`chats/${eKey}/${chat.id}.json`);
+    }
+    // Delete chat index
+    await b2Delete(`chats/${eKey}/index.json`);
+    // Remove from user index
+    let index = await getUserIndex();
+    index = index.filter(u => u.email !== email);
+    await saveUserIndex(index);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete user error:', err.message);
+    res.status(500).json({ error: 'Failed to delete user: ' + err.message });
+  }
 });
 
 // ── Admin: send popup ──
