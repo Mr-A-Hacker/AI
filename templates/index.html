@@ -491,6 +491,37 @@ header {
 .hum-result { border-radius:14px; border:1.5px solid rgba(124,58,237,.25); background:rgba(124,58,237,.05); padding:14px; font-size:.84rem; color:var(--text); line-height:1.75; white-space:pre-wrap; }
 .hum-copy { align-self:flex-start; padding:7px 16px; border-radius:10px; border:1.5px solid var(--border); background:none; color:var(--text-mid); font-family:var(--font-body); font-size:.75rem; font-weight:600; cursor:pointer; transition:all .2s; }
 .hum-copy:hover { border-color:var(--violet-light); color:var(--violet); }
+
+/* ── LANDING PAGE ── */
+#landing-screen { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg); overflow: hidden; }
+#landing-screen.hidden { display: none; }
+
+/* animated orbs */
+.landing-orb { position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; animation: orbFloat 8s ease-in-out infinite; }
+.landing-orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(124,58,237,.22) 0%, transparent 70%); top: -100px; left: -100px; animation-delay: 0s; }
+.landing-orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(236,72,153,.18) 0%, transparent 70%); bottom: -80px; right: -80px; animation-delay: -4s; }
+.landing-orb-3 { width: 300px; height: 300px; background: radial-gradient(circle, rgba(99,102,241,.15) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: -2s; }
+@keyframes orbFloat { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-20px) scale(1.05)} 66%{transform:translate(-20px,15px) scale(.97)} }
+
+/* grid lines bg */
+.landing-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(124,58,237,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,.06) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; }
+
+/* content */
+.landing-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 20px; max-width: 700px; }
+.landing-badge { display: inline-flex; align-items: center; gap: 7px; padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(124,58,237,.3); background: rgba(124,58,237,.08); font-size: .75rem; font-weight: 700; color: var(--violet-light); margin-bottom: 28px; letter-spacing: .04em; }
+.landing-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 8px var(--violet); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.8)} }
+.landing-h1 { font-family: var(--font-head); font-size: clamp(2.4rem, 6vw, 4rem); font-weight: 900; line-height: 1.1; letter-spacing: -.03em; color: var(--text); margin-bottom: 20px; }
+.landing-h1 .grad { background: linear-gradient(135deg, var(--grad-a) 0%, var(--grad-b) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.landing-sub { font-size: clamp(.95rem, 2vw, 1.12rem); color: var(--text-mid); line-height: 1.7; max-width: 520px; margin-bottom: 40px; }
+.landing-btns { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.landing-btn-primary { padding: 14px 32px; border-radius: 16px; border: none; background: linear-gradient(135deg, var(--grad-a), var(--grad-b)); color: white; font-family: var(--font-head); font-size: 1rem; font-weight: 700; cursor: pointer; transition: all .25s; box-shadow: 0 6px 28px rgba(124,58,237,.4); }
+.landing-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 36px rgba(124,58,237,.5); }
+.landing-btn-outline { padding: 14px 32px; border-radius: 16px; border: 1.5px solid var(--border); background: white; color: var(--text); font-family: var(--font-head); font-size: 1rem; font-weight: 700; cursor: pointer; transition: all .25s; }
+.landing-btn-outline:hover { border-color: var(--violet-light); color: var(--violet); transform: translateY(-2px); box-shadow: 0 6px 24px rgba(124,58,237,.1); }
+.landing-features { display: flex; gap: 28px; margin-top: 52px; flex-wrap: wrap; justify-content: center; }
+.landing-feat { display: flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--text-mid); font-weight: 600; }
+.landing-feat-icon { font-size: 1rem; }
 </style>
 </head>
 <body>
@@ -500,7 +531,54 @@ header {
 <div class="blob blob-3"></div>
 
 <!-- AUTH SCREEN -->
-<div class="screen" id="auth-screen">
+<div id="landing-screen">
+  <!-- Particle stars -->
+  <canvas id="landing-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></canvas>
+
+  <!-- Top nav -->
+  <nav style="position:absolute;top:0;left:0;right:0;padding:20px 40px;display:flex;align-items:center;justify-content:space-between;z-index:3;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-weight:900;color:white;font-size:.9rem;">V</div>
+      <span style="font-family:var(--font-head);font-weight:800;font-size:1rem;color:var(--text);">Viora AI</span>
+    </div>
+    <button onclick="showAuth('login')" style="padding:8px 20px;border-radius:12px;border:1.5px solid var(--border);background:white;font-family:var(--font-body);font-size:.82rem;font-weight:700;color:var(--text-mid);cursor:pointer;transition:all .2s;" onmouseenter="this.style.borderColor='#7c3aed';this.style.color='#7c3aed'" onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text-mid)'">Log in</button>
+  </nav>
+
+  <!-- Main content -->
+  <div class="landing-content">
+    <!-- Glowing ring behind V -->
+    <div style="position:relative;margin-bottom:32px;">
+      <div style="position:absolute;inset:-20px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.3) 0%,transparent 70%);animation:orbFloat 4s ease-in-out infinite;"></div>
+      <div style="width:80px;height:80px;border-radius:24px;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:2.2rem;font-weight:900;color:white;box-shadow:0 16px 48px rgba(124,58,237,.5);position:relative;">V</div>
+    </div>
+
+    <h1 class="landing-h1" style="font-size:clamp(2.6rem,7vw,4.4rem);">Meet <span class="grad">Viora.</span><br>Think smarter.</h1>
+    <p class="landing-sub">The AI that writes, creates, remembers, and reasons —<br>all from a single conversation.</p>
+
+    <div class="landing-btns">
+      <button class="landing-btn-primary" onclick="showAuth('signup')" style="font-size:1rem;padding:15px 36px;border-radius:18px;display:flex;align-items:center;gap:10px;">
+        <span>Start for free</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+      <button class="landing-btn-outline" onclick="showAuth('login')" style="font-size:1rem;padding:15px 36px;border-radius:18px;">Log in</button>
+    </div>
+
+    <!-- Feature pills -->
+    <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:48px;">
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🎨 Image gen</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🔍 Deep search</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🧠 Memory</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🌦️ Live weather</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🔗 Reads links</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">✍️ AI Humanizer</div>
+    </div>
+  </div>
+
+  <!-- Bottom tagline -->
+  <div style="position:absolute;bottom:24px;font-size:.72rem;color:var(--text-light);letter-spacing:.04em;">Built with ❤️ · Viora AI</div>
+</div>
+
+<div class="screen" id="auth-screen" style="display:none;">
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-mark">V</div>
@@ -663,6 +741,12 @@ let timerInterval = null;
 let sidebarOpen = false;
 
 // ── Auth ──
+function showAuth(tab) {
+  document.getElementById('landing-screen').classList.add('hidden');
+  document.getElementById('auth-screen').style.display = '';
+  switchTab(tab || 'login');
+}
+
 function switchTab(tab) {
   document.querySelectorAll('.auth-tab').forEach((t, i) => t.classList.toggle('active', (tab==='login'&&i===0)||(tab==='signup'&&i===1)));
   document.getElementById('login-form').classList.toggle('hidden', tab!=='login');
@@ -737,7 +821,8 @@ function doLogout() {
   document.getElementById('btn-memory').style.display = 'none';
   document.getElementById('sidebar-memory-btn').style.display = 'none';
   if (memoryOpen) toggleMemoryPanel();
-  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('landing-screen').classList.remove('hidden');
   document.getElementById('input-card').classList.remove('disabled');
   document.getElementById('input-hint-text').textContent = 'Enter to send · Shift+Enter for new line';
   if (sidebarOpen) toggleSidebar();
@@ -1586,6 +1671,11 @@ async function clearAllMemories() {
 
 window.addEventListener('load', async () => {
   const s = getSession();
+  if (!s) {
+    // Show landing by default — auth-screen stays hidden
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('landing-screen').classList.remove('hidden');
+  }
   if (s) {
     openChat(s.name, s.isTrial, s.email || null);
     checkAdminPopup();
@@ -1735,6 +1825,36 @@ function closeAdminPopup() {
     </div>
   </div>
 </div>
+
+<script>
+(function(){
+  const c = document.getElementById('landing-canvas');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  let stars = [];
+  function resize() { c.width = window.innerWidth; c.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+  for (let i = 0; i < 120; i++) {
+    stars.push({ x: Math.random(), y: Math.random(), r: Math.random() * 1.5 + .3, a: Math.random(), speed: Math.random() * .004 + .001, twinkle: Math.random() * Math.PI * 2 });
+  }
+  function draw() {
+    ctx.clearRect(0, 0, c.width, c.height);
+    stars.forEach(s => {
+      s.twinkle += s.speed;
+      const alpha = s.a * (.5 + .5 * Math.sin(s.twinkle));
+      ctx.beginPath();
+      ctx.arc(s.x * c.width, s.y * c.height, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(180,140,255,${alpha})`;
+      ctx.fill();
+    });
+    if (document.getElementById('landing-screen') && !document.getElementById('landing-screen').classList.contains('hidden')) {
+      requestAnimationFrame(draw);
+    }
+  }
+  draw();
+})();
+</script>
 
 </body>
 </html>
