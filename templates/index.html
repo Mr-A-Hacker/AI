@@ -411,6 +411,32 @@ header {
 .deep-bubble li { font-size: .88rem; line-height: 1.7; color: var(--text); margin: 3px 0; }
 .deep-bubble strong { font-weight: 700; color: var(--text); }
 .deep-badge { display: inline-flex; align-items: center; gap: 5px; font-size: .68rem; font-weight: 700; color: var(--violet); background: rgba(124,58,237,.08); border: 1px solid rgba(124,58,237,.2); border-radius: 20px; padding: 2px 10px; margin-bottom: 10px; }
+
+/* ── WEATHER CARD ── */
+.weather-card { background: linear-gradient(135deg, #1a1035 0%, #0f2040 50%, #0a1a35 100%); border: 1px solid rgba(124,58,237,.25); border-radius: 22px; padding: 20px 22px 16px; max-width: 380px; color: white; overflow: hidden; position: relative; box-shadow: 0 8px 32px rgba(0,0,0,.35); }
+.wc-location { font-size: .78rem; font-weight: 700; color: rgba(255,255,255,.6); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.wc-location svg { opacity: .6; }
+.wc-main { display: flex; align-items: flex-end; gap: 14px; margin-bottom: 14px; }
+.wc-temp { font-size: 3.6rem; font-weight: 800; line-height: 1; background: linear-gradient(135deg, #fff 60%, rgba(180,140,255,.8)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.wc-temp-unit { font-size: 1.4rem; font-weight: 400; color: rgba(255,255,255,.6); margin-bottom: 10px; }
+.wc-desc-wrap { flex: 1; }
+.wc-icon { font-size: 2.8rem; line-height: 1; margin-bottom: 2px; }
+.wc-desc { font-size: .85rem; color: rgba(255,255,255,.75); font-weight: 600; }
+.wc-feels { font-size: .75rem; color: rgba(255,255,255,.45); margin-top: 2px; }
+.wc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.wc-stat { background: rgba(255,255,255,.07); border-radius: 12px; padding: 9px 12px; display: flex; align-items: center; gap: 8px; }
+.wc-stat-icon { font-size: 1rem; }
+.wc-stat-label { font-size: .68rem; color: rgba(255,255,255,.45); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+.wc-stat-val { font-size: .82rem; color: rgba(255,255,255,.9); font-weight: 700; margin-top: 1px; }
+.wc-divider { height: 1px; background: rgba(255,255,255,.08); margin: 0 0 14px; }
+.wc-forecast { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.wc-forecast::-webkit-scrollbar { display: none; }
+.wc-day { flex: 1; min-width: 46px; background: rgba(255,255,255,.07); border-radius: 12px; padding: 8px 4px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.wc-day-name { font-size: .65rem; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .04em; }
+.wc-day-icon { font-size: 1.2rem; }
+.wc-day-high { font-size: .78rem; font-weight: 700; color: white; }
+.wc-day-low { font-size: .68rem; color: rgba(255,255,255,.4); }
+.wc-badge { position: absolute; top: 16px; right: 18px; font-size: .6rem; font-weight: 700; color: rgba(255,255,255,.3); letter-spacing: .05em; text-transform: uppercase; }
 </style>
 </head>
 <body>
@@ -971,6 +997,66 @@ function addDeepSearchMsg(query, text) {
   scrollBot();
 }
 
+// ── Weather Code to Emoji ──
+function weatherEmoji(code) {
+  if (code === 113) return '☀️';
+  if (code === 116) return '⛅';
+  if ([119,122].includes(code)) return '☁️';
+  if ([143,248,260].includes(code)) return '🌫️';
+  if ([176,263,266,293,296].includes(code)) return '🌦️';
+  if ([299,302,305,308].includes(code)) return '🌧️';
+  if ([311,314,317,320].includes(code)) return '🌨️';
+  if ([323,326,329,332,335,338,368,371,374,377].includes(code)) return '❄️';
+  if ([386,389,392,395].includes(code)) return '⛈️';
+  if ([200,386].includes(code)) return '🌩️';
+  return '🌤️';
+}
+
+function addWeatherCard(place, weather) {
+  const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const location = place ? `${place.city || ''}${place.city && place.country ? ', ' : ''}${place.country || ''}` : 'Your Location';
+  const forecastHTML = (weather.daily || []).map((d,i) => `
+    <div class="wc-day">
+      <div class="wc-day-name">${i===0?'Now':d.day}</div>
+      <div class="wc-day-icon">${weatherEmoji(d.code)}</div>
+      <div class="wc-day-high">${d.high}°</div>
+      <div class="wc-day-low">${d.low}°</div>
+    </div>`).join('');
+
+  const el = document.createElement('div');
+  el.className = 'msg ai';
+  el.innerHTML = `
+    <div class="av" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
+    <div class="bubble-wrap">
+      <div class="weather-card">
+        <div class="wc-badge">Viora Weather</div>
+        <div class="wc-location">
+          <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 7 5 7s5-3.25 5-7c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg>
+          ${escHtml(location)} &bull; Now
+        </div>
+        <div class="wc-main">
+          <div class="wc-temp">${weather.tempF}<span class="wc-temp-unit">°F</span></div>
+          <div class="wc-desc-wrap">
+            <div class="wc-icon">${weatherEmoji(weather.code)}</div>
+            <div class="wc-desc">${escHtml(weather.desc)}</div>
+            <div class="wc-feels">Feels like ${weather.feelsF}°F</div>
+          </div>
+        </div>
+        <div class="wc-stats">
+          <div class="wc-stat"><span class="wc-stat-icon">💧</span><div><div class="wc-stat-label">Humidity</div><div class="wc-stat-val">${weather.humidity}%</div></div></div>
+          <div class="wc-stat"><span class="wc-stat-icon">💨</span><div><div class="wc-stat-label">Wind</div><div class="wc-stat-val">${weather.windMph} mph</div></div></div>
+          <div class="wc-stat"><span class="wc-stat-icon">👁️</span><div><div class="wc-stat-label">Visibility</div><div class="wc-stat-val">${weather.visibility} mi</div></div></div>
+          <div class="wc-stat"><span class="wc-stat-icon">☀️</span><div><div class="wc-stat-label">UV Index</div><div class="wc-stat-val">${weather.uvIndex}</div></div></div>
+        </div>
+        <div class="wc-divider"></div>
+        <div class="wc-forecast">${forecastHTML}</div>
+      </div>
+      <div class="msg-time">${now}</div>
+    </div>`;
+  chatEl.insertBefore(el, typingEl);
+  scrollBot();
+}
+
 function isWeatherQuery(text) {
   return /weather|temperature|forecast|rain|sunny|cloudy|snow|wind|humidity|hot outside|cold outside|degrees/i.test(text);
 }
@@ -1083,6 +1169,26 @@ async function sendMessage() {
 
   let coords = null;
   if (isWeatherQuery(text) || isLocationQuery(text)) coords = await getBrowserLocation();
+
+  // ── Weather card ──
+  if (isWeatherQuery(text) && coords) {
+    try {
+      const wres = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
+      const wdata = await wres.json();
+      if (wdata.weather) {
+        typingEl.classList.remove('show');
+        addWeatherCard(wdata.place, wdata.weather);
+        const summary = `${wdata.place?.city || 'Your location'}: ${wdata.weather.tempF}°F, feels like ${wdata.weather.feelsF}°F, ${wdata.weather.desc}, humidity ${wdata.weather.humidity}%, wind ${wdata.weather.windMph} mph.`;
+        history.push({ role: 'assistant', content: summary });
+        await saveChatIfNeeded();
+        const session = getSession();
+        if (session?.email) renderHistory(session.email);
+        busy = false;
+        inputEl.focus();
+        return;
+      }
+    } catch(e) { /* fall through to normal chat */ }
+  }
 
   try {
     const res = await fetch('/api/chat', {
