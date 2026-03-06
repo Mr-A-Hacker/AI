@@ -493,7 +493,7 @@ header {
 .hum-copy:hover { border-color:var(--violet-light); color:var(--violet); }
 
 /* ── LANDING PAGE ── */
-#landing-screen { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg); overflow-y: auto; overflow-x: hidden; }
+#landing-screen { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg); overflow: hidden; }
 #landing-screen.hidden { display: none; }
 
 /* animated orbs */
@@ -507,13 +507,13 @@ header {
 .landing-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(124,58,237,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,.06) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; }
 
 /* content */
-.landing-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 120px 24px 80px; max-width: 720px; width: 100%; }
+.landing-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 20px; max-width: 700px; }
 .landing-badge { display: inline-flex; align-items: center; gap: 7px; padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(124,58,237,.3); background: rgba(124,58,237,.08); font-size: .75rem; font-weight: 700; color: var(--violet-light); margin-bottom: 28px; letter-spacing: .04em; }
 .landing-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 8px var(--violet); animation: pulse 2s ease-in-out infinite; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.8)} }
-.landing-h1 { font-family: var(--font-head); font-size: clamp(2.8rem, 7vw, 4.6rem); font-weight: 900; line-height: 1.08; letter-spacing: -.03em; color: var(--text); margin-bottom: 28px; }
+.landing-h1 { font-family: var(--font-head); font-size: clamp(2.4rem, 6vw, 4rem); font-weight: 900; line-height: 1.1; letter-spacing: -.03em; color: var(--text); margin-bottom: 20px; }
 .landing-h1 .grad { background: linear-gradient(135deg, var(--grad-a) 0%, var(--grad-b) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.landing-sub { font-size: clamp(1rem, 2vw, 1.15rem); color: var(--text-mid); line-height: 1.75; max-width: 520px; margin-bottom: 48px; }
+.landing-sub { font-size: clamp(.95rem, 2vw, 1.12rem); color: var(--text-mid); line-height: 1.7; max-width: 520px; margin-bottom: 40px; }
 .landing-btns { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
 .landing-btn-primary { padding: 14px 32px; border-radius: 16px; border: none; background: linear-gradient(135deg, var(--grad-a), var(--grad-b)); color: white; font-family: var(--font-head); font-size: 1rem; font-weight: 700; cursor: pointer; transition: all .25s; box-shadow: 0 6px 28px rgba(124,58,237,.4); }
 .landing-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 36px rgba(124,58,237,.5); }
@@ -522,6 +522,7 @@ header {
 .landing-features { display: flex; gap: 28px; margin-top: 52px; flex-wrap: wrap; justify-content: center; }
 .landing-feat { display: flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--text-mid); font-weight: 600; }
 .landing-feat-icon { font-size: 1rem; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
@@ -548,27 +549,30 @@ header {
   <!-- Main content -->
   <div class="landing-content">
     <!-- Glowing ring behind V -->
-    <div style="position:relative;margin-bottom:44px;">
-      <div style="position:absolute;inset:-24px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.3) 0%,transparent 70%);animation:orbFloat 4s ease-in-out infinite;"></div>
-      <div style="width:88px;height:88px;border-radius:26px;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:2.4rem;font-weight:900;color:white;box-shadow:0 16px 48px rgba(124,58,237,.5);position:relative;">V</div>
+    <div style="position:relative;margin-bottom:32px;">
+      <div style="position:absolute;inset:-20px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.3) 0%,transparent 70%);animation:orbFloat 4s ease-in-out infinite;"></div>
+      <div style="width:80px;height:80px;border-radius:24px;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:2.2rem;font-weight:900;color:white;box-shadow:0 16px 48px rgba(124,58,237,.5);position:relative;">V</div>
     </div>
 
-    <h1 class="landing-h1">Meet <span class="grad">Viora.</span><br>Think smarter.</h1>
+    <h1 class="landing-h1" style="font-size:clamp(2.6rem,7vw,4.4rem);">Meet <span class="grad">Viora.</span><br>Think smarter.</h1>
     <p class="landing-sub">The AI that writes, creates, remembers, and reasons —<br>all from a single conversation.</p>
 
     <div class="landing-btns">
-      <button class="landing-btn-primary" onclick="showAuth('signup')" style="display:flex;align-items:center;gap:10px;">
+      <button class="landing-btn-primary" onclick="showAuth('signup')" style="font-size:1rem;padding:15px 36px;border-radius:18px;display:flex;align-items:center;gap:10px;">
         <span>Start for free</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </button>
-      <button class="landing-btn-outline" onclick="showAuth('login')">Log in</button>
+      <button class="landing-btn-outline" onclick="showAuth('login')" style="font-size:1rem;padding:15px 36px;border-radius:18px;">Log in</button>
     </div>
 
-    <!-- Other AIs hint -->
-    <div style="margin-top:52px;">
-      <div style="padding:10px 22px;border-radius:24px;border:1px solid rgba(124,58,237,.25);background:rgba(124,58,237,.06);font-size:.82rem;font-weight:600;color:var(--violet-light);display:inline-flex;align-items:center;gap:8px;">
-        🤖 <span>We also have other AI tools — explore them after signing up</span> <span style="opacity:.5;">→</span>
-      </div>
+    <!-- Feature pills -->
+    <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:48px;">
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🎨 Image gen</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🔍 Deep search</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🧠 Memory</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🌦️ Live weather</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🔗 Reads links</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">✍️ AI Humanizer</div>
     </div>
   </div>
 
@@ -1075,19 +1079,58 @@ function removeGeneratingMsg() {
 function addRealImageMsg(prompt, url) {
   const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const safePrompt = escHtml(prompt.length > 80 ? prompt.slice(0,80)+'…' : prompt);
-  const safeUrl = url.replace(/'/g, '%27');
+
   const d = document.createElement('div');
   d.className = 'msg ai';
-  d.innerHTML = `
-    <div class="av" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
-    <div class="bubble-wrap">
-      <div class="img-bubble" style="padding:8px;max-width:360px;">
-        <img src="${url}" alt="${safePrompt}" style="width:100%;border-radius:14px;display:block;cursor:pointer;box-shadow:0 4px 24px rgba(0,0,0,.12);" onclick="openLightbox('${safeUrl}')" />
-        <div class="img-caption" style="margin-top:8px;">🎨 ${safePrompt}</div>
-        <button onclick="downloadImg('${safeUrl}')" style="margin-top:8px;padding:7px 16px;border-radius:10px;border:1.5px solid var(--border);background:none;color:var(--text-mid);font-family:var(--font-body);font-size:.74rem;font-weight:600;cursor:pointer;transition:all .2s;" onmouseenter="this.style.borderColor='#7c3aed';this.style.color='#7c3aed'" onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text-mid)'">⬇️ Download image</button>
-      </div>
-      <div class="msg-time">${now}</div>
-    </div>`;
+
+  const av = document.createElement('div');
+  av.className = 'av';
+  av.style.cssText = 'background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+  av.textContent = 'V';
+
+  const bwrap = document.createElement('div');
+  bwrap.className = 'bubble-wrap';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'img-bubble';
+  bubble.style.cssText = 'padding:8px;max-width:360px;';
+
+  // Skeleton shimmer shown while image loads
+  const skeleton = document.createElement('div');
+  skeleton.style.cssText = 'width:100%;aspect-ratio:1;border-radius:14px;background:linear-gradient(90deg,var(--surface) 25%,var(--border) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;';
+
+  const imgEl = document.createElement('img');
+  imgEl.alt = safePrompt;
+  imgEl.style.cssText = 'width:100%;border-radius:14px;display:none;cursor:pointer;box-shadow:0 4px 24px rgba(0,0,0,.12);';
+  imgEl.onload = () => { skeleton.remove(); imgEl.style.display = 'block'; scrollBot(); };
+  imgEl.onerror = () => { skeleton.style.background = 'var(--surface)'; skeleton.style.animation = 'none'; skeleton.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-light);font-size:.8rem;flex-direction:column;gap:8px;padding:40px 0;"><span style="font-size:2rem;">😕</span>Image failed to load.<br>Try a different prompt.</div>'; };
+  imgEl.onclick = () => openLightbox(url);
+  imgEl.src = url;
+
+  const caption = document.createElement('div');
+  caption.className = 'img-caption';
+  caption.style.marginTop = '8px';
+  caption.textContent = '🎨 ' + (prompt.length > 80 ? prompt.slice(0,80)+'…' : prompt);
+
+  const dlBtn = document.createElement('button');
+  dlBtn.textContent = '⬇️ Download image';
+  dlBtn.style.cssText = 'margin-top:8px;padding:7px 16px;border-radius:10px;border:1.5px solid var(--border);background:none;color:var(--text-mid);font-family:var(--font-body);font-size:.74rem;font-weight:600;cursor:pointer;transition:all .2s;';
+  dlBtn.onmouseenter = () => { dlBtn.style.borderColor='#7c3aed'; dlBtn.style.color='#7c3aed'; };
+  dlBtn.onmouseleave = () => { dlBtn.style.borderColor='var(--border)'; dlBtn.style.color='var(--text-mid)'; };
+  dlBtn.onclick = () => downloadImg(url);
+
+  const timeEl = document.createElement('div');
+  timeEl.className = 'msg-time';
+  timeEl.textContent = now;
+
+  bubble.appendChild(skeleton);
+  bubble.appendChild(imgEl);
+  bubble.appendChild(caption);
+  bubble.appendChild(dlBtn);
+  bwrap.appendChild(bubble);
+  bwrap.appendChild(timeEl);
+  d.appendChild(av);
+  d.appendChild(bwrap);
   chatEl.insertBefore(d, typingEl);
   scrollBot();
 }
@@ -1378,28 +1421,22 @@ async function sendMessage() {
     return;
   }
 
-  // ── Image generation (Pollinations.ai — free, real AI images) ──
+  // ── Image generation (api.airforce — free, no key needed) ──
   if (isImageRequest(text)) {
     try {
-      // Strip filler words to get clean subject
       const cleanPrompt = text
         .replace(/^(please|can you|could you)\s+/i, '')
         .replace(/^(draw|generate|create|make|paint|show|imagine|design|render|sketch|illustrate|produce)\s+(me\s+|us\s+)?(a\s+|an\s+|the\s+|some\s+)?/i, '')
         .trim();
 
-      // Enhance prompt for photorealistic quality
-      const enhancedPrompt = cleanPrompt + ', highly detailed, photorealistic, 8k, professional photography, beautiful lighting, sharp focus';
-      const encodedPrompt = encodeURIComponent(enhancedPrompt);
+      const enhancedPrompt = cleanPrompt + ', highly detailed, photorealistic, 8k, beautiful lighting, sharp focus';
       const seed = Math.floor(Math.random() * 999999);
-      const imgUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&model=flux&nologo=true`;
+      const imgUrl = `/api/genimage?prompt=${encodeURIComponent(enhancedPrompt)}&seed=${seed}`;
 
-      // Show loading state with progress feel
       typingEl.classList.remove('show');
       addGeneratingMsg();
 
-      // Preload image
-      const img = new Image();
-      img.onload = async () => {
+      setTimeout(async () => {
         removeGeneratingMsg();
         addRealImageMsg(text, imgUrl);
         history.push({ role: 'assistant', content: '[Generated image for: "' + text + '"]' });
@@ -1408,15 +1445,8 @@ async function sendMessage() {
         if (session?.email) renderHistory(session.email);
         busy = false;
         inputEl.focus();
-      };
-      img.onerror = () => {
-        removeGeneratingMsg();
-        addMsg('ai', '⚠️ Image generation failed. Please try again.');
-        busy = false;
-        inputEl.focus();
-      };
-      img.src = imgUrl;
-      return; // don't set busy=false yet, handled in onload/onerror
+      }, 1200);
+      return;
     } catch (err) {
       typingEl.classList.remove('show');
       addMsg('ai', '⚠️ Image error: ' + err.message);
@@ -1425,7 +1455,6 @@ async function sendMessage() {
     inputEl.focus();
     return;
   }
-
   let coords = null;
   if (isWeatherQuery(text) || isLocationQuery(text)) coords = await getBrowserLocation();
 
