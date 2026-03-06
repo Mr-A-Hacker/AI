@@ -620,41 +620,79 @@ app.post('/api/chat', async (req,res)=>{
   }
   const allMessages=[{role:'system',content:(system||'You are Viora, a friendly helpful AI.')+weatherCtx+locationCtx+memoryCtx+urlCtx},...builtMessages];
   try {
-    const payload = JSON.stringify({ model: 'google/gemini-2.0-flash-exp:free', stream: true, messages: allMessages });
-    const options = {
-      hostname: 'openrouter.ai', path: '/api/v1/chat/completions', method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'https://ai-1x5q.onrender.com', 'X-Title': 'Viora AI', 'Content-Length': Buffer.byteLength(payload) }
-    };
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    await new Promise((resolve, reject) => {
-      const req = https.request(options, (upstream) => {
-        let buf = '';
-        upstream.on('data', chunk => {
-          buf += chunk.toString();
-          const lines = buf.split('\n');
-          buf = lines.pop();
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const data = line.slice(6).trim();
-            if (data === '[DONE]') { res.write('data: [DONE]\n\n'); continue; }
-            try {
-              const parsed = JSON.parse(data);
-              const token = parsed.choices?.[0]?.delta?.content;
-              if (token) res.write(`data: ${JSON.stringify({ token })}\n\n`);
-            } catch {}
-          }
+    // Try streaming first, fall back to non-streaming if empty
+    const models = [
+      'google/gemini-2.0-flash-exp:free',
+      'meta-llama/llama-3.2-3b-instruct:free',
+      'microsoft/phi-3-mini-128k-instruct:free'
+    ];
+
+    let replied = false;
+    for (const model of models) {
+      try {
+        const payload = JSON.stringify({ model, stream: true, messages: allMessages });
+        const options = {
+          hostname: 'openrouter.ai', path: '/api/v1/chat/completions', method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'HTTP-Referer': 'https://ai-1x5q.onrender.com', 'X-Title': 'Viora AI',
+            'Content-Length': Buffer.byteLength(payload) }
+        };
+
+        const result = await new Promise((resolve, reject) => {
+          const req = https.request(options, (upstream) => {
+            let buf = '', tokens = '';
+            upstream.on('data', chunk => {
+              buf += chunk.toString();
+              const lines = buf.split('\n');
+              buf = lines.pop();
+              for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                const data = line.slice(6).trim();
+                if (data === '[DONE]') continue;
+                try {
+                  const parsed = JSON.parse(data);
+                  const token = parsed.choices?.[0]?.delta?.content;
+                  if (token) tokens += token;
+                  // Check for error
+                  if (parsed.error) reject(new Error(parsed.error.message));
+                } catch {}
+              }
+            });
+            upstream.on('end', () => resolve(tokens));
+            upstream.on('error', reject);
+          });
+          req.on('error', reject);
+          req.write(payload);
+          req.end();
         });
-        upstream.on('end', resolve);
-        upstream.on('error', reject);
-      });
-      req.on('error', reject);
-      req.write(payload);
-      req.end();
-    });
-    res.end();
+
+        if (result && result.trim().length > 0) {
+          // Stream the full result token by token to frontend
+          res.setHeader('Content-Type', 'text/event-stream');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Connection', 'keep-alive');
+          // Send in chunks for streaming feel
+          const words = result.split(/(?<=\s)/);
+          for (const word of words) {
+            res.write(`data: ${JSON.stringify({ token: word })}\n\n`);
+          }
+          res.write('data: [DONE]\n\n');
+          res.end();
+          replied = true;
+          break;
+        }
+      } catch(e) {
+        console.log(`Model ${model} failed:`, e.message);
+        continue;
+      }
+    }
+
+    if (!replied) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.write(`data: ${JSON.stringify({ token: "I'm having trouble connecting right now. Please try again in a moment." })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
   }
   catch(err){ res.status(500).json({error:err.message}); }
 });
