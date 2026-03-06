@@ -431,6 +431,7 @@ app.post('/api/chat', async (req,res)=>{
     }
   }
   // Auto-detect URLs in last user message and fetch content
+  const lastUserMsg = [...messages].reverse().find(m=>m.role==='user');
   let urlCtx = '';
   if (lastUserMsg) {
     const urlMatch = (typeof lastUserMsg.content === 'string' ? lastUserMsg.content : '').match(/https?:\/\/[^\s]+/);
@@ -446,7 +447,6 @@ app.post('/api/chat', async (req,res)=>{
   }
 
   // Auto-detect "remember: ..." and save to memory
-  const lastUserMsg = [...messages].reverse().find(m=>m.role==='user');
   if (email && lastUserMsg) {
     const rememberMatch = lastUserMsg.content.match(/^remember:\s*(.+)/i);
     if (rememberMatch) {
