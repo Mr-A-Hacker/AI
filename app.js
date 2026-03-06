@@ -276,7 +276,7 @@ async function getWeatherRich(lat,lon) {
 // ── OpenRouter ──
 function callOpenRouter(allMessages) {
   return new Promise((resolve,reject)=>{
-    const payload=JSON.stringify({model:'openrouter/auto',messages:allMessages});
+    const payload=JSON.stringify({model:'google/gemini-2.0-flash-exp:free',messages:allMessages});
     const options={hostname:'openrouter.ai',path:'/api/v1/chat/completions',method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${OPENROUTER_API_KEY}`,'HTTP-Referer':'https://ai-1x5q.onrender.com','X-Title':'Viora AI','Content-Length':Buffer.byteLength(payload)}};
     const req=https.request(options,res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{const p=JSON.parse(d);if(p.error)reject({message:p.error.message});else resolve(p.choices?.[0]?.message?.content||'');}catch{reject({message:'Parse error'})}});});
     req.on('error',err=>reject({message:err.message}));
@@ -440,7 +440,7 @@ app.post('/api/imagegen', async (req, res) => {
   if (!OPENROUTER_API_KEY) return res.status(500).json({ error: 'OPENROUTER_API_KEY not set.' });
   const { system, messages } = req.body;
   return new Promise((resolve, reject) => {
-    const payload = JSON.stringify({ model: 'openrouter/auto', max_tokens: 8000, messages: [{ role: 'system', content: system }, ...messages] });
+    const payload = JSON.stringify({ model: 'google/gemini-2.0-flash-exp:free', max_tokens: 8000, messages: [{ role: 'system', content: system }, ...messages] });
     const options = { hostname: 'openrouter.ai', path: '/api/v1/chat/completions', method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}`, 'HTTP-Referer': 'https://ai-1x5q.onrender.com', 'X-Title': 'Viora AI', 'Content-Length': Buffer.byteLength(payload) } };
     const r = https.request(options, resp => {
       let d = ''; resp.on('data', c => d += c);
@@ -458,48 +458,70 @@ app.post('/api/imagegen', async (req, res) => {
 });
 
 
-// ── Image generation proxy (api.airforce — free, no key) ──
+// ── Image generation proxy — tries multiple free endpoints ──
 app.get('/api/genimage', async (req, res) => {
-  const prompt = req.query.prompt;
+  const prompt = req.query.prompt || 'a beautiful landscape';
   const seed = req.query.seed || Math.floor(Math.random() * 999999);
-  if (!prompt) return res.status(400).json({ error: 'No prompt' });
+  const https = require('https');
+  const http = require('http');
 
-  const encodedPrompt = encodeURIComponent(prompt);
-  const imgUrl = `https://api.airforce/imagine2?prompt=${encodedPrompt}&size=1:1&seed=${seed}`;
-
-  return new Promise((resolve) => {
-    const https = require('https');
-    https.get(imgUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-        'Referer': 'https://api.airforce'
-      }
-    }, (imgRes) => {
-      // Follow redirects
-      if (imgRes.statusCode === 301 || imgRes.statusCode === 302) {
-        const redirectUrl = imgRes.headers.location;
-        https.get(redirectUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (r2) => {
-          res.setHeader('Content-Type', r2.headers['content-type'] || 'image/jpeg');
-          res.setHeader('Cache-Control', 'public, max-age=3600');
-          r2.pipe(res);
-          r2.on('end', resolve);
-        }).on('error', (err) => { res.status(500).json({ error: err.message }); resolve(); });
-        return;
-      }
-      if (imgRes.statusCode !== 200) {
-        res.status(500).json({ error: `Upstream error ${imgRes.statusCode}` });
-        return resolve();
-      }
-      res.setHeader('Content-Type', imgRes.headers['content-type'] || 'image/jpeg');
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      imgRes.pipe(res);
-      imgRes.on('end', resolve);
-    }).on('error', (err) => {
-      res.status(500).json({ error: err.message });
-      resolve();
+  function fetchUrl(urlStr, redirectCount) {
+    return new Promise((resolve, reject) => {
+      if (redirectCount > 5) return reject(new Error('Too many redirects'));
+      const parsed = new URL(urlStr);
+      const lib = parsed.protocol === 'https:' ? https : http;
+      const options = {
+        hostname: parsed.hostname,
+        path: parsed.pathname + parsed.search,
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0',
+          'Accept': 'image/webp,image/apng,image/jpeg,image/*,*/*;q=0.8',
+        },
+        timeout: 30000
+      };
+      const r = lib.request(options, (imgRes) => {
+        if ([301,302,303,307,308].includes(imgRes.statusCode) && imgRes.headers.location) {
+          const loc = imgRes.headers.location.startsWith('http') ? imgRes.headers.location : parsed.origin + imgRes.headers.location;
+          imgRes.resume();
+          return resolve(fetchUrl(loc, redirectCount + 1));
+        }
+        if (imgRes.statusCode !== 200) {
+          imgRes.resume();
+          return reject(new Error('Status ' + imgRes.statusCode));
+        }
+        resolve(imgRes);
+      });
+      r.on('error', reject);
+      r.on('timeout', () => { r.destroy(); reject(new Error('Timeout')); });
+      r.end();
     });
-  });
+  }
+
+  // Try endpoints in order
+  const endpoints = [
+    `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${seed}&model=flux-schnell&nologo=true`,
+    `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&seed=${seed}&nologo=true`,
+    `https://api.airforce/imagine2?prompt=${encodeURIComponent(prompt)}&size=1:1&seed=${seed}`,
+  ];
+
+  for (const url of endpoints) {
+    try {
+      const stream = await fetchUrl(url, 0);
+      const ct = stream.headers['content-type'] || 'image/jpeg';
+      if (!ct.includes('image')) { stream.resume(); continue; }
+      res.setHeader('Content-Type', ct);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      stream.pipe(res);
+      await new Promise((resolve) => stream.on('end', resolve).on('error', resolve));
+      return;
+    } catch (e) {
+      console.log('Image endpoint failed:', e.message);
+      continue;
+    }
+  }
+
+  res.status(500).json({ error: 'All image sources failed. Try again in a moment.' });
 });
 
 
@@ -585,7 +607,43 @@ app.post('/api/chat', async (req,res)=>{
     }
   }
   const allMessages=[{role:'system',content:(system||'You are Viora, a friendly helpful AI.')+weatherCtx+locationCtx+memoryCtx+urlCtx},...builtMessages];
-  try { const text=await callOpenRouter(allMessages); res.json({content:[{text}]}); }
+  try {
+    const payload = JSON.stringify({ model: 'google/gemini-2.0-flash-exp:free', stream: true, messages: allMessages });
+    const options = {
+      hostname: 'openrouter.ai', path: '/api/v1/chat/completions', method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'HTTP-Referer': 'https://ai-1x5q.onrender.com', 'X-Title': 'Viora AI', 'Content-Length': Buffer.byteLength(payload) }
+    };
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    await new Promise((resolve, reject) => {
+      const req = https.request(options, (upstream) => {
+        let buf = '';
+        upstream.on('data', chunk => {
+          buf += chunk.toString();
+          const lines = buf.split('\n');
+          buf = lines.pop();
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') { res.write('data: [DONE]\n\n'); continue; }
+            try {
+              const parsed = JSON.parse(data);
+              const token = parsed.choices?.[0]?.delta?.content;
+              if (token) res.write(`data: ${JSON.stringify({ token })}\n\n`);
+            } catch {}
+          }
+        });
+        upstream.on('end', resolve);
+        upstream.on('error', reject);
+      });
+      req.on('error', reject);
+      req.write(payload);
+      req.end();
+    });
+    res.end();
+  }
   catch(err){ res.status(500).json({error:err.message}); }
 });
 
