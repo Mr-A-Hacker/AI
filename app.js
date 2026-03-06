@@ -458,24 +458,41 @@ app.post('/api/imagegen', async (req, res) => {
 });
 
 
-// ── Image generation proxy (Pollinations.ai via server) ──
+// ── Image generation proxy (api.airforce — free, no key) ──
 app.get('/api/genimage', async (req, res) => {
   const prompt = req.query.prompt;
   const seed = req.query.seed || Math.floor(Math.random() * 999999);
   if (!prompt) return res.status(400).json({ error: 'No prompt' });
 
   const encodedPrompt = encodeURIComponent(prompt);
-  const imgUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&model=flux&nologo=true`;
+  const imgUrl = `https://api.airforce/imagine2?prompt=${encodedPrompt}&size=1:1&seed=${seed}`;
 
   return new Promise((resolve) => {
     const https = require('https');
-    https.get(imgUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (imgRes) => {
+    https.get(imgUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+        'Referer': 'https://api.airforce'
+      }
+    }, (imgRes) => {
+      // Follow redirects
+      if (imgRes.statusCode === 301 || imgRes.statusCode === 302) {
+        const redirectUrl = imgRes.headers.location;
+        https.get(redirectUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (r2) => {
+          res.setHeader('Content-Type', r2.headers['content-type'] || 'image/jpeg');
+          res.setHeader('Cache-Control', 'public, max-age=3600');
+          r2.pipe(res);
+          r2.on('end', resolve);
+        }).on('error', (err) => { res.status(500).json({ error: err.message }); resolve(); });
+        return;
+      }
       if (imgRes.statusCode !== 200) {
-        res.status(500).json({ error: `Upstream ${imgRes.statusCode}` });
+        res.status(500).json({ error: `Upstream error ${imgRes.statusCode}` });
         return resolve();
       }
       res.setHeader('Content-Type', imgRes.headers['content-type'] || 'image/jpeg');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
       imgRes.pipe(res);
       imgRes.on('end', resolve);
     }).on('error', (err) => {
