@@ -1552,10 +1552,9 @@ async function sendMessage() {
     if (!reply) reply = 'Hmm, no response. Try again!';
     if (bubbleEl) bubbleEl.innerHTML = renderMarkdown(reply);
     history.push({ role: 'assistant', content: reply });
-      await saveChatIfNeeded();
-      const session = getSession();
-      if (session?.email) renderHistory(session.email);
-    }
+    await saveChatIfNeeded();
+    const session = getSession();
+    if (session?.email) renderHistory(session.email);
   } catch (err) {
     typingEl.classList.remove('show');
     addMsg('ai', '⚠️ Connection error: ' + err.message);
