@@ -437,6 +437,60 @@ header {
 .wc-day-high { font-size: .78rem; font-weight: 700; color: white; }
 .wc-day-low { font-size: .68rem; color: rgba(255,255,255,.4); }
 .wc-badge { position: absolute; top: 16px; right: 18px; font-size: .6rem; font-weight: 700; color: rgba(255,255,255,.3); letter-spacing: .05em; text-transform: uppercase; }
+
+/* ── VIEW OTHER AIs BUTTON ── */
+.btn-other-ais {
+  width: calc(100% - 20px); margin: 6px 10px 4px;
+  padding: 10px 14px; border-radius: 14px;
+  border: 1.5px solid rgba(124,58,237,.28);
+  background: rgba(124,58,237,.08);
+  color: var(--violet-light); font-family: var(--font-body);
+  font-size: .8rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; transition: all .2s;
+}
+.btn-other-ais:hover { background: rgba(124,58,237,.16); border-color: rgba(124,58,237,.55); transform: translateY(-1px); }
+
+/* ── AI TOOLS MODAL ── */
+#ai-modal { display:none; position:fixed; inset:0; z-index:90; background:rgba(10,6,20,.78); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:16px; }
+#ai-modal.show { display:flex; }
+.aim-card { background:var(--card); border:1.5px solid var(--border); border-radius:24px; width:100%; max-width:580px; max-height:90vh; overflow:hidden; display:flex; flex-direction:column; animation:fadeUp .3s ease both; }
+.aim-head { padding:20px 24px 0; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.aim-title { font-family:var(--font-head); font-size:1.1rem; font-weight:800; background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.aim-close { width:32px; height:32px; border-radius:50%; border:1.5px solid var(--border); background:none; color:var(--text-mid); cursor:pointer; font-size:.9rem; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+.aim-close:hover { background:var(--surface); color:var(--text); }
+.aim-tabs { display:flex; gap:6px; padding:14px 24px 0; flex-shrink:0; overflow-x:auto; }
+.aim-tab { padding:7px 16px; border-radius:20px; border:1.5px solid var(--border); background:none; font-family:var(--font-body); font-size:.77rem; font-weight:700; color:var(--text-mid); cursor:pointer; white-space:nowrap; transition:all .2s; flex-shrink:0; }
+.aim-tab.active { background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); border-color:transparent; color:white; }
+.aim-body { overflow-y:auto; padding:16px 24px 24px; flex:1; }
+.aim-panel { display:none; }
+.aim-panel.show { display:block; }
+
+/* OTHER AIs GRID */
+.other-ais-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px; }
+@media(max-width:480px){.other-ais-grid{grid-template-columns:1fr;}}
+.other-ai-card { border:1.5px solid var(--border); border-radius:16px; padding:16px 14px; background:var(--surface); cursor:pointer; text-decoration:none; display:flex; flex-direction:column; gap:8px; transition:all .22s; }
+.other-ai-card:hover { border-color:rgba(124,58,237,.45); background:rgba(124,58,237,.05); transform:translateY(-2px); box-shadow:0 6px 24px rgba(124,58,237,.1); }
+.oac-logo { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+.oac-name { font-family:var(--font-head); font-size:.9rem; font-weight:800; color:var(--text); }
+.oac-desc { font-size:.73rem; color:var(--text-mid); line-height:1.5; }
+.oac-tag { display:inline-block; font-size:.63rem; font-weight:700; padding:2px 9px; border-radius:20px; margin-top:2px; }
+
+/* HUMANIZER */
+.hum-wrap { display:flex; flex-direction:column; gap:14px; margin-top:4px; }
+.hum-label { font-size:.78rem; font-weight:700; color:var(--text-mid); margin-bottom:5px; }
+.hum-ta { width:100%; min-height:120px; border-radius:14px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-family:var(--font-body); font-size:.84rem; padding:12px 14px; resize:vertical; outline:none; transition:border-color .2s; box-sizing:border-box; }
+.hum-ta:focus { border-color:var(--violet-light); }
+.hum-opts { display:flex; gap:7px; flex-wrap:wrap; }
+.hum-opt { padding:6px 14px; border-radius:20px; border:1.5px solid var(--border); background:none; font-family:var(--font-body); font-size:.75rem; font-weight:700; color:var(--text-mid); cursor:pointer; transition:all .2s; }
+.hum-opt.sel { background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); border-color:transparent; color:white; }
+.btn-humanize { padding:11px 22px; border-radius:14px; border:none; background:linear-gradient(135deg,var(--grad-a),var(--grad-b)); color:white; font-family:var(--font-head); font-size:.85rem; font-weight:700; cursor:pointer; transition:all .2s; box-shadow:0 4px 16px rgba(124,58,237,.3); align-self:flex-start; }
+.btn-humanize:hover { transform:translateY(-1px); box-shadow:0 6px 22px rgba(124,58,237,.4); }
+.btn-humanize:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+.hum-result-wrap { display:none; }
+.hum-result-wrap.show { display:flex; flex-direction:column; gap:8px; }
+.hum-result { border-radius:14px; border:1.5px solid rgba(124,58,237,.25); background:rgba(124,58,237,.05); padding:14px; font-size:.84rem; color:var(--text); line-height:1.75; white-space:pre-wrap; }
+.hum-copy { align-self:flex-start; padding:7px 16px; border-radius:10px; border:1.5px solid var(--border); background:none; color:var(--text-mid); font-family:var(--font-body); font-size:.75rem; font-weight:600; cursor:pointer; transition:all .2s; }
+.hum-copy:hover { border-color:var(--violet-light); color:var(--violet); }
 </style>
 </head>
 <body>
@@ -494,6 +548,9 @@ header {
     <div class="sidebar-section-label">Recent Chats</div>
     <div id="chat-history-list">
       <div class="sidebar-empty" id="history-empty">No chats yet.<br>Start a conversation!</div>
+    </div>
+    <div style="padding:0 0 4px;">
+      <button class="btn-other-ais" onclick="openAiModal()">🤖 View other AIs</button>
     </div>
     <div class="sidebar-footer">
       <div class="sidebar-user">
@@ -935,6 +992,64 @@ function closeLightbox() {
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+// ── AI Tools Modal ──
+let aimCurrentTab = 'ais';
+let humStyle = 'Casual';
+
+function openAiModal(tab) {
+  document.getElementById('ai-modal').classList.add('show');
+  switchAimTab(tab || 'ais');
+}
+function closeAiModal() {
+  document.getElementById('ai-modal').classList.remove('show');
+}
+function switchAimTab(tab) {
+  aimCurrentTab = tab;
+  document.querySelectorAll('.aim-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.aim-panel').forEach(p => p.classList.remove('show'));
+  document.getElementById('aim-tab-' + tab).classList.add('active');
+  document.getElementById('aim-panel-' + tab).classList.add('show');
+}
+function selectHumOpt(btn) {
+  document.querySelectorAll('.hum-opt').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  humStyle = btn.textContent.trim();
+}
+async function runHumanizer() {
+  const text = document.getElementById('hum-input').value.trim();
+  if (!text) return;
+  const btn = document.getElementById('btn-humanize');
+  btn.disabled = true; btn.textContent = '⏳ Humanizing…';
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: `You are an expert text humanizer. Rewrite the given AI-generated text to sound completely natural, human-written, and authentic in a ${humStyle} style. Remove robotic patterns, vary sentence structure, add natural flow, contractions, and personality. Output ONLY the rewritten text with no commentary or preamble.`,
+        messages: [{ role: 'user', content: text }],
+        email: getSession()?.email || null
+      })
+    });
+    const data = await res.json();
+    const result = data.content?.[0]?.text || data.error || 'Something went wrong.';
+    document.getElementById('hum-result').textContent = result;
+    document.getElementById('hum-result-wrap').classList.add('show');
+  } catch(e) {
+    document.getElementById('hum-result').textContent = 'Error: ' + e.message;
+    document.getElementById('hum-result-wrap').classList.add('show');
+  }
+  btn.disabled = false; btn.textContent = '✨ Humanize';
+}
+function copyHumanized() {
+  const text = document.getElementById('hum-result').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.hum-copy');
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy to clipboard', 2000);
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAiModal(); });
 
 // ── Deep Search ──
 let deepSearchMode = false;
@@ -1435,6 +1550,91 @@ function closeAdminPopup() {
 <div class="img-lightbox" id="img-lightbox" onclick="closeLightbox()">
   <button class="img-lightbox-close" onclick="closeLightbox()">✕</button>
   <img id="lightbox-img" src="" alt="Generated image" onclick="event.stopPropagation()" />
+</div>
+
+<!-- ── AI TOOLS MODAL ── -->
+<div id="ai-modal">
+  <div class="aim-card">
+    <div class="aim-head">
+      <div class="aim-title">🤖 AI Tools</div>
+      <button class="aim-close" onclick="closeAiModal()">✕</button>
+    </div>
+    <div class="aim-tabs">
+      <button class="aim-tab active" id="aim-tab-ais" onclick="switchAimTab('ais')">Other AIs</button>
+      <button class="aim-tab" id="aim-tab-humanizer" onclick="switchAimTab('humanizer')">✍️ AI Humanizer</button>
+    </div>
+    <div class="aim-body">
+
+      <!-- OTHER AIs PANEL -->
+      <div class="aim-panel show" id="aim-panel-ais">
+        <div class="other-ais-grid">
+          <a class="other-ai-card" href="https://chat.openai.com" target="_blank" rel="noopener">
+            <div class="oac-logo" style="background:#10a37f1a">🟢</div>
+            <div class="oac-name">ChatGPT</div>
+            <div class="oac-desc">OpenAI's flagship AI — great for writing, coding and reasoning.</div>
+            <span class="oac-tag" style="background:#10a37f1a;color:#10a37f">openai.com</span>
+          </a>
+          <a class="other-ai-card" href="https://gemini.google.com" target="_blank" rel="noopener">
+            <div class="oac-logo" style="background:#4285f41a">🔵</div>
+            <div class="oac-name">Gemini</div>
+            <div class="oac-desc">Google's AI — integrates with Google Workspace and search.</div>
+            <span class="oac-tag" style="background:#4285f41a;color:#4285f4">google.com</span>
+          </a>
+          <a class="other-ai-card" href="https://claude.ai" target="_blank" rel="noopener">
+            <div class="oac-logo" style="background:#d97c301a">🟠</div>
+            <div class="oac-name">Claude</div>
+            <div class="oac-desc">Anthropic's AI — known for nuanced writing and safety.</div>
+            <span class="oac-tag" style="background:#d97c301a;color:#d97c30">anthropic.com</span>
+          </a>
+          <a class="other-ai-card" href="https://copilot.microsoft.com" target="_blank" rel="noopener">
+            <div class="oac-logo" style="background:#0078d41a">🔷</div>
+            <div class="oac-name">Copilot</div>
+            <div class="oac-desc">Microsoft's AI — built into Windows and Office 365.</div>
+            <span class="oac-tag" style="background:#0078d41a;color:#0078d4">microsoft.com</span>
+          </a>
+          <a class="other-ai-card" href="https://www.perplexity.ai" target="_blank" rel="noopener">
+            <div class="oac-logo" style="background:#20b2aa1a">🔍</div>
+            <div class="oac-name">Perplexity</div>
+            <div class="oac-desc">AI-powered search engine with real-time web citations.</div>
+            <span class="oac-tag" style="background:#20b2aa1a;color:#20b2aa">perplexity.ai</span>
+          </a>
+          <a class="other-ai-card" href="https://grok.com" target="_blank" rel="noopener">
+            <div class="oac-logo" style="background:#1da1f21a">⚡</div>
+            <div class="oac-name">Grok</div>
+            <div class="oac-desc">xAI's model — real-time X/Twitter data access and wit.</div>
+            <span class="oac-tag" style="background:#1da1f21a;color:#1da1f2">x.ai</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- HUMANIZER PANEL -->
+      <div class="aim-panel" id="aim-panel-humanizer">
+        <div class="hum-wrap">
+          <div>
+            <div class="hum-label">Paste AI-generated text to humanize</div>
+            <textarea class="hum-ta" id="hum-input" placeholder="Paste your AI-written text here…"></textarea>
+          </div>
+          <div>
+            <div class="hum-label">Style</div>
+            <div class="hum-opts">
+              <button class="hum-opt sel" onclick="selectHumOpt(this)">Casual</button>
+              <button class="hum-opt" onclick="selectHumOpt(this)">Professional</button>
+              <button class="hum-opt" onclick="selectHumOpt(this)">Academic</button>
+              <button class="hum-opt" onclick="selectHumOpt(this)">Creative</button>
+              <button class="hum-opt" onclick="selectHumOpt(this)">Conversational</button>
+            </div>
+          </div>
+          <button class="btn-humanize" id="btn-humanize" onclick="runHumanizer()">✨ Humanize</button>
+          <div class="hum-result-wrap" id="hum-result-wrap">
+            <div class="hum-label">Humanized Result</div>
+            <div class="hum-result" id="hum-result"></div>
+            <button class="hum-copy" onclick="copyHumanized()">📋 Copy to clipboard</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 </body>
