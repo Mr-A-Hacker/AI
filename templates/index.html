@@ -409,6 +409,110 @@ header {
   }
 }
 
+/* ── SETTINGS MODAL ── */
+#settings-overlay {
+  position: fixed; inset: 0; z-index: 80;
+  background: rgba(30,16,48,.55); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  animation: fadeIn .25s ease both;
+}
+#settings-overlay.hidden { display: none; }
+.settings-card {
+  background: white; border: 1.5px solid var(--border); border-radius: 26px;
+  width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 70px rgba(124,58,237,.18); animation: fadeUp .3s ease both;
+}
+.settings-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 26px 0;
+}
+.settings-title {
+  font-family: var(--font-head); font-size: 1.2rem; font-weight: 800;
+  background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.settings-close {
+  width: 32px; height: 32px; border-radius: 10px; border: 1.5px solid var(--border);
+  background: white; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; font-size: 1rem; color: var(--text-mid); transition: all .15s;
+}
+.settings-close:hover { background: var(--bg); color: var(--text); }
+.settings-tabs {
+  display: flex; gap: 4px; padding: 14px 26px 0; border-bottom: 1.5px solid var(--border);
+}
+.settings-tab {
+  padding: 8px 16px; border: none; background: none; border-radius: 12px 12px 0 0;
+  font-family: var(--font-body); font-size: .8rem; font-weight: 600;
+  color: var(--text-mid); cursor: pointer; transition: all .18s;
+  border-bottom: 2.5px solid transparent; margin-bottom: -1.5px;
+}
+.settings-tab.active { color: var(--violet); border-bottom-color: var(--violet); }
+.settings-body { padding: 24px 26px 28px; }
+.settings-panel { display: none; flex-direction: column; gap: 18px; }
+.settings-panel.show { display: flex; }
+.settings-section-label {
+  font-size: .72rem; font-weight: 700; color: var(--text-light);
+  text-transform: uppercase; letter-spacing: .07em; margin-bottom: -8px;
+}
+.settings-field { display: flex; flex-direction: column; gap: 6px; }
+.settings-field label { font-size: .78rem; font-weight: 600; color: var(--text-mid); }
+.settings-input {
+  width: 100%; padding: 11px 14px; border-radius: 13px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  font-family: var(--font-body); font-size: .88rem; color: var(--text); outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.settings-input:focus { border-color: var(--violet-light); box-shadow: 0 0 0 3px rgba(124,58,237,.09); }
+.settings-input::placeholder { color: var(--text-light); }
+.btn-settings-save {
+  padding: 11px; border: none; border-radius: 13px;
+  background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
+  color: white; font-family: var(--font-head); font-size: .88rem; font-weight: 700;
+  cursor: pointer; transition: all .2s; box-shadow: 0 3px 14px rgba(124,58,237,.35);
+}
+.btn-settings-save:hover { transform: translateY(-1px); box-shadow: 0 5px 20px rgba(124,58,237,.45); }
+.btn-settings-save:disabled { opacity: .5; pointer-events: none; }
+.settings-msg { font-size: .8rem; font-weight: 600; border-radius: 10px; padding: 8px 12px; display: none; }
+.settings-msg.ok { background: #dcfce7; color: #15803d; display: block; }
+.settings-msg.err { background: #fee2e2; color: #b91c1c; display: block; }
+.avatar-row { display: flex; align-items: center; gap: 16px; }
+.avatar-preview {
+  width: 68px; height: 68px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head); font-size: 1.5rem; font-weight: 800; color: white;
+  overflow: hidden; border: 2.5px solid var(--border);
+}
+.avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+.btn-avatar-upload {
+  flex: 1; padding: 10px; border: 2px dashed var(--border); border-radius: 13px;
+  background: var(--bg); font-family: var(--font-body); font-size: .82rem;
+  color: var(--text-mid); cursor: pointer; text-align: center; transition: all .2s;
+}
+.btn-avatar-upload:hover { border-color: var(--violet-light); color: var(--violet); background: rgba(124,58,237,.04); }
+.danger-zone {
+  border: 1.5px solid rgba(239,68,68,.25); border-radius: 16px;
+  padding: 18px; background: rgba(239,68,68,.03);
+}
+.danger-title { font-family: var(--font-head); font-size: .9rem; font-weight: 700; color: var(--red); margin-bottom: 8px; }
+.danger-desc { font-size: .8rem; color: var(--text-mid); line-height: 1.6; margin-bottom: 14px; }
+.btn-danger {
+  padding: 10px 18px; border: 1.5px solid rgba(239,68,68,.4); border-radius: 12px;
+  background: white; color: var(--red); font-family: var(--font-head);
+  font-size: .82rem; font-weight: 700; cursor: pointer; transition: all .2s; width: 100%;
+}
+.btn-danger:hover { background: var(--red); color: white; box-shadow: 0 4px 16px rgba(239,68,68,.35); }
+.btn-settings-gear {
+  width: 28px; height: 28px; border-radius: 8px; border: none; background: none;
+  color: var(--text-light); cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: all .15s; font-size: .85rem; flex-shrink: 0;
+}
+.btn-settings-gear:hover { background: rgba(124,58,237,.1); color: var(--violet); }
+@media (max-width: 640px) {
+  #settings-overlay { align-items: flex-end; padding: 0; }
+  .settings-card { border-radius: 24px 24px 0 0; max-width: 100%; max-height: 92vh; }
+}
+
 /* ── ADMIN POPUP ── */
 #admin-popup-overlay{position:fixed;inset:0;z-index:100;background:rgba(30,16,48,.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease both}
 #admin-popup-overlay.hidden{display:none}
@@ -751,6 +855,7 @@ header {
       <div class="sidebar-user">
         <div class="sidebar-user-av" id="sidebar-av">U</div>
         <span class="sidebar-user-name" id="sidebar-username">User</span>
+        <button class="btn-settings-gear" onclick="openSettings()" title="Settings">⚙️</button>
         <button class="btn-sidebar-logout" onclick="doLogout()" title="Log out">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
@@ -836,6 +941,81 @@ header {
     <button class="btn-try" onclick="doLogout()">Back to Login</button>
   </div>
 </div>
+
+<!-- ══ SETTINGS MODAL ══ -->
+<div id="settings-overlay" class="hidden" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-card">
+    <div class="settings-header">
+      <span class="settings-title">⚙️ Settings</span>
+      <button class="settings-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-tabs">
+      <button class="settings-tab active" id="stab-profile" onclick="switchSettingsTab('profile')">👤 Profile</button>
+      <button class="settings-tab" id="stab-security" onclick="switchSettingsTab('security')">🔒 Security</button>
+      <button class="settings-tab" id="stab-danger" onclick="switchSettingsTab('danger')">⚠️ Account</button>
+    </div>
+    <div class="settings-body">
+      <!-- PROFILE TAB -->
+      <div class="settings-panel show" id="spanel-profile">
+        <div class="avatar-row">
+          <div class="avatar-preview" id="settings-avatar-preview">U</div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+            <div class="btn-avatar-upload" onclick="document.getElementById('avatar-file-input').click()">📷 Upload profile picture</div>
+            <input type="file" id="avatar-file-input" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)" />
+            <span style="font-size:.72rem;color:var(--text-light);">JPG, PNG or GIF · Max 2MB</span>
+          </div>
+        </div>
+        <div class="settings-field">
+          <label>Display Name</label>
+          <input class="settings-input" id="settings-name" type="text" placeholder="Your name" />
+        </div>
+        <div id="settings-profile-msg" class="settings-msg"></div>
+        <div class="settings-field">
+          <label>Confirm with current password</label>
+          <input class="settings-input" id="settings-profile-pass" type="password" placeholder="Enter current password" />
+        </div>
+        <button class="btn-settings-save" onclick="saveProfile()">Save Changes</button>
+      </div>
+      <!-- SECURITY TAB -->
+      <div class="settings-panel" id="spanel-security">
+        <div class="settings-section-label">Change Email</div>
+        <div class="settings-field">
+          <label>New Email Address</label>
+          <input class="settings-input" id="settings-new-email" type="email" placeholder="new@email.com" />
+        </div>
+        <div class="settings-section-label" style="margin-top:4px;">Change Password</div>
+        <div class="settings-field">
+          <label>New Password</label>
+          <input class="settings-input" id="settings-new-pass" type="password" placeholder="Min. 6 characters" />
+        </div>
+        <div class="settings-field">
+          <label>Confirm New Password</label>
+          <input class="settings-input" id="settings-confirm-pass" type="password" placeholder="Repeat new password" />
+        </div>
+        <div id="settings-security-msg" class="settings-msg"></div>
+        <div class="settings-field">
+          <label>Current Password (required)</label>
+          <input class="settings-input" id="settings-security-pass" type="password" placeholder="Enter current password" />
+        </div>
+        <button class="btn-settings-save" onclick="saveSecurity()">Update Security</button>
+      </div>
+      <!-- DANGER TAB -->
+      <div class="settings-panel" id="spanel-danger">
+        <div class="danger-zone">
+          <div class="danger-title">🗑️ Delete Account</div>
+          <div class="danger-desc">This permanently deletes your account, all chats, memories, and profile data. This action cannot be undone.</div>
+          <div class="settings-field" style="margin-bottom:12px;">
+            <label>Enter your password to confirm</label>
+            <input class="settings-input" id="settings-delete-pass" type="password" placeholder="Your password" />
+          </div>
+          <div id="settings-danger-msg" class="settings-msg"></div>
+          <button class="btn-danger" onclick="confirmDeleteAccount()">Delete My Account Forever</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <script>
 // ── Session (kept in localStorage for persistence across refreshes) ──
@@ -924,6 +1104,178 @@ async function startTrial() {
   openChat('Guest', true, null);
 }
 
+
+// ══════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════
+let pendingAvatarDataUrl = null;
+
+function openSettings() {
+  const session = getSession();
+  if (!session) return;
+  // Pre-fill name
+  document.getElementById('settings-name').value = session.name || '';
+  // Load avatar
+  loadSettingsAvatar(session.email, session.name);
+  // Clear all messages & inputs
+  ['settings-profile-pass','settings-new-email','settings-new-pass','settings-confirm-pass',
+   'settings-security-pass','settings-delete-pass'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['settings-profile-msg','settings-security-msg','settings-danger-msg'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.className = 'settings-msg'; el.textContent = ''; }
+  });
+  pendingAvatarDataUrl = null;
+  switchSettingsTab('profile');
+  document.getElementById('settings-overlay').classList.remove('hidden');
+}
+
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.add('hidden');
+}
+
+function switchSettingsTab(tab) {
+  document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('show'));
+  document.getElementById('stab-' + tab).classList.add('active');
+  document.getElementById('spanel-' + tab).classList.add('show');
+}
+
+async function loadSettingsAvatar(email, name) {
+  const prev = document.getElementById('settings-avatar-preview');
+  try {
+    const r = await fetch('/api/user/avatar?email=' + encodeURIComponent(email));
+    const d = await r.json();
+    if (d.avatar) {
+      prev.innerHTML = '<img src="' + d.avatar + '" />';
+      setSidebarAvatar(d.avatar);
+    } else {
+      prev.textContent = (name || 'U')[0].toUpperCase();
+    }
+  } catch { prev.textContent = (name || 'U')[0].toUpperCase(); }
+}
+
+function setSidebarAvatar(src) {
+  const av = document.getElementById('sidebar-av');
+  if (av) av.innerHTML = src ? '<img src="' + src + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />' : '';
+}
+
+function handleAvatarUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    pendingAvatarDataUrl = e.target.result;
+    const prev = document.getElementById('settings-avatar-preview');
+    prev.innerHTML = '<img src="' + pendingAvatarDataUrl + '" />';
+  };
+  reader.readAsDataURL(file);
+}
+
+function setSettingsMsg(id, type, text) {
+  const el = document.getElementById(id);
+  el.className = 'settings-msg ' + type;
+  el.textContent = text;
+}
+
+async function saveProfile() {
+  const session = getSession();
+  if (!session) return;
+  const name = document.getElementById('settings-name').value.trim();
+  const pass = document.getElementById('settings-profile-pass').value;
+  if (!pass) { setSettingsMsg('settings-profile-msg','err','Please enter your current password.'); return; }
+  if (!name) { setSettingsMsg('settings-profile-msg','err','Name cannot be empty.'); return; }
+  const btn = document.querySelector('#spanel-profile .btn-settings-save');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    // Save avatar first if changed
+    if (pendingAvatarDataUrl) {
+      const ar = await fetch('/api/user/avatar', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email: session.email, avatar: pendingAvatarDataUrl }) });
+      if (ar.ok) setSidebarAvatar(pendingAvatarDataUrl);
+    }
+    const res = await fetch('/api/user/update', { method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email: session.email, currentPassword: pass, newName: name }) });
+    const d = await res.json();
+    if (!res.ok) { setSettingsMsg('settings-profile-msg','err', d.error); return; }
+    // Update session
+    const s = getSession(); s.name = d.name;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+    document.getElementById('sidebar-username').textContent = d.name;
+    document.getElementById('sidebar-av').textContent = d.name[0].toUpperCase();
+    if (pendingAvatarDataUrl) setSidebarAvatar(pendingAvatarDataUrl);
+    pendingAvatarDataUrl = null;
+    setSettingsMsg('settings-profile-msg','ok','Profile updated successfully!');
+  } catch(e) { setSettingsMsg('settings-profile-msg','err','Error: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Save Changes'; }
+}
+
+async function saveSecurity() {
+  const session = getSession();
+  if (!session) return;
+  const pass = document.getElementById('settings-security-pass').value;
+  const newEmail = document.getElementById('settings-new-email').value.trim();
+  const newPass = document.getElementById('settings-new-pass').value;
+  const confirmPass = document.getElementById('settings-confirm-pass').value;
+  if (!pass) { setSettingsMsg('settings-security-msg','err','Enter your current password.'); return; }
+  if (!newEmail && !newPass) { setSettingsMsg('settings-security-msg','err','Enter a new email or new password.'); return; }
+  if (newPass && newPass !== confirmPass) { setSettingsMsg('settings-security-msg','err','New passwords do not match.'); return; }
+  if (newPass && newPass.length < 6) { setSettingsMsg('settings-security-msg','err','Password must be at least 6 characters.'); return; }
+  const btn = document.querySelector('#spanel-security .btn-settings-save');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const body = { email: session.email, currentPassword: pass };
+    if (newEmail) body.newEmail = newEmail;
+    if (newPass) body.newPassword = newPass;
+    const res = await fetch('/api/user/update', { method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body) });
+    const d = await res.json();
+    if (!res.ok) { setSettingsMsg('settings-security-msg','err', d.error); return; }
+    // Update session email if changed
+    if (newEmail && d.email) {
+      const s = getSession(); s.email = d.email;
+      localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+    }
+    setSettingsMsg('settings-security-msg','ok','Security settings updated! Please log in again if you changed your email.');
+    document.getElementById('settings-new-email').value = '';
+    document.getElementById('settings-new-pass').value = '';
+    document.getElementById('settings-confirm-pass').value = '';
+    document.getElementById('settings-security-pass').value = '';
+  } catch(e) { setSettingsMsg('settings-security-msg','err','Error: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Update Security'; }
+}
+
+async function confirmDeleteAccount() {
+  const session = getSession();
+  if (!session) return;
+  const pass = document.getElementById('settings-delete-pass').value;
+  if (!pass) { setSettingsMsg('settings-danger-msg','err','Enter your password to confirm.'); return; }
+  if (!confirm('Are you absolutely sure? This will permanently delete your account and all your data.')) return;
+  const btn = document.querySelector('.btn-danger');
+  btn.disabled = true; btn.textContent = 'Deleting…';
+  try {
+    const res = await fetch('/api/user/delete', { method:'DELETE', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email: session.email, password: pass }) });
+    const d = await res.json();
+    if (!res.ok) { setSettingsMsg('settings-danger-msg','err', d.error); return; }
+    closeSettings();
+    doLogout();
+  } catch(e) { setSettingsMsg('settings-danger-msg','err','Error: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Delete My Account Forever'; }
+}
+
+// Load avatar on login
+async function loadSidebarAvatarOnLogin(email, name) {
+  try {
+    const r = await fetch('/api/user/avatar?email=' + encodeURIComponent(email));
+    const d = await r.json();
+    if (d.avatar) setSidebarAvatar(d.avatar);
+    else document.getElementById('sidebar-av').textContent = (name||'U')[0].toUpperCase();
+  } catch { document.getElementById('sidebar-av').textContent = (name||'U')[0].toUpperCase(); }
+}
+
 function doLogout() {
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(CHAT_STATE_KEY);
@@ -951,6 +1303,7 @@ function openChat(name, isTrial, email) {
   document.getElementById('user-label').textContent = name;
   document.getElementById('sidebar-av').textContent = name[0].toUpperCase();
   document.getElementById('sidebar-username').textContent = name;
+  if (email && !isTrial) loadSidebarAvatarOnLogin(email, name);
 
   if (isTrial) {
     document.getElementById('welcome-sub').textContent = 'You have 5 minutes to explore. Sign up to unlock unlimited access!';
