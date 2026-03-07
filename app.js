@@ -14,10 +14,14 @@ const B2_KEY_ID      = process.env.B2_KEY_ID || '';
 const B2_APP_KEY     = process.env.B2_APP_KEY || '';
 const B2_BUCKET_NAME = process.env.B2_BUCKET_NAME || '';
 const B2_ENDPOINT    = process.env.B2_ENDPOINT || '';
+
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin1';
 
-let activePopup = null;
+// Active popup broadcast (in-memory, fast)
+let activePopup = null; // { message, type, id, createdAt }
+
+// IP trial tracking
 const usedTrialIPs = new Set();
 function getClientIP(req) {
   const fwd = req.headers['x-forwarded-for'];
@@ -29,6 +33,7 @@ function b2Request(method, key, body, contentType) {
   return new Promise((resolve, reject) => {
     if (!B2_ENDPOINT || !B2_BUCKET_NAME || !B2_KEY_ID || !B2_APP_KEY)
       return reject(new Error('B2 not configured'));
+
     const endpoint = B2_ENDPOINT.replace(/^https?:\/\//, '');
     const bodyBuf  = body ? Buffer.from(typeof body === 'string' ? body : JSON.stringify(body)) : Buffer.alloc(0);
     const now      = new Date();
@@ -37,6 +42,7 @@ function b2Request(method, key, body, contentType) {
     const region    = B2_ENDPOINT.match(/s3\.([^.]+)\.backblaze/)?.[1] || 'us-east-005';
     const fullPath  = `/${B2_BUCKET_NAME}/${key}`;
     const ct        = contentType || 'application/json';
+
     const canonicalHeaders = `content-type:${ct}\nhost:${endpoint}\nx-amz-content-sha256:UNSIGNED-PAYLOAD\nx-amz-date:${amzDate}\n`;
     const signedHeaders    = 'content-type;host;x-amz-content-sha256;x-amz-date';
     const canonicalRequest = `${method}\n${fullPath}\n\n${canonicalHeaders}\n${signedHeaders}\nUNSIGNED-PAYLOAD`;
@@ -48,6 +54,7 @@ function b2Request(method, key, body, contentType) {
     const kSign    = crypto.createHmac('sha256',kService).update('aws4_request').digest();
     const sig      = crypto.createHmac('sha256',kSign).update(strToSign).digest('hex');
     const auth = `AWS4-HMAC-SHA256 Credential=${B2_KEY_ID}/${credScope}, SignedHeaders=${signedHeaders}, Signature=${sig}`;
+
     const options = {
       hostname: endpoint, path: fullPath, method,
       headers: { 'Content-Type':ct,'Content-Length':bodyBuf.length,'x-amz-date':amzDate,'x-amz-content-sha256':'UNSIGNED-PAYLOAD','Authorization':auth }
@@ -71,21 +78,21 @@ async function b2Delete(key) {
   try { await b2Request('DELETE',key,null,'application/json'); return true; } catch { return false; }
 }
 const emailToKey = email => crypto.createHash('sha256').update(email.toLowerCase()).digest('hex');
+
+// ── User index helpers ──
 async function getUserIndex() { return (await b2Get('users/index.json')) || []; }
 async function saveUserIndex(index) { return b2Put('users/index.json', index); }
-async function getMemory(email) { return (await b2Get(`memory/${emailToKey(email)}.json`)) || []; }
-async function saveMemory(email, memories) { return b2Put(`memory/${emailToKey(email)}.json`, memories); }
-async function getChatIndex(email) { return (await b2Get(`chats/${emailToKey(email)}/index.json`)) || []; }
-async function saveChatIndex(email, index) { return b2Put(`chats/${emailToKey(email)}/index.json`, index); }
 
+// ── Admin middleware ──
 function adminAuth(req, res, next) {
   const auth = req.headers['x-admin-token'];
-  if (auth !== Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString('base64'))
+  if (auth !== Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString('base64')) {
     return res.status(401).json({ error: 'Unauthorized' });
+  }
   next();
 }
 
-// ── Auth ──
+// ── Auth API ──
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password || password.length < 6)
@@ -95,6 +102,7 @@ app.post('/api/auth/register', async (req, res) => {
   const hash = crypto.createHash('sha256').update(password).digest('hex');
   const userData = { name, email: email.toLowerCase(), password: hash, createdAt: new Date().toISOString() };
   await b2Put(key, userData);
+  // Add to user index
   const index = await getUserIndex();
   index.push({ name, email: email.toLowerCase(), createdAt: userData.createdAt });
   await saveUserIndex(index);
@@ -111,56 +119,168 @@ app.post('/api/auth/login', async (req, res) => {
   res.json({ success: true, name: user.name, email: user.email });
 });
 
+// ── Admin login ──
 app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body;
-  if (username === ADMIN_USER && password === ADMIN_PASS)
-    return res.json({ success: true, token: Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString('base64') });
+  if (username === ADMIN_USER && password === ADMIN_PASS) {
+    const token = Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString('base64');
+    return res.json({ success: true, token });
+  }
   res.status(401).json({ error: 'Invalid credentials' });
 });
 
-app.get('/api/admin/users', adminAuth, async (req, res) => res.json(await getUserIndex()));
+// ── Admin: list users ──
+app.get('/api/admin/users', adminAuth, async (req, res) => {
+  const index = await getUserIndex();
+  res.json(index);
+});
 
+// ── Admin: delete user ──
 app.delete('/api/admin/users/:email', adminAuth, async (req, res) => {
   const email = decodeURIComponent(req.params.email).toLowerCase();
   const eKey  = emailToKey(email);
   try {
+    // Delete user profile
+    await b2Delete(`users/${eKey}.json`);
+    // Delete memory
+    await b2Delete(`memory/${eKey}.json`);
+    // Delete all individual chat files
+    const chatIndex = await b2Get(`chats/${eKey}/index.json`) || [];
+    for (const chat of chatIndex) {
+      await b2Delete(`chats/${eKey}/${chat.id}.json`);
+    }
+    // Delete chat index
+    await b2Delete(`chats/${eKey}/index.json`);
+    // Remove from user index
+    let index = await getUserIndex();
+    index = index.filter(u => u.email !== email);
+    await saveUserIndex(index);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete user error:', err.message);
+    res.status(500).json({ error: 'Failed to delete user: ' + err.message });
+  }
+});
+
+// ── User Settings: Update profile (name / email / password) ──
+app.patch('/api/user/update', async (req, res) => {
+  const { email, currentPassword, newName, newEmail, newPassword } = req.body;
+  if (!email || !currentPassword) return res.status(400).json({ error: 'Missing credentials' });
+  const key = `users/${emailToKey(email)}.json`;
+  const user = await b2Get(key);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (user.password !== crypto.createHash('sha256').update(currentPassword).digest('hex'))
+    return res.status(401).json({ error: 'Current password is incorrect' });
+  // Apply changes
+  if (newName && newName.trim()) user.name = newName.trim();
+  if (newPassword && newPassword.length >= 6)
+    user.password = crypto.createHash('sha256').update(newPassword).digest('hex');
+  const emailChanged = newEmail && newEmail.toLowerCase() !== email.toLowerCase();
+  if (emailChanged) {
+    const newKey = `users/${emailToKey(newEmail)}.json`;
+    if (await b2Get(newKey)) return res.status(409).json({ error: 'Email already in use' });
+    user.email = newEmail.toLowerCase();
+    await b2Put(newKey, user);
+    await b2Delete(key);
+  } else {
+    await b2Put(key, user);
+  }
+  // Update user index
+  let idx = await getUserIndex();
+  const ui = idx.find(u => u.email === email.toLowerCase());
+  if (ui) { ui.name = user.name; ui.email = user.email; }
+  await saveUserIndex(idx);
+  res.json({ success: true, name: user.name, email: user.email });
+});
+
+// ── User Settings: Delete own account ──
+app.delete('/api/user/delete', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Missing fields' });
+  const eKey = emailToKey(email);
+  const user = await b2Get(`users/${eKey}.json`);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (user.password !== crypto.createHash('sha256').update(password).digest('hex'))
+    return res.status(401).json({ error: 'Incorrect password' });
+  try {
     await b2Delete(`users/${eKey}.json`);
     await b2Delete(`memory/${eKey}.json`);
+    await b2Delete(`avatars/${eKey}.json`);
     const chatIndex = await b2Get(`chats/${eKey}/index.json`) || [];
     for (const chat of chatIndex) await b2Delete(`chats/${eKey}/${chat.id}.json`);
     await b2Delete(`chats/${eKey}/index.json`);
-    let index = await getUserIndex();
-    await saveUserIndex(index.filter(u => u.email !== email));
+    let idx = await getUserIndex();
+    idx = idx.filter(u => u.email !== email.toLowerCase());
+    await saveUserIndex(idx);
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: 'Failed: ' + err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete account: ' + err.message });
+  }
 });
 
-app.post('/api/admin/popup', adminAuth, (req, res) => {
-  const { message, type } = req.body;
-  if (!message) return res.status(400).json({ error: 'Message required' });
-  activePopup = { message, type: type || 'info', id: Date.now(), createdAt: new Date().toISOString() };
+// ── User Settings: Save avatar ──
+app.post('/api/user/avatar', async (req, res) => {
+  const { email, avatar } = req.body; // avatar = base64 data URL
+  if (!email || !avatar) return res.status(400).json({ error: 'Missing fields' });
+  await b2Put(`avatars/${emailToKey(email)}.json`, { avatar });
   res.json({ success: true });
 });
-app.delete('/api/admin/popup', adminAuth, (req, res) => { activePopup = null; res.json({ success: true }); });
+
+// ── User Settings: Get avatar ──
+app.get('/api/user/avatar', async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ error: 'Missing email' });
+  const data = await b2Get(`avatars/${emailToKey(email)}.json`);
+  res.json({ avatar: data?.avatar || null });
+});
+
+// ── Admin: send popup ──
+app.post('/api/admin/popup', adminAuth, (req, res) => {
+  const { message, type } = req.body; // type: info | warning | success | error
+  if (!message) return res.status(400).json({ error: 'Message required' });
+  activePopup = { message, type: type || 'info', id: Date.now(), createdAt: new Date().toISOString() };
+  console.log('Admin popup set:', activePopup.message);
+  res.json({ success: true });
+});
+
+// ── Admin: clear popup ──
+app.delete('/api/admin/popup', adminAuth, (req, res) => {
+  activePopup = null;
+  res.json({ success: true });
+});
+
+// ── Admin: stats ──
 app.get('/api/admin/stats', adminAuth, async (req, res) => {
   const index = await getUserIndex();
   res.json({ totalUsers: index.length, activePopup, trialIPCount: usedTrialIPs.size });
 });
-app.get('/api/popup', (req, res) => res.json(activePopup || null));
+
+// ── User: poll for popup ──
+app.get('/api/popup', (req, res) => {
+  res.json(activePopup || null);
+});
+
+// ── Serve admin page ──
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'templates', 'admin.html')));
+
+// ── Trial ──
 app.post('/api/trial-start', (req, res) => {
   const ip = getClientIP(req);
   if (usedTrialIPs.has(ip)) return res.json({ allowed: false });
   usedTrialIPs.add(ip);
-  res.json({ allowed: true });
+  return res.json({ allowed: true });
 });
 
-// ── Chat history ──
+// ── Chat history API ──
+async function getChatIndex(email) { return (await b2Get(`chats/${emailToKey(email)}/index.json`)) || []; }
+async function saveChatIndex(email, index) { return b2Put(`chats/${emailToKey(email)}/index.json`, index); }
+
 app.get('/api/chats', async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ error: 'Missing email' });
   res.json(await getChatIndex(email));
 });
+
 app.post('/api/chats', async (req, res) => {
   const { email, chatId, title, messages } = req.body;
   if (!email || !chatId || !messages) return res.status(400).json({ error: 'Missing fields' });
@@ -172,6 +292,7 @@ app.post('/api/chats', async (req, res) => {
   await saveChatIndex(email, index);
   res.json({ success: true });
 });
+
 app.get('/api/chats/:chatId', async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ error: 'Missing email' });
@@ -179,43 +300,23 @@ app.get('/api/chats/:chatId', async (req, res) => {
   if (!chat) return res.status(404).json({ error: 'Not found' });
   res.json(chat);
 });
+
 app.delete('/api/chats/:chatId', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Missing email' });
   await b2Delete(`chats/${emailToKey(email)}/${req.params.chatId}.json`);
   let index = await getChatIndex(email);
-  await saveChatIndex(email, index.filter(c=>c.id!==req.params.chatId));
+  index = index.filter(c=>c.id!==req.params.chatId);
+  await saveChatIndex(email, index);
   res.json({ success: true });
 });
 
 // ── Fetch helpers ──
 function fetchText(url) {
-  return new Promise((resolve,reject)=>{
-    const mod=url.startsWith('https')?https:http;
-    mod.get(url,{headers:{'User-Agent':'VioraAI/1.0'}},res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>resolve(d.trim()));}).on('error',reject);
-  });
+  return new Promise((resolve,reject)=>{ const mod=url.startsWith('https')?https:http; mod.get(url,{headers:{'User-Agent':'VioraAI/1.0'}},res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>resolve(d.trim()));}).on('error',reject); });
 }
 function fetchJSON(url) {
-  return new Promise((resolve,reject)=>{
-    const mod=url.startsWith('https')?https:http;
-    mod.get(url,{headers:{'User-Agent':'VioraAI/1.0'}},res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{resolve(JSON.parse(d))}catch{resolve(null)}});}).on('error',reject);
-  });
-}
-function fetchUrl(url) {
-  return new Promise((resolve,reject)=>{
-    const mod=url.startsWith('https')?https:http;
-    mod.get(url,{headers:{'User-Agent':'Mozilla/5.0 (compatible; VioraAI/1.0)','Accept':'text/html,*/*'}},res=>{
-      if(res.statusCode>=300&&res.statusCode<400&&res.headers.location) return fetchUrl(res.headers.location).then(resolve).catch(reject);
-      let d='';res.on('data',c=>d+=c);res.on('end',()=>resolve(d));
-    }).on('error',reject);
-  });
-}
-function extractTextFromHtml(html) {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi,'').replace(/<style[\s\S]*?<\/style>/gi,'')
-    .replace(/<nav[\s\S]*?<\/nav>/gi,'').replace(/<footer[\s\S]*?<\/footer>/gi,'')
-    .replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&')
-    .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/\s+/g,' ').trim().slice(0,6000);
+  return new Promise((resolve,reject)=>{ const mod=url.startsWith('https')?https:http; mod.get(url,{headers:{'User-Agent':'VioraAI/1.0'}},res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{resolve(JSON.parse(d))}catch{resolve(null)}});}).on('error',reject); });
 }
 async function reverseGeocode(lat,lon) {
   try { const d=await fetchJSON(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`); if(d?.address) return {city:d.address.city||d.address.town||d.address.village||'',country:d.address.country||''}; } catch{} return null;
@@ -225,15 +326,26 @@ async function getWeatherFromCoords(lat,lon) {
 }
 async function getWeatherRich(lat,lon) {
   try {
-    const raw=await fetchText(`https://wttr.in/${lat},${lon}?format=j1`);
-    const d=JSON.parse(raw); const cur=d.current_condition?.[0]; if(!cur) return null;
-    const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const daily=(d.weather||[]).slice(0,7).map(day=>{const dt=new Date(day.date);return{day:days[dt.getDay()],high:parseInt(day.maxtempF),low:parseInt(day.mintempF),code:parseInt(day.hourly?.[4]?.weatherCode||113)};});
-    return {tempF:parseInt(cur.temp_F),feelsF:parseInt(cur.FeelsLikeF),desc:cur.weatherDesc?.[0]?.value||'',humidity:parseInt(cur.humidity),windMph:parseInt(cur.windspeedMiles),visibility:parseInt(cur.visibility),uvIndex:parseInt(cur.uvIndex),code:parseInt(cur.weatherCode),daily};
-  } catch { return null; }
+    const raw = await fetchText(`https://wttr.in/${lat},${lon}?format=j1`);
+    const d = JSON.parse(raw);
+    const cur = d.current_condition?.[0];
+    if (!cur) return null;
+    const weather = d.weather || [];
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const daily = weather.slice(0,7).map(day => {
+      const date = new Date(day.date);
+      return { day: days[date.getDay()], high: parseInt(day.maxtempF), low: parseInt(day.mintempF), code: parseInt(day.hourly?.[4]?.weatherCode || 113) };
+    });
+    return {
+      tempF: parseInt(cur.temp_F), feelsF: parseInt(cur.FeelsLikeF),
+      desc: cur.weatherDesc?.[0]?.value || '', humidity: parseInt(cur.humidity),
+      windMph: parseInt(cur.windspeedMiles), visibility: parseInt(cur.visibility),
+      uvIndex: parseInt(cur.uvIndex), code: parseInt(cur.weatherCode), daily
+    };
+  } catch(e) { return null; }
 }
 
-// ── OpenRouter (non-streaming, for deep search) ──
+// ── OpenRouter ──
 function callOpenRouter(allMessages) {
   return new Promise((resolve,reject)=>{
     const payload=JSON.stringify({model:'openrouter/auto',messages:allMessages});
@@ -244,123 +356,337 @@ function callOpenRouter(allMessages) {
   });
 }
 
+// ── Image Generation via OpenRouter (Flux Schnell) ──
+function callOpenRouterImage(prompt) {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify({
+      model: 'openrouter/auto',
+      messages: [{ role: 'user', content: prompt }]
+    });
+    const options = {
+      hostname: 'openrouter.ai',
+      path: '/api/v1/chat/completions',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'HTTP-Referer': 'https://viora-ai.onrender.com',
+        'X-Title': 'Viora AI',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    };
+    const req = https.request(options, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => {
+        try {
+          const p = JSON.parse(d);
+          if (p.error) return reject({ message: p.error.message || JSON.stringify(p.error) });
+          const content = p.choices?.[0]?.message?.content;
+          // Gemini returns array of parts
+          if (Array.isArray(content)) {
+            const imgPart = content.find(c => c.type === 'image_url');
+            if (imgPart?.image_url?.url) return resolve(imgPart.image_url.url);
+            // Inline base64 data
+            const inlinePart = content.find(c => c.type === 'inline_data' || c.inline_data);
+            if (inlinePart) {
+              const d = inlinePart.inline_data || inlinePart;
+              return resolve(`data:${d.mime_type};base64,${d.data}`);
+            }
+          }
+          if (typeof content === 'string' && content.startsWith('http')) return resolve(content);
+          if (typeof content === 'string' && content.startsWith('data:')) return resolve(content);
+          reject({ message: 'No image in response: ' + JSON.stringify(p).slice(0, 300) });
+        } catch(e) { reject({ message: 'Parse error: ' + e.message }); }
+      });
+    });
+    req.on('error', err => reject({ message: err.message }));
+    req.write(payload); req.end();
+  });
+}
+
+app.post('/api/image', async (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
+  if (!OPENROUTER_API_KEY) return res.status(500).json({ error: 'OPENROUTER_API_KEY not set.' });
+  try {
+    const url = await callOpenRouterImage(prompt);
+    res.json({ url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ── URL Fetcher ──
+function fetchUrl(url) {
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith('https') ? https : http;
+    const options = {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; VioraAI/1.0)',
+        'Accept': 'text/html,application/xhtml+xml,*/*'
+      }
+    };
+    mod.get(url, options, res => {
+      // Follow redirects
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return fetchUrl(res.headers.location).then(resolve).catch(reject);
+      }
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => resolve(data));
+    }).on('error', reject);
+  });
+}
+
+function extractTextFromHtml(html) {
+  // Remove scripts, styles, nav, footer etc
+  let text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+    .replace(/<header[\s\S]*?<\/header>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim();
+  // Limit to ~6000 chars to stay within context
+  return text.slice(0, 6000);
+}
+
+
 // ── Deep Search ──
 app.post('/api/deepsearch', async (req, res) => {
   const { query, email } = req.body;
   if (!query) return res.status(400).json({ error: 'Missing query' });
   if (!OPENROUTER_API_KEY) return res.status(500).json({ error: 'OPENROUTER_API_KEY not set.' });
-  let memoryCtx='';
-  if(email){const m=await getMemory(email);if(m.length>0)memoryCtx='\n\n[USER MEMORIES: '+m.map(x=>`- ${x.text}`).join('\n')+']';}
-  const sys=`You are Viora, an expert research assistant. Produce a thorough deep research report.\nFormat:\n# [Title]\n## Overview\n[summary]\n## [Sections]\n## Key Takeaways\n- bullets\nWrite at least 400 words.${memoryCtx}`;
-  try { const text=await callOpenRouter([{role:'system',content:sys},{role:'user',content:`Deep research: ${query}`}]); res.json({content:[{text}]}); }
-  catch(err){res.status(500).json({error:err.message});}
-});
 
-// ── Weather & Geocode ──
-app.get('/api/weather', async (req, res) => {
-  const{lat,lon}=req.query; if(!lat||!lon) return res.status(400).json({error:'Missing coords'});
-  const[place,rich]=await Promise.all([reverseGeocode(parseFloat(lat),parseFloat(lon)),getWeatherRich(parseFloat(lat),parseFloat(lon))]);
-  if(!rich) return res.status(500).json({error:'Weather unavailable'});
-  res.json({place,weather:rich});
-});
-app.get('/api/geocode', async (req, res) => {
-  const{lat,lon}=req.query; if(!lat||!lon) return res.status(400).json({error:'Missing coords'});
-  res.json((await reverseGeocode(parseFloat(lat),parseFloat(lon)))||{});
-});
-
-// ── Main Chat (streaming with fallback) ──
-app.post('/api/chat', async (req, res) => {
-  const{messages,system,coords,email,image}=req.body;
-  if(!OPENROUTER_API_KEY) return res.status(500).json({error:'OPENROUTER_API_KEY not set.'});
-
-  let weatherCtx='',locationCtx='',memoryCtx='',urlCtx='';
-  if(coords?.lat&&coords?.lon){
-    const[place,weather]=await Promise.all([reverseGeocode(coords.lat,coords.lon),getWeatherFromCoords(coords.lat,coords.lon)]);
-    if(weather){const loc=place?`${place.city}, ${place.country}`:`${coords.lat},${coords.lon}`;weatherCtx=`\n\n[LIVE WEATHER (${loc}): ${weather}]`;}
-    if(place){locationCtx=`\n\n[USER LOCATION: ${place.city?place.city+', ':''}${place.country} (coordinates: ${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}). Provide Google Maps links for nearby places.]`;}
-    else{locationCtx=`\n\n[USER COORDINATES: ${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}]`;}
+  let memoryCtx = '';
+  if (email) {
+    const memories = await getMemory(email);
+    if (memories.length > 0) {
+      memoryCtx = '\n\n[USER MEMORIES: ' + memories.map(m => `- ${m.text}`).join('\n') + ']';
+    }
   }
-  if(email){const m=await getMemory(email);if(m.length>0)memoryCtx='\n\n[THINGS YOU REMEMBER ABOUT THIS USER:\n'+m.map(x=>`- ${x.text}`).join('\n')+'\nUse naturally without announcing it.]';}
-  const lastUserMsg=[...messages].reverse().find(m=>m.role==='user');
-  if(lastUserMsg){
-    const urlMatch=(typeof lastUserMsg.content==='string'?lastUserMsg.content:'').match(/https?:\/\/[^\s]+/);
-    if(urlMatch){try{const html=await fetchUrl(urlMatch[0]);const t=extractTextFromHtml(html);if(t.length>100)urlCtx=`\n\n[WEBPAGE CONTENT from ${urlMatch[0]}:\n${t}\n(End)]`;}catch(e){urlCtx=`\n\n[Could not fetch ${urlMatch[0]}: ${e.message}]`;}}
-    if(email){const rm=(typeof lastUserMsg.content==='string'?lastUserMsg.content:'').match(/^remember:\s*(.+)/i);if(rm){const ex=await getMemory(email);ex.push({id:Date.now().toString(),text:rm[1].trim(),createdAt:new Date().toISOString()});await saveMemory(email,ex);}}
-  }
-  let builtMessages=messages.map(m=>({...m}));
-  if(image){const li=builtMessages.map(m=>m.role).lastIndexOf('user');if(li>=0){const lm=builtMessages[li];builtMessages[li]={role:'user',content:[{type:'text',text:typeof lm.content==='string'?lm.content:''},{type:'image_url',image_url:{url:image}}]};}}
-  const allMessages=[{role:'system',content:(system||'You are Viora, a friendly helpful AI.')+weatherCtx+locationCtx+memoryCtx+urlCtx},...builtMessages];
+
+  const systemPrompt = `You are Viora, an expert research assistant. When given a topic or question, produce a thorough, well-structured deep research report. 
+
+Format your response using this structure:
+# [Title]
+
+## Overview
+[2-3 sentence summary]
+
+## [Section 1 — relevant heading]
+[Detailed content with facts, tips, explanations]
+
+## [Section 2]
+[Continue as needed, 3-6 sections total]
+
+## Key Takeaways
+- Bullet point summary of the most important points
+
+Use clear headings, be comprehensive, accurate, and well-organized. Write at least 400 words.${memoryCtx}`;
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: `Deep research topic: ${query}` }
+  ];
 
   try {
-    const result = await new Promise((resolve, reject) => {
-      const payload = JSON.stringify({ model: 'openrouter/auto', messages: allMessages });
-      const options = {
-        hostname: 'openrouter.ai', path: '/api/v1/chat/completions', method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-          'HTTP-Referer': 'https://viora-ai.onrender.com',
-          'X-Title': 'Viora AI',
-          'Content-Length': Buffer.byteLength(payload)
-        }
-      };
-      const req = https.request(options, upstream => {
-        let d = '';
-        upstream.on('data', c => d += c);
-        upstream.on('end', () => {
-          try {
-            const p = JSON.parse(d);
-            console.log('[openrouter/auto] status:', upstream.statusCode, 'model used:', p.model || 'unknown', 'content len:', p.choices?.[0]?.message?.content?.length || 0, 'error:', p.error?.message || 'none');
-            if (p.error) return reject(new Error(p.error.message || JSON.stringify(p.error)));
-            resolve(p.choices?.[0]?.message?.content || '');
-          } catch(e) { reject(e); }
-        });
-      });
-      req.on('error', reject);
-      req.write(payload);
-      req.end();
-    });
-
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    if (result && result.trim().length > 0) {
-      const words = result.split(/(?<=\s)/);
-      for (const word of words) res.write(`data: ${JSON.stringify({ token: word })}\n\n`);
-    } else {
-      res.write(`data: ${JSON.stringify({ token: "Sorry, I didn't get a response. Please try again." })}\n\n`);
-    }
-    res.write('data: [DONE]\n\n');
-    res.end();
-  } catch(err) {
-    console.error('[chat error]', err.message);
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.write(`data: ${JSON.stringify({ token: 'Error: ' + err.message })}\n\n`);
-    res.write('data: [DONE]\n\n');
-    res.end();
+    const text = await callOpenRouter(messages);
+    res.json({ content: [{ text }] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ── Static / PWA routes ──
-app.get('/V.png',(req,res)=>res.sendFile(path.join(__dirname,'templates','V.png')));
-app.get('/manifest.json',(req,res)=>res.sendFile(path.join(__dirname,'templates','manifest.json')));
-app.get('/sw.js',(req,res)=>{res.setHeader('Content-Type','application/javascript');res.setHeader('Service-Worker-Allowed','/');res.sendFile(path.join(__dirname,'templates','sw.js'));});
-app.get('/icon-192.png',(req,res)=>res.sendFile(path.join(__dirname,'templates','icon-192.png')));
-app.get('/icon-512.png',(req,res)=>res.sendFile(path.join(__dirname,'templates','icon-512.png')));
-app.get('/',(req,res)=>res.sendFile(path.join(__dirname,'templates','index.html')));
 
-const PORT=process.env.PORT||3000;
-app.listen(PORT,()=>console.log(`Viora AI running on port ${PORT}`));
+// ── Dedicated image gen route (higher token limit) ──
+app.post('/api/imagegen', async (req, res) => {
+  if (!OPENROUTER_API_KEY) return res.status(500).json({ error: 'OPENROUTER_API_KEY not set.' });
+  const { system, messages } = req.body;
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify({ model: 'openrouter/auto', max_tokens: 8000, messages: [{ role: 'system', content: system }, ...messages] });
+    const options = { hostname: 'openrouter.ai', path: '/api/v1/chat/completions', method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}`, 'HTTP-Referer': 'https://viora-ai.onrender.com', 'X-Title': 'Viora AI', 'Content-Length': Buffer.byteLength(payload) } };
+    const r = https.request(options, resp => {
+      let d = ''; resp.on('data', c => d += c);
+      resp.on('end', () => {
+        try {
+          const p = JSON.parse(d);
+          if (p.error) { res.status(500).json({ error: p.error.message }); resolve(); }
+          else { res.json({ content: [{ text: p.choices?.[0]?.message?.content || '' }] }); resolve(); }
+        } catch { res.status(500).json({ error: 'Parse error' }); resolve(); }
+      });
+    });
+    r.on('error', err => { res.status(500).json({ error: err.message }); resolve(); });
+    r.write(payload); r.end();
+  });
+});
 
-// ── Admin chat/memory viewers ──
-app.get('/api/admin/users/:email/chats',adminAuth,async(req,res)=>{res.json(await getChatIndex(decodeURIComponent(req.params.email).toLowerCase()));});
-app.get('/api/admin/users/:email/chats/:chatId',adminAuth,async(req,res)=>{const chat=await b2Get(`chats/${emailToKey(decodeURIComponent(req.params.email).toLowerCase())}/${req.params.chatId}.json`);if(!chat)return res.status(404).json({error:'Not found'});res.json(chat);});
-app.get('/api/admin/users/:email/memory',adminAuth,async(req,res)=>{res.json(await getMemory(decodeURIComponent(req.params.email).toLowerCase()));});
-app.delete('/api/admin/users/:email/memory/:id',adminAuth,async(req,res)=>{const email=decodeURIComponent(req.params.email).toLowerCase();let m=await getMemory(email);await saveMemory(email,m.filter(x=>x.id!==req.params.id));res.json({success:true});});
 
-// ── Memory API ──
-app.get('/api/memory',async(req,res)=>{const{email}=req.query;if(!email)return res.status(400).json({error:'Missing email'});res.json(await getMemory(email));});
-app.post('/api/memory',async(req,res)=>{const{email,text}=req.body;if(!email||!text)return res.status(400).json({error:'Missing fields'});const m=await getMemory(email);const entry={id:Date.now().toString(),text:text.trim(),createdAt:new Date().toISOString()};m.push(entry);await saveMemory(email,m);res.json(entry);});
-app.delete('/api/memory/:id',async(req,res)=>{const{email}=req.body;if(!email)return res.status(400).json({error:'Missing email'});let m=await getMemory(email);await saveMemory(email,m.filter(x=>x.id!==req.params.id));res.json({success:true});});
-app.delete('/api/memory',async(req,res)=>{const{email}=req.body;if(!email)return res.status(400).json({error:'Missing email'});await saveMemory(email,[]);res.json({success:true});});
+app.get('/api/weather', async (req, res) => {
+  const { lat, lon } = req.query;
+  if (!lat || !lon) return res.status(400).json({ error: 'Missing coords' });
+  const [place, rich, simple] = await Promise.all([
+    reverseGeocode(parseFloat(lat), parseFloat(lon)),
+    getWeatherRich(parseFloat(lat), parseFloat(lon)),
+    getWeatherFromCoords(parseFloat(lat), parseFloat(lon))
+  ]);
+  if (!rich) return res.status(500).json({ error: 'Weather unavailable' });
+  res.json({ place, weather: rich });
+});
+
+
+app.post('/api/chat', async (req,res)=>{
+  const {messages,system,coords,email,image}=req.body;
+  if (!OPENROUTER_API_KEY) return res.status(500).json({error:'OPENROUTER_API_KEY not set.'});
+  let weatherCtx='';
+  if (coords?.lat&&coords?.lon) {
+    const [place,weather]=await Promise.all([reverseGeocode(coords.lat,coords.lon),getWeatherFromCoords(coords.lat,coords.lon)]);
+    if (weather) { const loc=place?`${place.city}, ${place.country}`:`${coords.lat},${coords.lon}`; weatherCtx=`\n\n[LIVE WEATHER (${loc}): ${weather}]`; }
+  }
+  // Inject location context
+  let locationCtx='';
+  if (coords?.lat && coords?.lon) {
+    const place = await reverseGeocode(coords.lat, coords.lon);
+    if (place) {
+      locationCtx = `\n\n[USER LOCATION: ${place.city ? place.city + ', ' : ''}${place.country} (coordinates: ${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}). Use this to answer questions about their location, nearest places, local services, etc. When they ask for nearest stores or places, tell them to search Google Maps for "[place] near ${place.city || 'their location'}" and provide a direct Google Maps link like: https://www.google.com/maps/search/[place]+near+${encodeURIComponent((place.city||'') + ' ' + (place.country||'')).replace(/%20/g,'+')}]`;
+    } else {
+      locationCtx = `\n\n[USER COORDINATES: ${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}. Use this for location-based questions.]`;
+    }
+  }
+
+  // Inject memories into system prompt
+  let memoryCtx='';
+  if (email) {
+    const memories = await getMemory(email);
+    if (memories.length > 0) {
+      memoryCtx = '\n\n[THINGS YOU REMEMBER ABOUT THIS USER:\n' + memories.map(m=>`- ${m.text}`).join('\n') + '\nUse this naturally without announcing it every time.]';
+    }
+  }
+  // Auto-detect URLs in last user message and fetch content
+  const lastUserMsg = [...messages].reverse().find(m=>m.role==='user');
+  let urlCtx = '';
+  if (lastUserMsg) {
+    const urlMatch = (typeof lastUserMsg.content === 'string' ? lastUserMsg.content : '').match(/https?:\/\/[^\s]+/);
+    if (urlMatch) {
+      try {
+        const html = await fetchUrl(urlMatch[0]);
+        const text = extractTextFromHtml(html);
+        if (text.length > 100) {
+          urlCtx = `\n\n[WEBPAGE CONTENT from ${urlMatch[0]}:\n${text}\n(End of page content)]`;
+        }
+      } catch(e) { urlCtx = `\n\n[Could not fetch ${urlMatch[0]}: ${e.message}]`; }
+    }
+  }
+
+  // Auto-detect "remember: ..." and save to memory
+  if (email && lastUserMsg) {
+    const rememberMatch = lastUserMsg.content.match(/^remember:\s*(.+)/i);
+    if (rememberMatch) {
+      const memText = rememberMatch[1].trim();
+      const existing = await getMemory(email);
+      existing.push({ id: Date.now().toString(), text: memText, createdAt: new Date().toISOString() });
+      await saveMemory(email, existing);
+    }
+  }
+  // Build messages — inject image into last user message if provided
+  let builtMessages = messages.map(m => ({ ...m }));
+  if (image) {
+    const lastIdx = builtMessages.map(m=>m.role).lastIndexOf('user');
+    if (lastIdx >= 0) {
+      const lastMsg = builtMessages[lastIdx];
+      builtMessages[lastIdx] = {
+        role: 'user',
+        content: [
+          { type: 'text', text: typeof lastMsg.content === 'string' ? lastMsg.content : '' },
+          { type: 'image_url', image_url: { url: image } }
+        ]
+      };
+    }
+  }
+  const allMessages=[{role:'system',content:(system||'You are Viora, a friendly helpful AI.')+weatherCtx+locationCtx+memoryCtx+urlCtx},...builtMessages];
+  try { const text=await callOpenRouter(allMessages); res.json({content:[{text}]}); }
+  catch(err){ res.status(500).json({error:err.message}); }
+});
+
+app.get('/V.png', (req,res) => res.sendFile(path.join(__dirname,'templates','V.png')));
+app.get('/', (req,res) => res.sendFile(path.join(__dirname,'templates','index.html')));
+const PORT = process.env.PORT||3000;
+app.listen(PORT, ()=>console.log(`Server running on port ${PORT}`));
+
+// ── Admin: get user chat list ──
+app.get('/api/admin/users/:email/chats', adminAuth, async (req, res) => {
+  const email = decodeURIComponent(req.params.email).toLowerCase();
+  const index = await getChatIndex(email);
+  res.json(index);
+});
+
+// ── Admin: get specific chat ──
+app.get('/api/admin/users/:email/chats/:chatId', adminAuth, async (req, res) => {
+  const email = decodeURIComponent(req.params.email).toLowerCase();
+  const chat = await b2Get(`chats/${emailToKey(email)}/${req.params.chatId}.json`);
+  if (!chat) return res.status(404).json({ error: 'Not found' });
+  res.json(chat);
+});
+
+// ── Memory helpers ──
+async function getMemory(email) { return (await b2Get(`memory/${emailToKey(email)}.json`)) || []; }
+async function saveMemory(email, memories) { return b2Put(`memory/${emailToKey(email)}.json`, memories); }
+
+// Get user memories
+app.get('/api/memory', async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ error: 'Missing email' });
+  res.json(await getMemory(email));
+});
+
+// Add a memory
+app.post('/api/memory', async (req, res) => {
+  const { email, text } = req.body;
+  if (!email || !text) return res.status(400).json({ error: 'Missing fields' });
+  const memories = await getMemory(email);
+  const entry = { id: Date.now().toString(), text: text.trim(), createdAt: new Date().toISOString() };
+  memories.push(entry);
+  await saveMemory(email, memories);
+  res.json(entry);
+});
+
+// Delete a memory
+app.delete('/api/memory/:id', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Missing email' });
+  let memories = await getMemory(email);
+  memories = memories.filter(m => m.id !== req.params.id);
+  await saveMemory(email, memories);
+  res.json({ success: true });
+});
+
+// Clear all memories
+app.delete('/api/memory', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Missing email' });
+  await saveMemory(email, []);
+  res.json({ success: true });
+});
+
+// Admin: view user memories
+app.get('/api/admin/users/:email/memory', adminAuth, async (req, res) => {
+  const email = decodeURIComponent(req.params.email).toLowerCase();
+  res.json(await getMemory(email));
+});
+
+// Admin: delete a specific user memory
+app.delete('/api/admin/users/:email/memory/:id', adminAuth, async (req, res) => {
+  const email = decodeURIComponent(req.params.email).toLowerCase();
+  let memories = await getMemory(email);
+  memories = memories.filter(m => m.id !== req.params.id);
+  await saveMemory(email, memories);
+  res.json({ success: true });
+});
