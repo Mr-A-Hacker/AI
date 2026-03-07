@@ -5,16 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Viora AI</title>
 <link rel="icon" type="image/png" href="/V.png" />
-<!-- PWA -->
-<link rel="manifest" href="/manifest.json" />
-<meta name="theme-color" content="#7c3aed" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Viora AI" />
-<link rel="apple-touch-icon" href="/icon-192.png" />
-<meta name="msapplication-TileColor" content="#7c3aed" />
-<meta name="msapplication-TileImage" content="/icon-192.png" />
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -353,7 +343,7 @@ header {
 .btn-memory:hover{background:rgba(124,58,237,.14);border-color:var(--violet-light)}
 
 /* MEMORY PANEL */
-#memory-panel{position:fixed;top:0;right:0;bottom:0;width:360px;max-width:90vw;background:white;border-left:1.5px solid var(--border);z-index:60;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 40px rgba(124,58,237,.1)}
+#memory-panel{position:fixed;top:0;right:0;bottom:0;width:360px;max-width:90vw;background:white;border-left:1.5px solid var(--border);z-index:30;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 40px rgba(124,58,237,.1)}
 #memory-panel.open{transform:translateX(0)}
 .memory-header{padding:18px 20px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .memory-title{font-family:var(--font-head);font-size:1rem;font-weight:800;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
@@ -377,7 +367,7 @@ header {
 .memory-footer{padding:12px 16px;border-top:1.5px solid var(--border);flex-shrink:0}
 .btn-clear-mem{width:100%;padding:10px;border-radius:12px;border:1.5px solid rgba(239,68,68,.2);background:rgba(239,68,68,.05);color:var(--red);font-family:var(--font-body);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s}
 .btn-clear-mem:hover{background:rgba(239,68,68,.12)}
-#memory-overlay{display:none;position:fixed;inset:0;z-index:59;background:rgba(30,16,48,.2);backdrop-filter:blur(2px)}
+#memory-overlay{display:none;position:fixed;inset:0;z-index:29;background:rgba(30,16,48,.2);backdrop-filter:blur(2px)}
 #memory-overlay.show{display:block}
 
 /* IMAGE MESSAGES */
@@ -423,72 +413,30 @@ header {
 .deep-badge { display: inline-flex; align-items: center; gap: 5px; font-size: .68rem; font-weight: 700; color: var(--violet); background: rgba(124,58,237,.08); border: 1px solid rgba(124,58,237,.2); border-radius: 20px; padding: 2px 10px; margin-bottom: 10px; }
 
 /* ── WEATHER CARD ── */
-.weather-card {
-  max-width: 440px; border-radius: 26px; overflow: hidden; color: white;
-  box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(139,92,246,.15);
-  font-family: var(--font-body); position: relative;
-}
-.wc-hero {
-  background: linear-gradient(145deg, #0d0520 0%, #130a2e 30%, #0a1830 70%, #060d1f 100%);
-  padding: 22px 22px 20px; position: relative; overflow: hidden;
-}
-.wc-hero::before {
-  content: ''; position: absolute; inset: 0; opacity: .5;
-  background: radial-gradient(ellipse 80% 60% at 90% 0%, rgba(139,92,246,.35) 0%, transparent 60%),
-              radial-gradient(ellipse 60% 80% at 10% 100%, rgba(236,72,153,.2) 0%, transparent 60%);
-}
-.wc-hero::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background-image: radial-gradient(circle, rgba(255,255,255,.06) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
-.wc-top-row { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; position:relative; z-index:1; }
-.wc-location { font-size: .7rem; font-weight: 700; color: rgba(255,255,255,.55); letter-spacing: .08em; text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
-.wc-location svg { opacity: .6; flex-shrink: 0; }
-.wc-badge { font-size: .58rem; font-weight: 800; color: rgba(196,167,255,.9); letter-spacing: .07em; text-transform: uppercase; background: rgba(139,92,246,.2); border: 1px solid rgba(139,92,246,.35); padding: 3px 10px; border-radius: 20px; }
-.wc-main { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; }
-.wc-temp-block { flex: 1; }
-.wc-temp { font-size: 5.5rem; font-weight: 900; line-height: .85; letter-spacing: -.05em; background: linear-gradient(160deg, #ffffff 40%, rgba(196,167,255,.6) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; display: inline-block; }
-.wc-temp-unit { font-size: 2rem; font-weight: 300; color: rgba(255,255,255,.35); vertical-align: super; font-family: var(--font-body); }
-.wc-feels { font-size: .72rem; color: rgba(255,255,255,.38); margin-top: 8px; letter-spacing: .02em; }
-.wc-desc-text { font-size: .82rem; color: rgba(255,255,255,.7); font-weight: 600; margin-top: 3px; }
-.wc-right { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.wc-icon { font-size: 5rem; line-height: 1; filter: drop-shadow(0 6px 20px rgba(0,0,0,.5)); animation: weatherFloat 4s ease-in-out infinite; }
-@keyframes weatherFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-.wc-body { background: linear-gradient(180deg, #0a0f1e 0%, #0d1525 100%); padding: 16px 18px 18px; }
-.wc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-.wc-stat { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; transition: background .2s; }
-.wc-stat:hover { background: rgba(139,92,246,.1); border-color: rgba(139,92,246,.2); }
-.wc-stat-icon { font-size: 1.3rem; flex-shrink: 0; }
-.wc-stat-label { font-size: .6rem; color: rgba(255,255,255,.35); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
-.wc-stat-val { font-size: .9rem; color: rgba(255,255,255,.95); font-weight: 800; margin-top: 2px; }
-.wc-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(139,92,246,.25), transparent); margin: 4px 0 14px; }
-.wc-forecast-label { font-size: .6rem; font-weight: 800; color: rgba(139,92,246,.7); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
-.wc-forecast { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: none; }
+.weather-card { background: linear-gradient(135deg, #1a1035 0%, #0f2040 50%, #0a1a35 100%); border: 1px solid rgba(124,58,237,.25); border-radius: 22px; padding: 20px 22px 16px; max-width: 380px; color: white; overflow: hidden; position: relative; box-shadow: 0 8px 32px rgba(0,0,0,.35); }
+.wc-location { font-size: .78rem; font-weight: 700; color: rgba(255,255,255,.6); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.wc-location svg { opacity: .6; }
+.wc-main { display: flex; align-items: flex-end; gap: 14px; margin-bottom: 14px; }
+.wc-temp { font-size: 3.6rem; font-weight: 800; line-height: 1; background: linear-gradient(135deg, #fff 60%, rgba(180,140,255,.8)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.wc-temp-unit { font-size: 1.4rem; font-weight: 400; color: rgba(255,255,255,.6); margin-bottom: 10px; }
+.wc-desc-wrap { flex: 1; }
+.wc-icon { font-size: 2.8rem; line-height: 1; margin-bottom: 2px; }
+.wc-desc { font-size: .85rem; color: rgba(255,255,255,.75); font-weight: 600; }
+.wc-feels { font-size: .75rem; color: rgba(255,255,255,.45); margin-top: 2px; }
+.wc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.wc-stat { background: rgba(255,255,255,.07); border-radius: 12px; padding: 9px 12px; display: flex; align-items: center; gap: 8px; }
+.wc-stat-icon { font-size: 1rem; }
+.wc-stat-label { font-size: .68rem; color: rgba(255,255,255,.45); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+.wc-stat-val { font-size: .82rem; color: rgba(255,255,255,.9); font-weight: 700; margin-top: 1px; }
+.wc-divider { height: 1px; background: rgba(255,255,255,.08); margin: 0 0 14px; }
+.wc-forecast { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
 .wc-forecast::-webkit-scrollbar { display: none; }
-.wc-day { flex: 1; min-width: 52px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06); border-radius: 16px; padding: 11px 4px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; transition: all .2s; cursor: default; }
-.wc-day:hover { background: rgba(139,92,246,.12); border-color: rgba(139,92,246,.25); }
-.wc-day.today { background: linear-gradient(135deg, rgba(139,92,246,.2), rgba(236,72,153,.12)); border-color: rgba(139,92,246,.4); box-shadow: 0 0 20px rgba(139,92,246,.15); }
-.wc-day-name { font-size: .6rem; font-weight: 800; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: .05em; }
-.wc-day.today .wc-day-name { color: rgba(196,167,255,.95); }
-.wc-day-icon { font-size: 1.4rem; }
-.wc-day-high { font-size: .84rem; font-weight: 800; color: white; }
-.wc-day-low { font-size: .68rem; color: rgba(255,255,255,.3); font-weight: 600; }
-.wc-open-maps { display:flex; align-items:center; justify-content:center; gap:7px; margin-top:14px; padding:10px; border-radius:14px; border:1px solid rgba(139,92,246,.2); background:rgba(139,92,246,.07); color:rgba(196,167,255,.7); font-size:.72rem; font-weight:700; text-decoration:none; transition:all .2s; letter-spacing:.02em; }
-.wc-open-maps:hover { background:rgba(139,92,246,.18); color:rgba(196,167,255,1); border-color:rgba(139,92,246,.45); }
-
-/* MAP CARD */
-.map-card { background: white; border: 1.5px solid var(--border); border-radius: 24px; overflow: hidden; max-width: 440px; box-shadow: 0 8px 32px rgba(0,0,0,.1); }
-.map-card-header { padding: 14px 16px 12px; background: linear-gradient(135deg, rgba(124,58,237,.06), rgba(236,72,153,.03)); border-bottom: 1px solid var(--border); display:flex; align-items:center; gap:12px; }
-.map-card-icon { width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,#7c3aed,#ec4899); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; box-shadow:0 4px 14px rgba(124,58,237,.3); }
-.map-card-title { font-family:var(--font-head); font-size:.9rem; font-weight:800; color:var(--text); }
-.map-card-sub { font-size:.7rem; color:var(--text-light); margin-top:2px; display:flex; align-items:center; gap:4px; }
-.map-iframe-wrap { position:relative; width:100%; height:240px; background:#f0edf8; }
-.map-iframe-wrap iframe { width:100%; height:100%; border:none; display:block; }
-.map-card-footer { padding:11px 14px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; background: rgba(124,58,237,.02); border-top: 1px solid var(--border); }
-.map-open-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 18px; border-radius:12px; background:linear-gradient(135deg,#7c3aed,#ec4899); color:white; font-family:var(--font-head); font-size:.76rem; font-weight:700; text-decoration:none; transition:all .2s; box-shadow:0 3px 12px rgba(124,58,237,.3); }
-.map-open-btn:hover { transform:translateY(-1px); box-shadow:0 5px 18px rgba(124,58,237,.4); }
-.map-hint { font-size:.68rem; color:var(--text-light); }
+.wc-day { flex: 1; min-width: 46px; background: rgba(255,255,255,.07); border-radius: 12px; padding: 8px 4px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.wc-day-name { font-size: .65rem; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .04em; }
+.wc-day-icon { font-size: 1.2rem; }
+.wc-day-high { font-size: .78rem; font-weight: 700; color: white; }
+.wc-day-low { font-size: .68rem; color: rgba(255,255,255,.4); }
+.wc-badge { position: absolute; top: 16px; right: 18px; font-size: .6rem; font-weight: 700; color: rgba(255,255,255,.3); letter-spacing: .05em; text-transform: uppercase; }
 
 /* ── VIEW OTHER AIs BUTTON ── */
 .btn-other-ais {
@@ -574,8 +522,6 @@ header {
 .landing-features { display: flex; gap: 28px; margin-top: 52px; flex-wrap: wrap; justify-content: center; }
 .landing-feat { display: flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--text-mid); font-weight: 600; }
 .landing-feat-icon { font-size: 1rem; }
-@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -617,7 +563,15 @@ header {
       <button class="landing-btn-outline" onclick="showAuth('login')" style="font-size:1rem;padding:15px 36px;border-radius:18px;">Log in</button>
     </div>
 
-
+    <!-- Feature pills -->
+    <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:48px;">
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🎨 Image gen</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🔍 Deep search</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🧠 Memory</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🌦️ Live weather</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">🔗 Reads links</div>
+      <div style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:6px;">✍️ AI Humanizer</div>
+    </div>
   </div>
 
   <!-- Bottom tagline -->
@@ -703,7 +657,6 @@ header {
       <div class="header-right">
         <div id="timer-pill"><span>⏱</span><span id="timer-display">5:00</span></div>
         <div class="status-badge"><div class="status-dot"></div><span id="user-label">Online</span></div>
-        <button class="btn-memory" id="btn-memory" onclick="toggleMemoryPanel()" title="My Memory" style="display:none">🧠 Memory</button>
         <button class="btn-logout" id="header-logout-btn" onclick="doLogout()">Log out</button>
       </div>
     </header>
@@ -864,7 +817,7 @@ function doLogout() {
   document.getElementById('welcome').style.display = '';
   document.getElementById('expired-overlay').classList.remove('show');
   document.getElementById('chat-screen').classList.add('hidden');
-  document.getElementById('btn-memory').style.display = 'none';
+  
   document.getElementById('sidebar-memory-btn').style.display = 'none';
   if (memoryOpen) toggleMemoryPanel();
   document.getElementById('auth-screen').style.display = 'none';
@@ -890,7 +843,7 @@ function openChat(name, isTrial, email) {
     startTimer();
   } else {
     document.getElementById('welcome-sub').textContent = 'Your AI assistant — ask me anything. Writing, coding, ideas, and more.';
-    document.getElementById('btn-memory').style.display = '';
+    
     document.getElementById('sidebar-memory-btn').style.display = '';
     document.getElementById('header-logout-btn').style.display = 'none'; // sidebar has logout
     document.querySelector('.btn-toggle-sidebar').style.visibility = '';
@@ -1070,33 +1023,20 @@ inputEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey)
 
 function scrollBot() { chatEl.scrollTop = chatEl.scrollHeight; }
 
-function renderMarkdown(text) {
-  // Simple markdown: bold, italic, code blocks, inline code, line breaks
-  return text
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/```([\s\S]*?)```/g, '<pre style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;overflow-x:auto;font-size:.83rem;margin:6px 0;"><code>$1</code></pre>')
-    .replace(/`([^`]+)`/g, '<code style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:.85em;">$1</code>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\n/g, '<br>');
-}
-
 function addMsg(role, text) {
   const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const d = document.createElement('div');
   d.className = `msg ${role}`;
   const session = getSession();
   const initials = session?.name ? session.name[0].toUpperCase() : 'U';
-  const bubbleContent = role === 'ai' ? renderMarkdown(text) : escHtml(text);
   d.innerHTML = `
     <div class="av">${role === 'ai' ? 'V' : initials}</div>
     <div class="bubble-wrap">
-      <div class="bubble">${bubbleContent}</div>
+      <div class="bubble">${escHtml(text)}</div>
       <div class="msg-time">${now}</div>
     </div>`;
   chatEl.insertBefore(d, typingEl);
   scrollBot();
-  return d;
 }
 
 function escHtml(t) {
@@ -1112,33 +1052,15 @@ function isImageRequest(text) {
     || /\b(generate|create|draw|make|paint|render)\s+(an?|the|some|me|us)?\s*(image|picture|photo|illustration|artwork|painting|portrait)/i.test(text);
 }
 
-function addGeneratingMsg() {
-  const d = document.createElement('div');
-  d.className = 'msg ai';
-  d.id = 'generating-msg';
-  d.innerHTML = `
-    <div class="av" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
-    <div class="bubble-wrap">
-      <div class="bubble" style="display:flex;align-items:center;gap:12px;padding:14px 18px;">
-        <div style="width:20px;height:20px;border:2.5px solid rgba(124,58,237,.25);border-top-color:#7c3aed;border-radius:50%;animation:spin .75s linear infinite;flex-shrink:0;"></div>
-        <span style="font-size:.85rem;color:var(--text-mid);">Creating your image…</span>
-      </div>
-    </div>`;
-  chatEl.insertBefore(d, typingEl);
-  scrollBot();
-}
-
-function removeGeneratingMsg() {
-  const el = document.getElementById('generating-msg');
-  if (el) el.remove();
-}
-
-function addRealImageMsg(prompt, url) {
+function addCodeImageMsg(prompt, svgCode) {
   const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  const safePrompt = escHtml(prompt.length > 80 ? prompt.slice(0,80)+'…' : prompt);
-
+  const msgId = 'img_' + Date.now();
   const d = document.createElement('div');
   d.className = 'msg ai';
+
+  // Create wrapper
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;align-items:flex-start;gap:10px;';
 
   const av = document.createElement('div');
   av.className = 'av';
@@ -1150,75 +1072,83 @@ function addRealImageMsg(prompt, url) {
 
   const bubble = document.createElement('div');
   bubble.className = 'img-bubble';
-  bubble.style.cssText = 'padding:8px;max-width:360px;';
+  bubble.style.cssText = 'padding:10px;max-width:360px;';
 
-  // Skeleton shimmer shown while image loads
-  const skeleton = document.createElement('div');
-  skeleton.style.cssText = 'width:100%;aspect-ratio:1;border-radius:14px;background:linear-gradient(90deg,var(--surface) 25%,var(--border) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;';
+  // Render SVG into canvas for PNG download
+  const canvas = document.createElement('canvas');
+  canvas.width = 800; canvas.height = 800;
+  canvas.style.cssText = 'width:100%;border-radius:14px;display:block;cursor:pointer;image-rendering:high-quality;';
+  canvas.title = 'Click to enlarge';
 
-  const imgEl = document.createElement('img');
-  imgEl.alt = safePrompt;
-  imgEl.style.cssText = 'width:100%;border-radius:14px;display:none;cursor:pointer;box-shadow:0 4px 24px rgba(0,0,0,.12);';
-  let imgRetries = 0;
-  const fallbackUrls = [
-    url,
-    url.replace('model=flux', 'model=flux-schnell'),
-    url.replace('model=flux', 'model=turbo').replace('1024&height=1024', '512&height=512'),
-  ];
-  imgEl.onload = () => { skeleton.remove(); imgEl.style.display = 'block'; scrollBot(); };
-  imgEl.onerror = () => {
-    imgRetries++;
-    if (imgRetries < fallbackUrls.length) {
-      setTimeout(() => { imgEl.src = fallbackUrls[imgRetries]; }, 2000);
-      skeleton.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:var(--text-light);font-size:.78rem;flex-direction:column;gap:8px;"><span style="font-size:1.5rem;">⏳</span>Trying again…</div>';
-    } else {
-      skeleton.style.background = 'var(--surface)'; skeleton.style.animation = 'none';
-      skeleton.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-light);font-size:.8rem;flex-direction:column;gap:8px;padding:40px 0;"><span style="font-size:2rem;">😕</span>Image failed to load.<br>Try a different prompt.</div>';
-    }
+  // Use high-DPI rendering
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = 800 * dpr;
+  canvas.height = 800 * dpr;
+  canvas.style.width = '100%';
+  canvas.style.height = 'auto';
+
+  const svgBlob = new Blob([svgCode], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(svgBlob);
+  const img = new Image();
+  img.onload = () => {
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.drawImage(img, 0, 0, 800, 800);
+    URL.revokeObjectURL(url);
   };
-  imgEl.onclick = () => openLightbox(url);
-  imgEl.src = fallbackUrls[0];
+  img.onerror = () => {
+    // Fallback: render SVG directly in an img tag
+    canvas.style.display = 'none';
+    const fallback = document.createElement('img');
+    fallback.src = url;
+    fallback.style.cssText = 'width:100%;border-radius:14px;display:block;cursor:pointer;';
+    fallback.onclick = () => openLightbox(url);
+    bubble.insertBefore(fallback, canvas);
+  };
+  img.src = url;
+
+  canvas.addEventListener('click', () => {
+    // Wait for image to be fully rendered
+    setTimeout(() => {
+      const lb = document.getElementById('img-lightbox');
+      const lbImg = document.getElementById('lightbox-img');
+      lbImg.src = canvas.toDataURL('image/png');
+      lb.classList.add('show');
+    }, 100);
+  });
 
   const caption = document.createElement('div');
   caption.className = 'img-caption';
-  caption.style.marginTop = '8px';
   caption.textContent = '🎨 ' + (prompt.length > 80 ? prompt.slice(0,80)+'…' : prompt);
 
+  // Download button
   const dlBtn = document.createElement('button');
   dlBtn.textContent = '⬇️ Download image';
-  dlBtn.style.cssText = 'margin-top:8px;padding:7px 16px;border-radius:10px;border:1.5px solid var(--border);background:none;color:var(--text-mid);font-family:var(--font-body);font-size:.74rem;font-weight:600;cursor:pointer;transition:all .2s;';
-  dlBtn.onmouseenter = () => { dlBtn.style.borderColor='#7c3aed'; dlBtn.style.color='#7c3aed'; };
-  dlBtn.onmouseleave = () => { dlBtn.style.borderColor='var(--border)'; dlBtn.style.color='var(--text-mid)'; };
-  dlBtn.onclick = () => downloadImg(url);
+  dlBtn.style.cssText = 'margin-top:8px;padding:6px 14px;border-radius:10px;border:1.5px solid var(--border);background:none;color:var(--text-mid);font-family:var(--font-body);font-size:.74rem;font-weight:600;cursor:pointer;transition:all .2s;';
+  dlBtn.onmouseenter = () => dlBtn.style.borderColor = 'var(--violet-light)';
+  dlBtn.onmouseleave = () => dlBtn.style.borderColor = 'var(--border)';
+  dlBtn.onclick = () => {
+    const link = document.createElement('a');
+    link.download = 'viora-image.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
 
   const timeEl = document.createElement('div');
   timeEl.className = 'msg-time';
   timeEl.textContent = now;
 
-  bubble.appendChild(skeleton);
-  bubble.appendChild(imgEl);
+  bubble.appendChild(canvas);
   bubble.appendChild(caption);
   bubble.appendChild(dlBtn);
   bwrap.appendChild(bubble);
   bwrap.appendChild(timeEl);
   d.appendChild(av);
   d.appendChild(bwrap);
+
   chatEl.insertBefore(d, typingEl);
   scrollBot();
 }
-
-function downloadImg(url) {
-  fetch(url)
-    .then(r => r.blob())
-    .then(blob => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'viora-image.png';
-      a.click();
-    })
-    .catch(() => window.open(url, '_blank'));
-}
-
 
 function openLightbox(src) {
   document.getElementById('lightbox-img').src = src;
@@ -1242,6 +1172,62 @@ function openAiModal(tab) {
 function closeAiModal() {
   document.getElementById('ai-modal').classList.remove('show');
 }
+
+async function fetchWeatherForCity() {
+  const city = document.getElementById('weather-city-input').value.trim();
+  if (!city) return;
+  const btn = document.getElementById('btn-weather-search');
+  const resultEl = document.getElementById('weather-tool-result');
+  btn.disabled = true; btn.textContent = '⏳ Loading…';
+  resultEl.innerHTML = '<div style="color:var(--text-mid);font-size:.83rem;">Fetching weather…</div>';
+  try {
+    // Geocode city name
+    const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`);
+    const geoData = await geoRes.json();
+    if (!geoData.length) { resultEl.innerHTML = '<div style="color:#f87171;">City not found. Try a different name.</div>'; return; }
+    const { lat, lon, display_name } = geoData[0];
+    const wRes = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
+    const w = await wRes.json();
+    if (w.error) { resultEl.innerHTML = `<div style="color:#f87171;">${w.error}</div>`; return; }
+    // Render a compact weather card
+    const icons = ['❄️','🌨️','🌧️','🌦️','⛅','🌤️','☀️','🌩️','🌫️'];
+    const code = w.code || 0;
+    const icon = code >= 95 ? '🌩️' : code >= 80 ? '🌧️' : code >= 70 ? '🌨️' : code >= 60 ? '🌧️' : code >= 50 ? '🌦️' : code >= 30 ? '⛅' : code >= 2 ? '🌤️' : '☀️';
+    resultEl.innerHTML = `
+      <div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);border-radius:16px;padding:18px;color:#fff;margin-top:4px;">
+        <div style="font-size:.72rem;opacity:.6;margin-bottom:4px;">📍 ${display_name.split(',').slice(0,2).join(',')}</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:2.8rem;">${icon}</span>
+          <div>
+            <div style="font-size:2rem;font-weight:800;">${w.tempF}°F</div>
+            <div style="font-size:.78rem;opacity:.7;">${w.description} · Feels ${w.feelsF}°F</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;">
+          <div style="background:rgba(255,255,255,.07);border-radius:10px;padding:8px;text-align:center;">
+            <div style="font-size:.65rem;opacity:.55;">Humidity</div>
+            <div style="font-weight:700;">${w.humidity}%</div>
+          </div>
+          <div style="background:rgba(255,255,255,.07);border-radius:10px;padding:8px;text-align:center;">
+            <div style="font-size:.65rem;opacity:.55;">Wind</div>
+            <div style="font-weight:700;">${w.windMph} mph</div>
+          </div>
+          <div style="background:rgba(255,255,255,.07);border-radius:10px;padding:8px;text-align:center;">
+            <div style="font-size:.65rem;opacity:.55;">Visibility</div>
+            <div style="font-weight:700;">${w.visibility} mi</div>
+          </div>
+          <div style="background:rgba(255,255,255,.07);border-radius:10px;padding:8px;text-align:center;">
+            <div style="font-size:.65rem;opacity:.55;">UV Index</div>
+            <div style="font-weight:700;">${w.uvIndex}</div>
+          </div>
+        </div>
+      </div>`;
+  } catch(e) {
+    resultEl.innerHTML = `<div style="color:#f87171;">Error: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = '🔍 Search';
+  }
+}
 function switchAimTab(tab) {
   aimCurrentTab = tab;
   document.querySelectorAll('.aim-tab').forEach(t => t.classList.remove('active'));
@@ -1260,75 +1246,20 @@ async function runHumanizer() {
   if (!text) return;
   const btn = document.getElementById('btn-humanize');
   btn.disabled = true; btn.textContent = '⏳ Humanizing…';
-  
-  const styleGuides = {
-    'Casual': 'Write like texting a smart friend. Use contractions freely (I\'m, it\'s, don\'t, you\'d). Throw in filler phrases occasionally like "honestly", "kind of", "basically", "I mean". Vary sentence length wildly — some very short. One-word sentences are fine.',
-    'Professional': 'Write like a confident human expert, not a corporate bot. Use first-person opinions ("I think", "in my experience"). Avoid buzzwords. Include minor hedges ("usually", "in most cases"). Mix short punchy sentences with longer ones.',
-    'Academic': 'Write like a sharp grad student, not an AI. Use field-appropriate vocabulary but vary sentence structure dramatically. Include personal hedges ("arguably", "it seems", "one could suggest"). Avoid suspiciously perfect parallel structure.',
-    'Creative': 'Write with real personality — use em dashes, parenthetical asides (like this), fragments for effect. Let ideas meander slightly then snap back. Sound like a human who gets excited about topics.',
-    'Conversational': 'Write like a podcast transcript. Start sentences with "And", "But", "So". Use rhetorical questions. Include phrases like "right?", "you know what I mean", "here\'s the thing". Feel free to digress slightly.'
-  };
-
-  const systemPrompt = `You are an expert at rewriting AI-generated text so it is completely undetectable by AI detectors like GPTZero, Turnitin, Copyleaks, Winston AI, and Originality.ai.
-
-WHAT AI DETECTORS LOOK FOR (avoid all of these):
-- Unnaturally consistent sentence length and rhythm
-- Overly formal or "perfect" word choices
-- Parallel list structures (First... Second... Third... / Additionally... Furthermore... Moreover...)
-- Phrases: "It's important to note", "In conclusion", "In today's world", "This essay will", "Delve into", "Leverage", "Utilize", "Showcase", "It is worth noting", "As an AI", "Certainly!", "Absolutely!"
-- Too-smooth transitions between paragraphs
-- Predictable topic sentence → evidence → explanation structure
-- Suspiciously balanced pros/cons
-- Perfect grammar with zero personality
-
-HOW TO REWRITE:
-- Break the rhythm constantly — mix very short sentences with longer, wandering ones
-- Add ONE real imperfection: a slight digression, a casual aside, or a minor opinion
-- Use contractions aggressively
-- Replace any "utilize" → "use", "demonstrate" → "show", "facilitate" → "help"
-- Kill all transition phrases — just start the next thought
-- Add subtle subjectivity ("which is actually kind of fascinating", "and that matters more than people realize")
-- Occasionally start a sentence with And, But, or Because
-- Style: ${styleGuides[humStyle] || styleGuides['Casual']}
-
-OUTPUT ONLY the rewritten text. No preamble, no explanation, no quotes around it.`;
-
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system: systemPrompt,
-        messages: [{ role: 'user', content: `Rewrite this so no AI detector can identify it:\n\n${text}` }],
+        system: `You are an expert text humanizer. Rewrite the given AI-generated text to sound completely natural, human-written, and authentic in a ${humStyle} style. Remove robotic patterns, vary sentence structure, add natural flow, contractions, and personality. Output ONLY the rewritten text with no commentary or preamble.`,
+        messages: [{ role: 'user', content: text }],
         email: getSession()?.email || null
       })
     });
-    // Handle streaming response
-    let result = '';
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = '';
-    const resultEl = document.getElementById('hum-result');
+    const data = await res.json();
+    const result = data.content?.[0]?.text || data.error || 'Something went wrong.';
+    document.getElementById('hum-result').textContent = result;
     document.getElementById('hum-result-wrap').classList.add('show');
-    resultEl.textContent = '…';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      const lines = buf.split('\n');
-      buf = lines.pop();
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') break;
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.token) { result += parsed.token; resultEl.textContent = result; }
-        } catch {}
-      }
-    }
-    if (!result) result = 'Something went wrong. Try again.';
-    resultEl.textContent = result;
   } catch(e) {
     document.getElementById('hum-result').textContent = 'Error: ' + e.message;
     document.getElementById('hum-result-wrap').classList.add('show');
@@ -1424,10 +1355,8 @@ function weatherEmoji(code) {
 function addWeatherCard(place, weather) {
   const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const location = place ? `${place.city || ''}${place.city && place.country ? ', ' : ''}${place.country || ''}` : 'Your Location';
-  const mapsUrl = place ? `https://www.google.com/maps/search/weather+${encodeURIComponent(location)}` : '#';
-
   const forecastHTML = (weather.daily || []).map((d,i) => `
-    <div class="wc-day ${i===0?'today':''}">
+    <div class="wc-day">
       <div class="wc-day-name">${i===0?'Now':d.day}</div>
       <div class="wc-day-icon">${weatherEmoji(d.code)}</div>
       <div class="wc-day-high">${d.high}°</div>
@@ -1440,93 +1369,27 @@ function addWeatherCard(place, weather) {
     <div class="av" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
     <div class="bubble-wrap">
       <div class="weather-card">
-        <div class="wc-hero">
-          <div class="wc-top-row">
-            <div class="wc-location">
-              <svg width="9" height="11" viewBox="0 0 9 11" fill="currentColor"><path d="M4.5 0C2.02 0 0 2.02 0 4.5c0 3.38 4.5 6.5 4.5 6.5S9 7.88 9 4.5C9 2.02 6.98 0 4.5 0zm0 6.08a1.58 1.58 0 110-3.16 1.58 1.58 0 010 3.16z"/></svg>
-              ${escHtml(location)}
-            </div>
-            <div class="wc-badge">Viora Weather</div>
-          </div>
-          <div class="wc-main">
-            <div class="wc-temp-block">
-              <div><span class="wc-temp">${weather.tempF}</span><span class="wc-temp-unit">°F</span></div>
-              <div class="wc-desc-text">${escHtml(weather.desc)}</div>
-              <div class="wc-feels">Feels like ${weather.feelsF}°F</div>
-            </div>
-            <div class="wc-right">
-              <div class="wc-icon">${weatherEmoji(weather.code)}</div>
-            </div>
+        <div class="wc-badge">Viora Weather</div>
+        <div class="wc-location">
+          <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 7 5 7s5-3.25 5-7c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg>
+          ${escHtml(location)} &bull; Now
+        </div>
+        <div class="wc-main">
+          <div class="wc-temp">${weather.tempF}<span class="wc-temp-unit">°F</span></div>
+          <div class="wc-desc-wrap">
+            <div class="wc-icon">${weatherEmoji(weather.code)}</div>
+            <div class="wc-desc">${escHtml(weather.desc)}</div>
+            <div class="wc-feels">Feels like ${weather.feelsF}°F</div>
           </div>
         </div>
-        <div class="wc-body">
-          <div class="wc-stats">
-            <div class="wc-stat"><span class="wc-stat-icon">💧</span><div><div class="wc-stat-label">Humidity</div><div class="wc-stat-val">${weather.humidity}%</div></div></div>
-            <div class="wc-stat"><span class="wc-stat-icon">💨</span><div><div class="wc-stat-label">Wind</div><div class="wc-stat-val">${weather.windMph} mph</div></div></div>
-            <div class="wc-stat"><span class="wc-stat-icon">👁️</span><div><div class="wc-stat-label">Visibility</div><div class="wc-stat-val">${weather.visibility} mi</div></div></div>
-            <div class="wc-stat"><span class="wc-stat-icon">🌡️</span><div><div class="wc-stat-label">UV Index</div><div class="wc-stat-val">${weather.uvIndex}</div></div></div>
-          </div>
-          <div class="wc-divider"></div>
-          <div class="wc-forecast-label">7-Day Forecast</div>
-          <div class="wc-forecast">${forecastHTML}</div>
-          <a href="${mapsUrl}" target="_blank" class="wc-open-maps">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            View on Google Maps
-          </a>
+        <div class="wc-stats">
+          <div class="wc-stat"><span class="wc-stat-icon">💧</span><div><div class="wc-stat-label">Humidity</div><div class="wc-stat-val">${weather.humidity}%</div></div></div>
+          <div class="wc-stat"><span class="wc-stat-icon">💨</span><div><div class="wc-stat-label">Wind</div><div class="wc-stat-val">${weather.windMph} mph</div></div></div>
+          <div class="wc-stat"><span class="wc-stat-icon">👁️</span><div><div class="wc-stat-label">Visibility</div><div class="wc-stat-val">${weather.visibility} mi</div></div></div>
+          <div class="wc-stat"><span class="wc-stat-icon">☀️</span><div><div class="wc-stat-label">UV Index</div><div class="wc-stat-val">${weather.uvIndex}</div></div></div>
         </div>
-      </div>
-      <div class="msg-time">${now}</div>
-    </div>`;
-  chatEl.insertBefore(el, typingEl);
-  scrollBot();
-}
-
-function addMapCard(query, coords, place) {
-  const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  const locationName = place ? `${place.city || ''}${place.city && place.country ? ', ' : ''}${place.country || ''}` : 'Your Location';
-
-  // Detect place type from query
-  const placeMatch = query.match(/restaurant|food|eat|pizza|burger|sushi|cafe|coffee|bar|pub|hospital|pharmacy|drug|doctor|hotel|motel|gas|petrol|station|bank|atm|gym|fitness|park|school|mall|shop|store|market|supermarket|grocery|hair|salon|spa|beach|museum|cinema|movie/i);
-  const placeType = placeMatch ? placeMatch[0].toLowerCase() : 'place';
-  const placeEmojis = { restaurant:'🍽️', food:'🍔', eat:'🍽️', pizza:'🍕', burger:'🍔', sushi:'🍣', cafe:'☕', coffee:'☕', bar:'🍺', pub:'🍺', hospital:'🏥', pharmacy:'💊', drug:'💊', doctor:'👨‍⚕️', hotel:'🏨', motel:'🏨', gas:'⛽', petrol:'⛽', station:'⛽', bank:'🏦', atm:'🏧', gym:'💪', fitness:'💪', park:'🌳', school:'🏫', mall:'🛍️', shop:'🛒', store:'🛒', market:'🛒', supermarket:'🛒', grocery:'🛒', hair:'💇', salon:'💅', spa:'🧘', beach:'🏖️', museum:'🏛️', cinema:'🎬', movie:'🎬' };
-  const emoji = placeEmojis[placeType] || '📍';
-
-  const searchQuery = `${placeType} near ${locationName}`;
-  const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(searchQuery)}/@${coords.lat},${coords.lon},14z`;
-
-  // OpenStreetMap embed — free, no API key, no restrictions
-  const osmUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${coords.lon-.025},${coords.lat-.018},${coords.lon+.025},${coords.lat+.018}&layer=mapnik&marker=${coords.lat},${coords.lon}`;
-
-  const el = document.createElement('div');
-  el.className = 'msg ai';
-  el.innerHTML = `
-    <div class="av" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
-    <div class="bubble-wrap">
-      <div class="map-card">
-        <div class="map-card-header">
-          <div class="map-card-icon">${emoji}</div>
-          <div>
-            <div class="map-card-title" style="text-transform:capitalize;">${placeType}s near you</div>
-            <div class="map-card-sub">
-              <svg width="9" height="10" viewBox="0 0 9 11" fill="var(--violet)" style="opacity:.6"><path d="M4.5 0C2.02 0 0 2.02 0 4.5c0 3.38 4.5 6.5 4.5 6.5S9 7.88 9 4.5C9 2.02 6.98 0 4.5 0zm0 6.08a1.58 1.58 0 110-3.16 1.58 1.58 0 010 3.16z"/></svg>
-              ${escHtml(locationName)}
-            </div>
-          </div>
-        </div>
-        <div class="map-iframe-wrap">
-          <iframe
-            src="${osmUrl}"
-            loading="lazy"
-            title="Map near ${escHtml(locationName)}">
-          </iframe>
-        </div>
-        <div class="map-card-footer">
-          <span class="map-hint">📌 Your location is marked on the map</span>
-          <a href="${mapsUrl}" target="_blank" class="map-open-btn">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            Search in Google Maps
-          </a>
-        </div>
+        <div class="wc-divider"></div>
+        <div class="wc-forecast">${forecastHTML}</div>
       </div>
       <div class="msg-time">${now}</div>
     </div>`;
@@ -1616,33 +1479,62 @@ async function sendMessage() {
     return;
   }
 
-  // ── Image generation (api.airforce — free, no key needed) ──
+  // ── Image generation (code-rendered SVG) ──
   if (isImageRequest(text)) {
     try {
-      const cleanPrompt = text
-        .replace(/^(please|can you|could you)\s+/i, '')
-        .replace(/^(draw|generate|create|make|paint|show|imagine|design|render|sketch|illustrate|produce)\s+(me\s+|us\s+)?(a\s+|an\s+|the\s+|some\s+)?/i, '')
-        .trim();
+      const cleanPrompt = text.replace(/^(draw|generate|create|make|paint|show|imagine|design|render|sketch|illustrate|produce|can you|please|could you)\s+(me\s+)?(a|an|the|some)?\s*/i, '').trim();
 
-      const enhancedPrompt = cleanPrompt + ', highly detailed, photorealistic, 8k, beautiful lighting, sharp focus';
-      const seed = Math.floor(Math.random() * 999999);
-      // Call Pollinations directly from the browser (no server proxy needed)
-      const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1024&height=1024&seed=${seed}&model=flux&nologo=true`;
+      const res = await fetch('/api/imagegen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: `You are a world-class SVG illustrator. Your SVGs are stunning, detailed, and photorealistic in style despite being vector art.
 
+STRICT RULES:
+1. Output ONLY raw SVG. No explanation, no markdown, no backticks, no comments outside SVG.
+2. Always start with exactly: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+3. End with exactly: </svg>
+4. Use ALL of these techniques to maximize quality:
+   - Multiple layered <defs> with linearGradient, radialGradient, filter (blur, shadow, glow, noise)
+   - Complex paths with bezier curves for organic shapes
+   - Realistic lighting: highlights (white overlay, low opacity), shadows (dark overlay)
+   - Depth through overlapping layers, atmospheric perspective
+   - Rich color palettes — no flat colors, always use gradients
+   - Fine details: texture, patterns, subtle noise via feTurbulence
+   - Smooth animations with <animate> or <animateTransform> where fitting (stars twinkling, water rippling, etc.)
+5. Fill the entire 800x800 canvas — background to foreground
+6. Think like a painter: sky/bg first, mid-ground, foreground, details, highlights last
+7. Make it BEAUTIFUL. This is art.`,
+          messages: [{ role: 'user', content: `Create a stunning, highly detailed SVG illustration of: ${cleanPrompt}
+
+Think carefully about:
+- What colors, lighting, and mood best suit this subject
+- How to create depth and realism with SVG gradients and filters
+- What foreground, mid-ground, and background elements to include
+- Any subtle animations that would bring it to life` }],
+          email: getSession()?.email || null
+        })
+      });
+
+      const data = await res.json();
       typingEl.classList.remove('show');
-      addGeneratingMsg();
 
-      setTimeout(async () => {
-        removeGeneratingMsg();
-        addRealImageMsg(text, imgUrl);
-        history.push({ role: 'assistant', content: '[Generated image for: "' + text + '"]' });
-        await saveChatIfNeeded();
-        const session = getSession();
-        if (session?.email) renderHistory(session.email);
-        busy = false;
-        inputEl.focus();
-      }, 300);
-      return;
+      if (data.error) {
+        addMsg('ai', '⚠️ Image error: ' + data.error);
+      } else {
+        let svgCode = data.content?.[0]?.text || '';
+        // Strip any markdown fences or preamble
+        svgCode = svgCode.replace(/^[\s\S]*?(<svg)/i, '$1').replace(/<\/svg>[\s\S]*$/, '</svg>').trim();
+        if (svgCode.startsWith('<svg')) {
+          addCodeImageMsg(text, svgCode);
+          history.push({ role: 'assistant', content: '[Generated image for: "' + text + '"]' });
+          await saveChatIfNeeded();
+          const session = getSession();
+          if (session?.email) renderHistory(session.email);
+        } else {
+          addMsg('ai', '⚠️ Could not generate image. Try rephrasing your prompt.');
+        }
+      }
     } catch (err) {
       typingEl.classList.remove('show');
       addMsg('ai', '⚠️ Image error: ' + err.message);
@@ -1651,54 +1543,9 @@ async function sendMessage() {
     inputEl.focus();
     return;
   }
+
   let coords = null;
   if (isWeatherQuery(text) || isLocationQuery(text)) coords = await getBrowserLocation();
-
-  // ── Location / Map query ──
-  if (isLocationQuery(text) && coords) {
-    try {
-      typingEl.classList.remove('show');
-      const placeRes = await fetch(`/api/geocode?lat=${coords.lat}&lon=${coords.lon}`).catch(()=>null);
-      const placeData = placeRes ? await placeRes.json().catch(()=>null) : null;
-      addMapCard(text, coords, placeData);
-      // Also get AI to describe the area and give tips
-      const locationName = placeData ? `${placeData.city || ''}, ${placeData.country || ''}` : `${coords.lat.toFixed(3)}, ${coords.lon.toFixed(3)}`;
-      const aiHint = `The user is at ${locationName} and asked: "${text}". Give a brief, helpful 1-2 sentence response acknowledging you've shown a map, and suggest they tap pins or "Open in Maps" to find what they need. Be friendly and concise.`;
-      const msgDiv = addMsg('ai', '');
-      const bubbleEl = msgDiv ? msgDiv.querySelector('.bubble') : null;
-      let reply = '';
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ system: aiHint, messages: [{ role: 'user', content: text }], email: getSession()?.email || null })
-      });
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop();
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (data === '[DONE]') break;
-          try { const p = JSON.parse(data); if (p.token) { reply += p.token; if (bubbleEl) { bubbleEl.innerHTML = renderMarkdown(reply); scrollBot(); } } } catch {}
-        }
-      }
-      if (!reply) reply = `Here's a map showing ${text.toLowerCase()} near you! Tap any pin or click "Open in Maps" to get directions.`;
-      if (bubbleEl) bubbleEl.innerHTML = renderMarkdown(reply);
-      history.push({ role: 'assistant', content: '[Map shown] ' + reply });
-      await saveChatIfNeeded();
-      const session = getSession();
-      if (session?.email) renderHistory(session.email);
-      busy = false;
-      inputEl.focus();
-      return;
-    } catch(e) { /* fall through */ }
-  }
 
   // ── Weather card ──
   if (isWeatherQuery(text) && coords) {
@@ -1733,49 +1580,19 @@ async function sendMessage() {
       })
     });
 
+    const data = await res.json();
     typingEl.classList.remove('show');
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-      addMsg('ai', '⚠️ ' + (err.error || 'Request failed'));
-      busy = false; inputEl.focus(); return;
+    if (data.error) {
+      addMsg('ai', '⚠️ ' + data.error);
+    } else {
+      const reply = data.content?.[0]?.text || 'Hmm, no response. Try again!';
+      addMsg('ai', reply);
+      history.push({ role: 'assistant', content: reply });
+      await saveChatIfNeeded();
+      const session = getSession();
+      if (session?.email) renderHistory(session.email);
     }
-
-    // Stream tokens into a live bubble
-    const msgDiv = addMsg('ai', '');
-    const bubbleEl = msgDiv ? msgDiv.querySelector('.bubble') : null;
-    let reply = '';
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      const lines = buf.split('\n');
-      buf = lines.pop();
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') break;
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.token) {
-            reply += parsed.token;
-            if (bubbleEl) { bubbleEl.innerHTML = renderMarkdown(reply); scrollBot(); }
-          }
-        } catch {}
-      }
-    }
-
-    if (!reply) reply = 'Hmm, no response. Try again!';
-    if (bubbleEl) bubbleEl.innerHTML = renderMarkdown(reply);
-    history.push({ role: 'assistant', content: reply });
-    await saveChatIfNeeded();
-    const session = getSession();
-    if (session?.email) renderHistory(session.email);
   } catch (err) {
     typingEl.classList.remove('show');
     addMsg('ai', '⚠️ Connection error: ' + err.message);
@@ -2013,6 +1830,7 @@ function closeAdminPopup() {
     <div class="aim-tabs">
       <button class="aim-tab active" id="aim-tab-tools" onclick="switchAimTab('tools')">🤖 Tools</button>
       <button class="aim-tab" id="aim-tab-humanizer" onclick="switchAimTab('humanizer')">✍️ Humanizer</button>
+      <button class="aim-tab" id="aim-tab-weather" onclick="switchAimTab('weather')">🌦️ Weather</button>
     </div>
     <div class="aim-body">
 
@@ -2026,11 +1844,11 @@ function closeAdminPopup() {
             <div class="oac-desc">Make AI-written text sound natural and human.</div>
             <span class="oac-tag" style="background:rgba(124,58,237,.1);color:var(--violet-light);">Free · Viora</span>
           </div>
-          <div class="other-ai-card" style="opacity:.5;cursor:default;">
-            <div class="oac-logo" style="background:rgba(124,58,237,.08)">🔜</div>
-            <div class="oac-name">Coming Soon</div>
-            <div class="oac-desc">More Viora tools are on the way.</div>
-            <span class="oac-tag" style="background:rgba(124,58,237,.06);color:var(--text-mid);">Soon</span>
+          <div class="other-ai-card" onclick="switchAimTab('weather')" style="cursor:pointer;">
+            <div class="oac-logo" style="background:rgba(56,189,248,.12)">🌦️</div>
+            <div class="oac-name">AI Weather</div>
+            <div class="oac-desc">Get a detailed weather forecast for any city.</div>
+            <span class="oac-tag" style="background:rgba(56,189,248,.1);color:#38bdf8;">Free · Viora</span>
           </div>
         </div>
       </div>
@@ -2038,11 +1856,11 @@ function closeAdminPopup() {
       <div class="aim-panel" id="aim-panel-humanizer">
         <div class="hum-wrap">
           <div>
-            <div class="hum-label">Paste AI-generated text</div>
-            <textarea class="hum-ta" id="hum-input" placeholder="Paste your AI-written text here…" style="min-height:140px;"></textarea>
+            <div class="hum-label">Paste AI-generated text to humanize</div>
+            <textarea class="hum-ta" id="hum-input" placeholder="Paste your AI-written text here…"></textarea>
           </div>
           <div>
-            <div class="hum-label">Writing Style</div>
+            <div class="hum-label">Style</div>
             <div class="hum-opts">
               <button class="hum-opt sel" onclick="selectHumOpt(this)">Casual</button>
               <button class="hum-opt" onclick="selectHumOpt(this)">Professional</button>
@@ -2051,23 +1869,29 @@ function closeAdminPopup() {
               <button class="hum-opt" onclick="selectHumOpt(this)">Conversational</button>
             </div>
           </div>
-          <div style="background:rgba(124,58,237,.05);border:1px solid rgba(124,58,237,.15);border-radius:12px;padding:10px 14px;font-size:.72rem;color:var(--text-mid);line-height:1.6;">
-            🛡️ <strong style="color:var(--violet);">Bypass mode active</strong> — targets GPTZero, Turnitin, Copyleaks, Winston AI & Originality.ai
-          </div>
-          <button class="btn-humanize" id="btn-humanize" onclick="runHumanizer()" style="width:100%;justify-content:center;display:flex;align-items:center;gap:8px;">
-            <span>✨</span> Humanize &amp; Bypass Detectors
-          </button>
+          <button class="btn-humanize" id="btn-humanize" onclick="runHumanizer()">✨ Humanize</button>
           <div class="hum-result-wrap" id="hum-result-wrap">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-              <div class="hum-label" style="margin:0;">Result</div>
-              <div style="font-size:.68rem;color:#16a34a;font-weight:700;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:20px;padding:2px 10px;">✅ Detector-safe</div>
-            </div>
+            <div class="hum-label">Humanized Result</div>
             <div class="hum-result" id="hum-result"></div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <button class="hum-copy" onclick="copyHumanized()">📋 Copy</button>
-              <button class="hum-copy" onclick="runHumanizer()" style="border-color:rgba(124,58,237,.3);color:var(--violet);">🔄 Redo</button>
-            </div>
+            <button class="hum-copy" onclick="copyHumanized()">📋 Copy to clipboard</button>
           </div>
+        </div>
+      </div>
+
+      <!-- WEATHER PANEL -->
+      <div class="aim-panel" id="aim-panel-weather">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <p style="font-size:.78rem;color:var(--text-mid);margin:0;">Get a detailed weather forecast for any city in the world.</p>
+          <div style="display:flex;gap:8px;">
+            <input id="weather-city-input" type="text" placeholder="Enter city name… e.g. New York" 
+              style="flex:1;padding:10px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--font-body);font-size:.85rem;outline:none;"
+              onkeydown="if(event.key==='Enter')fetchWeatherForCity()" />
+            <button onclick="fetchWeatherForCity()" id="btn-weather-search"
+              style="padding:10px 18px;border-radius:12px;border:none;background:linear-gradient(135deg,#38bdf8,#0ea5e9);color:#fff;font-weight:700;cursor:pointer;font-size:.85rem;">
+              🔍 Search
+            </button>
+          </div>
+          <div id="weather-tool-result" style="min-height:40px;"></div>
         </div>
       </div>
 
@@ -2105,68 +1929,5 @@ function closeAdminPopup() {
 })();
 </script>
 
-<script>
-// ── PWA: Service Worker ──
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
-}
-
-// ── PWA: Install prompt ──
-let deferredPrompt = null;
-const installBanner = document.getElementById('pwa-install-banner');
-
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  // Show banner after 3 seconds if not already installed
-  setTimeout(() => {
-    if (deferredPrompt && getSession()) {
-      installBanner.classList.add('show');
-    }
-  }, 3000);
-});
-
-window.addEventListener('appinstalled', () => {
-  installBanner.classList.remove('show');
-  deferredPrompt = null;
-});
-
-function installPWA() {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(() => {
-    deferredPrompt = null;
-    installBanner.classList.remove('show');
-  });
-}
-
-function dismissInstall() {
-  installBanner.classList.remove('show');
-  sessionStorage.setItem('pwa_dismissed', '1');
-}
-</script>
-
-<!-- PWA Install Banner -->
-<div id="pwa-install-banner" style="
-  display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-  z-index:200; width:calc(100% - 32px); max-width:400px;
-  background:white; border:1.5px solid var(--border); border-radius:20px;
-  padding:14px 16px; box-shadow:0 8px 40px rgba(124,58,237,.18);
-  align-items:center; gap:12px; animation:slideUp .4s cubic-bezier(.34,1.56,.64,1) both;
-">
-  <div style="width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:1.1rem;font-weight:900;color:white;flex-shrink:0;">V</div>
-  <div style="flex:1;min-width:0;">
-    <div style="font-family:var(--font-head);font-size:.85rem;font-weight:800;color:var(--text);">Install Viora AI</div>
-    <div style="font-size:.72rem;color:var(--text-light);margin-top:1px;">Add to home screen for the best experience</div>
-  </div>
-  <button onclick="installPWA()" style="padding:8px 16px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-family:var(--font-head);font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 3px 12px rgba(124,58,237,.3);">Install</button>
-  <button onclick="dismissInstall()" style="width:28px;height:28px;border-radius:8px;border:none;background:none;color:var(--text-light);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
-</div>
-<style>
-#pwa-install-banner.show { display:flex; }
-@keyframes slideUp { from{opacity:0;transform:translateX(-50%) translateY(20px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
-</style>
 </body>
 </html>
