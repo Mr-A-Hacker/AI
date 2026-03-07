@@ -236,7 +236,7 @@ async function getWeatherRich(lat,lon) {
 // ── OpenRouter (non-streaming, for deep search) ──
 function callOpenRouter(allMessages) {
   return new Promise((resolve,reject)=>{
-    const payload=JSON.stringify({model:'google/gemini-2.0-flash-exp:free',messages:allMessages});
+    const payload=JSON.stringify({model:'deepseek/deepseek-chat-v3-0324:free',messages:allMessages});
     const options={hostname:'openrouter.ai',path:'/api/v1/chat/completions',method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${OPENROUTER_API_KEY}`,'HTTP-Referer':'https://ai-1x5q.onrender.com','X-Title':'Viora AI','Content-Length':Buffer.byteLength(payload)}};
     const req=https.request(options,res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{const p=JSON.parse(d);if(p.error)reject({message:p.error.message});else resolve(p.choices?.[0]?.message?.content||'');}catch{reject({message:'Parse error'})}});});
     req.on('error',err=>reject({message:err.message}));
@@ -291,7 +291,7 @@ app.post('/api/chat', async (req, res) => {
   if(image){const li=builtMessages.map(m=>m.role).lastIndexOf('user');if(li>=0){const lm=builtMessages[li];builtMessages[li]={role:'user',content:[{type:'text',text:typeof lm.content==='string'?lm.content:''},{type:'image_url',image_url:{url:image}}]};}}
   const allMessages=[{role:'system',content:(system||'You are Viora, a friendly helpful AI.')+weatherCtx+locationCtx+memoryCtx+urlCtx},...builtMessages];
 
-  const models=['google/gemini-2.0-flash-exp:free','meta-llama/llama-3.3-70b-instruct:free','microsoft/phi-3-mini-128k-instruct:free'];
+  const models=['google/gemini-2.0-flash-thinking-exp:free','deepseek/deepseek-chat-v3-0324:free','meta-llama/llama-4-maverick:free','mistralai/mistral-small-3.1-24b-instruct:free','qwen/qwen3-235b-a22b:free'];
   try {
     let replied=false;
     for(const model of models){
@@ -299,7 +299,7 @@ app.post('/api/chat', async (req, res) => {
         const result=await new Promise((resolve,reject)=>{
           const payload=JSON.stringify({model,messages:allMessages});
           const options={hostname:'openrouter.ai',path:'/api/v1/chat/completions',method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${OPENROUTER_API_KEY}`,'HTTP-Referer':'https://ai-1x5q.onrender.com','X-Title':'Viora AI','Content-Length':Buffer.byteLength(payload)}};
-          const req=https.request(options,upstream=>{let d='';upstream.on('data',c=>d+=c);upstream.on('end',()=>{try{const p=JSON.parse(d);if(p.error)return reject(new Error(p.error.message||JSON.stringify(p.error)));resolve(p.choices?.[0]?.message?.content||'');}catch(e){reject(e);}});});
+          const req=https.request(options,upstream=>{let d='';upstream.on('data',c=>d+=c);upstream.on('end',()=>{try{const p=JSON.parse(d);console.log(`[${model}] status:`,upstream.statusCode,'content len:',p.choices?.[0]?.message?.content?.length||0,'error:',p.error?.message||'none');if(p.error)return reject(new Error(p.error.message||JSON.stringify(p.error)));resolve(p.choices?.[0]?.message?.content||'');}catch(e){reject(e);}});});
           req.on('error',reject);req.write(payload);req.end();
         });
         if(result&&result.trim().length>0){
