@@ -368,7 +368,7 @@ async function getWeatherRich(lat,lon) {
 // ── OpenRouter ──
 function callOpenRouter(allMessages) {
   return new Promise((resolve,reject)=>{
-    const payload=JSON.stringify({model:'mistralai/mistral-7b-instruct',messages:allMessages});
+    const payload=JSON.stringify({model:'meta-llama/llama-3.1-8b-instruct:free',messages:allMessages});
     const options={hostname:'openrouter.ai',path:'/api/v1/chat/completions',method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${OPENROUTER_API_KEY}`,'HTTP-Referer':'https://viora-ai.onrender.com','X-Title':'Viora AI','Content-Length':Buffer.byteLength(payload)}};
     const req=https.request(options,res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{const p=JSON.parse(d);if(p.error)reject({message:p.error.message});else resolve(p.choices?.[0]?.message?.content||'');}catch{reject({message:'Parse error'})}});});
     req.on('error',err=>reject({message:err.message}));
