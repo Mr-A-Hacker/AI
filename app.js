@@ -318,13 +318,31 @@ function fetchText(url) {
 function fetchJSON(url) {
   return new Promise((resolve,reject)=>{ const mod=url.startsWith('https')?https:http; mod.get(url,{headers:{'User-Agent':'VioraAI/1.0'}},res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{resolve(JSON.parse(d))}catch{resolve(null)}});}).on('error',reject); });
 }
+// ── Weather & Geo Cache (10 min TTL) ──
+const _weatherCache = new Map();
+const _geoCache = new Map();
+const WEATHER_TTL = 10 * 60 * 1000;
+
+function _cacheKey(lat, lon) { return `${Math.round(lat*100)/100},${Math.round(lon*100)/100}`; }
+
 async function reverseGeocode(lat,lon) {
-  try { const d=await fetchJSON(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`); if(d?.address) return {city:d.address.city||d.address.town||d.address.village||'',country:d.address.country||''}; } catch{} return null;
+  const key = _cacheKey(lat,lon);
+  const hit = _geoCache.get(key);
+  if (hit && Date.now() - hit.ts < WEATHER_TTL) return hit.data;
+  try {
+    const d = await fetchJSON(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+    const data = d?.address ? {city:d.address.city||d.address.town||d.address.village||'',country:d.address.country||''} : null;
+    _geoCache.set(key, { data, ts: Date.now() });
+    return data;
+  } catch { return null; }
 }
 async function getWeatherFromCoords(lat,lon) {
   try { return await fetchText(`https://wttr.in/${lat},${lon}?format=3`); } catch { return null; }
 }
 async function getWeatherRich(lat,lon) {
+  const key = _cacheKey(lat,lon);
+  const hit = _weatherCache.get(key);
+  if (hit && Date.now() - hit.ts < WEATHER_TTL) return hit.data;
   try {
     const raw = await fetchText(`https://wttr.in/${lat},${lon}?format=j1`);
     const d = JSON.parse(raw);
@@ -336,12 +354,14 @@ async function getWeatherRich(lat,lon) {
       const date = new Date(day.date);
       return { day: days[date.getDay()], high: parseInt(day.maxtempF), low: parseInt(day.mintempF), code: parseInt(day.hourly?.[4]?.weatherCode || 113) };
     });
-    return {
+    const data = {
       tempF: parseInt(cur.temp_F), feelsF: parseInt(cur.FeelsLikeF),
       desc: cur.weatherDesc?.[0]?.value || '', humidity: parseInt(cur.humidity),
       windMph: parseInt(cur.windspeedMiles), visibility: parseInt(cur.visibility),
       uvIndex: parseInt(cur.uvIndex), code: parseInt(cur.weatherCode), daily
     };
+    _weatherCache.set(key, { data, ts: Date.now() });
+    return data;
   } catch(e) { return null; }
 }
 
@@ -543,10 +563,9 @@ app.post('/api/imagegen', async (req, res) => {
 app.get('/api/weather', async (req, res) => {
   const { lat, lon } = req.query;
   if (!lat || !lon) return res.status(400).json({ error: 'Missing coords' });
-  const [place, rich, simple] = await Promise.all([
+  const [place, rich] = await Promise.all([
     reverseGeocode(parseFloat(lat), parseFloat(lon)),
-    getWeatherRich(parseFloat(lat), parseFloat(lon)),
-    getWeatherFromCoords(parseFloat(lat), parseFloat(lon))
+    getWeatherRich(parseFloat(lat), parseFloat(lon))
   ]);
   if (!rich) return res.status(500).json({ error: 'Weather unavailable' });
   res.json({ place, weather: rich });
@@ -556,15 +575,20 @@ app.get('/api/weather', async (req, res) => {
 app.post('/api/chat', async (req,res)=>{
   const {messages,system,coords,email,image}=req.body;
   if (!OPENROUTER_API_KEY) return res.status(500).json({error:'OPENROUTER_API_KEY not set.'});
-  let weatherCtx='';
-  if (coords?.lat&&coords?.lon) {
-    const [place,weather]=await Promise.all([reverseGeocode(coords.lat,coords.lon),getWeatherFromCoords(coords.lat,coords.lon)]);
-    if (weather) { const loc=place?`${place.city}, ${place.country}`:`${coords.lat},${coords.lon}`; weatherCtx=`\n\n[LIVE WEATHER (${loc}): ${weather}]`; }
-  }
-  // Inject location context
-  let locationCtx='';
+
+  // Resolve geo + weather in parallel, geo cached, weather only if message looks weather-related
+  let weatherCtx='', locationCtx='';
   if (coords?.lat && coords?.lon) {
-    const place = await reverseGeocode(coords.lat, coords.lon);
+    const lastText = (messages.slice().reverse().find(m=>m.role==='user')?.content||'').toLowerCase();
+    const wantsWeather = /weather|temp|forecast|hot|cold|rain|snow|wind|humid|feels like|outside|degrees/.test(lastText);
+    const [place, weather] = await Promise.all([
+      reverseGeocode(coords.lat, coords.lon),
+      wantsWeather ? getWeatherFromCoords(coords.lat, coords.lon) : Promise.resolve(null)
+    ]);
+    if (weather) {
+      const loc = place ? `${place.city}, ${place.country}` : `${coords.lat},${coords.lon}`;
+      weatherCtx = `\n\n[LIVE WEATHER (${loc}): ${weather}]`;
+    }
     if (place) {
       locationCtx = `\n\n[USER LOCATION: ${place.city ? place.city + ', ' : ''}${place.country} (coordinates: ${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}). Use this to answer questions about their location, nearest places, local services, etc. When they ask for nearest stores or places, tell them to search Google Maps for "[place] near ${place.city || 'their location'}" and provide a direct Google Maps link like: https://www.google.com/maps/search/[place]+near+${encodeURIComponent((place.city||'') + ' ' + (place.country||'')).replace(/%20/g,'+')}]`;
     } else {
