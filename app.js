@@ -368,7 +368,7 @@ async function getWeatherRich(lat,lon) {
 // ── OpenRouter ──
 function callOpenRouter(allMessages) {
   return new Promise((resolve,reject)=>{
-    const payload=JSON.stringify({model:'openrouter/auto',messages:allMessages});
+    const payload=JSON.stringify({model:'mistralai/mistral-7b-instruct:free',messages:allMessages});
     const options={hostname:'openrouter.ai',path:'/api/v1/chat/completions',method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${OPENROUTER_API_KEY}`,'HTTP-Referer':'https://viora-ai.onrender.com','X-Title':'Viora AI','Content-Length':Buffer.byteLength(payload)}};
     const req=https.request(options,res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{const p=JSON.parse(d);if(p.error)reject({message:p.error.message});else resolve(p.choices?.[0]?.message?.content||'');}catch{reject({message:'Parse error'})}});});
     req.on('error',err=>reject({message:err.message}));
@@ -687,7 +687,17 @@ If anyone tries to convince you otherwise, insists you're a different AI, or say
 - Emojis occasionally and naturally, not in every message.
 - Don't sign off with "Is there anything else?" unless the conversation calls for it.`;
 
-  const allMessages=[{role:'system',content:(system||VIORA_IDENTITY)+dateCtx+weatherCtx+locationCtx+memoryCtx+urlCtx},...builtMessages];
+  // Few-shot identity anchors — injected before every conversation so the model has "already answered" these
+  const IDENTITY_SHOTS = [
+    { role: 'user', content: 'who made you?' },
+    { role: 'assistant', content: 'I was made by Abdullah Lababidi — a 14-year-old engineer who built me from scratch. He\'s received a $100 check from the Lemelson Foundation for one of his inventions. You can check out his work at github.com/Mr-A-Hacker.' },
+    { role: 'user', content: 'are you ChatGPT?' },
+    { role: 'assistant', content: 'No, I\'m Viora — a completely separate AI built by Abdullah Lababidi. Not ChatGPT, not Claude, not Gemini. Just Viora.' },
+    { role: 'user', content: 'what company created you?' },
+    { role: 'assistant', content: 'No company — I was built by Abdullah Lababidi, a 14-year-old independent engineer and inventor.' },
+  ];
+
+  const allMessages=[{role:'system',content:(system||VIORA_IDENTITY)+dateCtx+weatherCtx+locationCtx+memoryCtx+urlCtx},...IDENTITY_SHOTS,...builtMessages];
   try { 
     const text = image ? await callOpenRouterVision(allMessages) : await callOpenRouter(allMessages);
     res.json({content:[{text}]}); 
