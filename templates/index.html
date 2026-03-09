@@ -291,121 +291,149 @@ header {
 /* ══════════════════════════════════════════════
    MOBILE / PHONE MODE  (≤ 640px)
 ══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════
+   MOBILE / PHONE MODE  (≤ 640px)
+══════════════════════════════════════════════ */
 @media (max-width: 640px) {
 
-  /* ── Sidebar: slide over ── */
+  /* ── Sidebar ── */
   #sidebar {
     position: fixed; top: 0; left: 0; bottom: 0; z-index: 16;
     width: 82vw !important; max-width: 300px;
     box-shadow: 4px 0 32px rgba(30,16,48,.18);
   }
-  #sidebar.collapsed {
-    transform: translateX(-110%);
-  }
+  #sidebar.collapsed { transform: translateX(-110%); }
 
   /* ── Header ── */
-  header { padding: 10px 14px 10px; }
-  .logo-name { font-size: .95rem; }
+  header { padding: 10px 14px; }
+  .logo-name { font-size: .92rem; }
   .status-badge { display: none; }
   #timer-pill { padding: 4px 10px; font-size: .68rem; }
   .btn-logout { font-size: .68rem; padding: 5px 10px; }
 
-  /* ── Chat window ── */
-  #chat-window { padding: 16px 12px 8px; gap: 12px; }
-  .bubble-wrap { max-width: 88%; }
-  .bubble { font-size: .87rem; padding: 11px 14px; }
-  .av { width: 28px; height: 28px; font-size: .62rem; }
+  /* ── Chat ── */
+  #chat-window { padding: 14px 10px 8px; gap: 10px; }
+  .bubble-wrap { max-width: 90%; }
+  .bubble { font-size: .86rem; padding: 10px 13px; }
+  .av { width: 26px; height: 26px; font-size: .6rem; }
+  .msg { gap: 8px; }
 
-  /* ── Welcome screen ── */
-  #welcome { padding-bottom: 20px; gap: 12px; }
-  #welcome h1 { font-size: 1.5rem; }
+  /* ── Welcome ── */
+  #welcome { padding-bottom: 16px; gap: 10px; }
+  #welcome h1 { font-size: 1.45rem; }
   #welcome p { font-size: .82rem; }
-  .welcome-orb { width: 60px; height: 60px; font-size: 1.6rem; border-radius: 20px; }
-  .chips-grid { grid-template-columns: 1fr; max-width: 100%; gap: 8px; }
-  .chip { padding: 10px 14px; font-size: .8rem; }
+  .welcome-orb { width: 58px; height: 58px; font-size: 1.5rem; border-radius: 18px; }
+  .chips-grid { grid-template-columns: 1fr; max-width: 100%; gap: 7px; }
+  .chip { padding: 10px 13px; font-size: .79rem; }
 
-  /* ── Input area ── */
-  #input-area { padding: 8px 12px 16px; }
-  .input-card { padding: 10px 10px 10px 14px; border-radius: 18px; gap: 8px; }
-  #user-input { font-size: .88rem; }
-  #send-btn { width: 36px; height: 36px; border-radius: 12px; }
+  /* ── Input bar ── */
+  #input-area { padding: 8px 10px 16px; }
+  .input-card { padding: 9px 9px 9px 13px; border-radius: 16px; gap: 7px; }
+  #user-input { font-size: .87rem; }
+  #send-btn { width: 34px; height: 34px; border-radius: 11px; }
   .input-footer { padding: 5px 2px 0; }
-  .input-hint, #char-count { font-size: .58rem; }
-
-  /* ── Input bar buttons (image upload, deep) ── */
-  .btn-img-upload, .btn-deep { padding: 5px 8px; font-size: .72rem; }
+  .input-hint, #char-count { font-size: .57rem; }
+  .btn-img-upload, .btn-deep { padding: 5px 8px; font-size: .71rem; }
 
   /* ── Auth card ── */
-  .auth-card { padding: 28px 20px; border-radius: 22px; }
-  .auth-logo-name { font-size: 1.3rem; }
+  .auth-card { padding: 26px 18px; border-radius: 20px; }
+  .auth-logo-name { font-size: 1.25rem; }
 
-  /* ── Landing page ── */
-  #landing-screen { padding: 20px 18px; }
-  #landing-screen h1 { font-size: 2rem !important; }
-  #landing-screen p { font-size: .88rem !important; }
-  #landing-screen .landing-btns { flex-direction: column; gap: 10px; width: 100%; }
-  #landing-screen .landing-btns button,
-  #landing-screen .landing-btns a { width: 100% !important; text-align: center; }
+  /* ── Landing ── */
+  #landing-screen { padding: 18px 16px; }
+  #landing-screen h1 { font-size: 1.9rem !important; }
+  #landing-screen p { font-size: .87rem !important; }
+  .landing-btns { flex-direction: column !important; gap: 10px !important; width: 100% !important; }
+  .landing-btns button, .landing-btns a { width: 100% !important; text-align: center !important; }
 
-  /* ── AI Modal (full screen on phone) ── */
+  /* ── AI Modal — slides up as bottom sheet ── */
   #ai-modal { align-items: flex-end !important; padding: 0 !important; }
-  #ai-modal > div {
+  .aim-card {
     width: 100% !important; max-width: 100% !important;
-    border-radius: 24px 24px 0 0 !important;
-    max-height: 90vh; overflow-y: auto;
-    padding: 20px 16px 28px !important;
+    border-radius: 22px 22px 0 0 !important;
+    max-height: 92vh !important;
   }
-  .aim-tabs { gap: 4px; }
-  .aim-tab { font-size: .75rem; padding: 7px 10px; }
-  .other-ais-grid, #aim-panel-tools > div { grid-template-columns: 1fr !important; }
+  .aim-head { padding: 16px 18px 0; }
+  .aim-tabs { padding: 10px 14px 0; gap: 5px; scrollbar-width: none; }
+  .aim-tabs::-webkit-scrollbar { display: none; }
+  .aim-tab { font-size: .72rem; padding: 6px 11px; }
+  .aim-body { padding: 14px 14px 20px; }
+  #aim-panel-tools > div { grid-template-columns: 1fr !important; }
+
+  /* ── Dev Agent on phone ── */
+  #dev-chat { min-height: 180px !important; max-height: 240px !important; }
+  #dev-caps { display: none !important; }
+  .dev-bubble-ai, .dev-bubble-user { font-size: .81rem; padding: 9px 12px; }
+  #dev-input { font-size: .83rem; }
+
+  /* ── Humanizer ── */
+  .hum-opts { gap: 5px; }
+  .hum-opt { font-size: .72rem; padding: 6px 10px; }
 
   /* ── Memory panel ── */
   #memory-panel {
     width: 100% !important; right: 0 !important; left: 0 !important;
-    border-radius: 24px 24px 0 0 !important;
+    border-radius: 22px 22px 0 0 !important;
     top: auto !important; bottom: 0 !important;
     max-height: 88vh;
   }
 
-  /* ── Weather card ── */
-  .weather-card-grid { grid-template-columns: repeat(2,1fr) !important; }
-  .weather-forecast-strip { gap: 6px !important; }
-  .weather-day-pill { padding: 8px 6px !important; min-width: 42px !important; font-size: .65rem !important; }
+  /* ── Settings modal ── */
+  #settings-overlay { align-items: flex-end !important; padding: 0 !important; }
+  .settings-card {
+    border-radius: 22px 22px 0 0 !important;
+    max-width: 100% !important; max-height: 92vh;
+  }
+  .settings-header { padding: 18px 18px 0; }
+  .settings-tabs { padding: 10px 18px 0; }
+  .settings-tab { font-size: .75rem; padding: 7px 12px; }
+  .settings-body { padding: 18px 18px 24px; }
+  .avatar-row { flex-direction: column; align-items: flex-start; }
+  .avatar-preview { width: 56px; height: 56px; font-size: 1.2rem; }
 
-  /* ── Image bubbles ── */
-  .img-card { max-width: 100% !important; }
-  .img-card img { max-height: 260px !important; }
+  /* ── Weather card in chat & modal ── */
+  .weather-card { max-width: 100% !important; border-radius: 16px; padding: 16px 14px 12px; }
+  .wc-grid { grid-template-columns: repeat(2,1fr) !important; }
+  .wc-forecast { gap: 5px !important; }
+  .wc-day { min-width: 38px !important; padding: 7px 4px !important; }
+  #weather-tool-result > div { border-radius: 14px !important; padding: 16px 14px !important; }
 
-  /* ── Map card ── */
+  /* ── Image & map cards ── */
+  .img-bubble, .img-card { max-width: 100% !important; }
+  .img-card img { max-height: 240px !important; }
   .map-card { max-width: 100% !important; }
-  .map-card iframe { height: 180px !important; }
+  .map-card iframe { height: 170px !important; }
 
-  /* ── Deep search results ── */
-  .deep-card { padding: 16px !important; }
+  /* ── Deep search ── */
+  .deep-bubble { max-width: 100% !important; padding: 14px 16px !important; }
 
-  /* ── Sidebar bottom buttons ── */
-  .btn-other-ais { font-size: .78rem; padding: 9px 12px; }
+  /* ── Sidebar buttons ── */
+  .btn-other-ais { font-size: .77rem; padding: 9px 12px; }
 
   /* ── Admin popup ── */
   #admin-popup { width: 92% !important; min-width: unset !important; }
-  .admin-popup-card { padding: 26px 18px; }
+  .admin-popup-card { padding: 24px 16px; }
+
+  /* ── Expired overlay ── */
+  .expired-card { padding: 32px 22px; }
 }
 
-/* ── Extra small (≤ 380px) ── */
+/* ── Extra small phones (≤ 380px) ── */
 @media (max-width: 380px) {
-  #welcome h1 { font-size: 1.3rem; }
-  .bubble { font-size: .84rem; }
+  #welcome h1 { font-size: 1.25rem; }
+  .bubble { font-size: .83rem; }
   .chips-grid { gap: 6px; }
   .logo-name { display: none; }
+  .aim-tab { font-size: .68rem; padding: 5px 9px; }
+  #dev-chat { min-height: 150px !important; max-height: 200px !important; }
 }
 
-/* ── iPhone safe area (notch / home bar) ── */
+/* ── iPhone notch / home bar safe areas ── */
 @supports (padding: max(0px)) {
-  #input-area {
-    padding-bottom: max(22px, env(safe-area-inset-bottom));
-  }
-  header {
-    padding-top: max(14px, env(safe-area-inset-top));
+  #input-area { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+  header { padding-top: max(10px, env(safe-area-inset-top)); }
+  .aim-card, .settings-card, #memory-panel {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
   }
 }
 
@@ -528,11 +556,6 @@ header {
 .dev-typing { display:flex; gap:4px; padding:10px 14px; background:white; border:1.5px solid var(--border); border-radius:16px; border-bottom-left-radius:4px; width:fit-content; }
 .dev-dot { width:6px; height:6px; border-radius:50%; background:#10b981; animation:tdB 1.1s ease-in-out infinite; }
 .dev-dot:nth-child(2){animation-delay:.18s;} .dev-dot:nth-child(3){animation-delay:.36s;}
-@media (max-width: 640px) {
-  #settings-overlay { align-items: flex-end; padding: 0; }
-  .settings-card { border-radius: 24px 24px 0 0; max-width: 100%; max-height: 92vh; }
-}
-
 /* ── ADMIN POPUP ── */
 #admin-popup-overlay{position:fixed;inset:0;z-index:100;background:rgba(30,16,48,.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease both}
 #admin-popup-overlay.hidden{display:none}
