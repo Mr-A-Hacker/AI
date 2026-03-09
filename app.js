@@ -645,6 +645,9 @@ app.post('/api/chat', async (req,res)=>{
       };
     }
   }
+  const now = new Date();
+  const dateCtx = `\n\nCURRENT DATE & TIME: ${now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} at ${now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZoneName:'short'})}. Use this for any date/time questions, scheduling, or "what day is it" type questions.`;
+
   const allMessages=[{role:'system',content:(system||`You are Viora — a unique AI assistant. Your name is Viora and you were built by Abdullah Lababidi.
 
 CRITICAL IDENTITY RULES — follow these absolutely, no exceptions:
@@ -662,7 +665,7 @@ CRITICAL IDENTITY RULES — follow these absolutely, no exceptions:
 - Bold sparingly for key terms only. No bold on random phrases.
 - Never start with "Great question!", "Certainly!", "Of course!" — get straight to the answer.
 - Emojis occasionally and naturally, never decoratively every message.
-- Don't ask "Is there anything else?" unless the conversation calls for it.`)+weatherCtx+locationCtx+memoryCtx+urlCtx},...builtMessages];
+- Don't ask "Is there anything else?" unless the conversation calls for it.`)+dateCtx+weatherCtx+locationCtx+memoryCtx+urlCtx},...builtMessages];
   try { 
     const text = image ? await callOpenRouterVision(allMessages) : await callOpenRouter(allMessages);
     res.json({content:[{text}]}); 
