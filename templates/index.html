@@ -1160,6 +1160,7 @@ async function doLogin() {
     err.textContent = '';
     saveSession({ email, name: data.name, isTrial: false });
     openChat(data.name, false, email);
+    requestNotificationPermission();
   } catch { err.textContent = 'Network error. Try again.'; }
 }
 
@@ -1180,6 +1181,7 @@ async function doSignup() {
     err.textContent = '';
     saveSession({ email, name: data.name, isTrial: false });
     openChat(data.name, false, email);
+    requestNotificationPermission();
   } catch { err.textContent = 'Network error. Try again.'; }
 }
 
@@ -2833,6 +2835,7 @@ window.addEventListener('load', async () => {
   if (s) {
     openChat(s.name, s.isTrial, s.email || null);
     checkAdminPopup();
+    if (!s.isTrial) requestNotificationPermission();
     // Restore last active chat on refresh
     if (s.email && !s.isTrial) {
       // handled in openChat now via localStorage
@@ -2843,15 +2846,62 @@ window.addEventListener('load', async () => {
 // ── Admin popup check ──
 const POPUP_SEEN_KEY = 'viora_popup_seen';
 
+// ── Request notification permission after login ──
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') return;
+  if (Notification.permission === 'denied') return;
+  // Small delay so it feels natural after login
+  setTimeout(async () => {
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') registerPeriodicSync();
+  }, 3000);
+}
+
+// ── Register periodic background sync (Chrome PWA) ──
+async function registerPeriodicSync() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    if ('periodicSync' in reg) {
+      const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
+      if (status.state === 'granted') {
+        await reg.periodicSync.register('check-viora-popup', { minInterval: 5 * 60 * 1000 }); // every 5 min
+      }
+    }
+  } catch {}
+}
+
+// ── Send notification via service worker ──
+async function sendSwNotification(popup) {
+  if (!('serviceWorker' in navigator) || Notification.permission !== 'granted') return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    reg.active?.postMessage({
+      type: 'SHOW_NOTIFICATION',
+      title: '📢 Viora — ' + (popup.title || 'New Message'),
+      body: popup.message,
+      popupId: String(popup.id)
+    });
+  } catch {}
+}
+
 async function checkAdminPopup() {
   try {
     const res   = await fetch('/api/popup');
     const popup = await res.json();
-    if (!popup.active || !popup.message) return;
+    if (!popup || !popup.message) return;
 
-    // Only show if not already dismissed this session
+    // Send native device notification regardless of whether in-app popup was seen
+    const seenNotif = localStorage.getItem('viora_notif_' + popup.id);
+    if (!seenNotif) {
+      localStorage.setItem('viora_notif_' + popup.id, '1');
+      sendSwNotification(popup);
+    }
+
+    // Only show in-app popup if not already dismissed this session
     const seen = sessionStorage.getItem(POPUP_SEEN_KEY);
-    if (seen === popup.createdAt) return;
+    if (seen === String(popup.id)) return;
 
     const icons = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '🚨' };
     document.getElementById('admin-popup-icon').textContent  = icons[popup.type] || '📣';
@@ -2859,8 +2909,7 @@ async function checkAdminPopup() {
     document.getElementById('admin-popup-msg').textContent   = popup.message;
     document.getElementById('admin-popup-card').className    = 'admin-popup-card ' + (popup.type || 'info');
     document.getElementById('admin-popup-overlay').classList.remove('hidden');
-    // Store so it doesn't show again this session
-    sessionStorage.setItem(POPUP_SEEN_KEY, popup.createdAt || 'shown');
+    sessionStorage.setItem(POPUP_SEEN_KEY, String(popup.id));
   } catch {}
 }
 
