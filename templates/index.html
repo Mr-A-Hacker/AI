@@ -1552,6 +1552,49 @@ inputEl.addEventListener('input', () => {
 
 inputEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 
+// Paste image directly into chat (Ctrl+V / Cmd+V)
+inputEl.addEventListener('paste', e => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault();
+      const file = item.getAsFile();
+      if (!file || file.size > 5 * 1024 * 1024) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        attachedImage = reader.result;
+        document.getElementById('img-preview-thumb').src = attachedImage;
+        document.getElementById('img-preview-wrap').classList.add('show');
+      };
+      reader.readAsDataURL(file);
+      break;
+    }
+  }
+});
+// Also allow pasting anywhere on the page when input is focused
+document.addEventListener('paste', e => {
+  if (document.activeElement === inputEl) return; // already handled above
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault();
+      const file = item.getAsFile();
+      if (!file || file.size > 5 * 1024 * 1024) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        attachedImage = reader.result;
+        document.getElementById('img-preview-thumb').src = attachedImage;
+        document.getElementById('img-preview-wrap').classList.add('show');
+        inputEl.focus();
+      };
+      reader.readAsDataURL(file);
+      break;
+    }
+  }
+});
+
 function scrollBot() { chatEl.scrollTop = chatEl.scrollHeight; }
 
 function addMsg(role, text) {
