@@ -2209,38 +2209,32 @@ async function hwSend() {
   if (userText) displayHtml += userText.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
   hwAddMsg('user', displayHtml);
 
-  // Build API message
-  let msgContent;
-  if (hwImageData) {
-    const base64 = hwImageData.split(',')[1];
-    const mimeType = hwImageData.split(';')[0].split(':')[1];
-    msgContent = [
-      { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
-      { type: 'text', text: userText || 'Please solve this homework problem step-by-step.' }
-    ];
-  } else {
-    msgContent = userText;
-  }
-
-  hwHistory.push({ role: 'user', content: msgContent });
+  // Build API message — always plain text in the messages array
+  const textContent = userText || 'Please solve this homework problem step-by-step.';
+  hwHistory.push({ role: 'user', content: textContent });
   input.value = ''; input.style.height = 'auto';
+
+  // Capture image before clearing
+  const imgToSend = hwImageData;
   hwClearImage();
   hwShowTyping();
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const body = {
+      system: HW_SYSTEMS[hwSubject] || HW_SYSTEMS.any,
+      messages: hwHistory,
+      email: getSession()?.email || null
+    };
+    if (imgToSend) body.image = imgToSend; // base64 data URL — /api/chat injects it
+
+    const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
-        system: HW_SYSTEMS[hwSubject] || HW_SYSTEMS.any,
-        messages: hwHistory
-      })
+      body: JSON.stringify(body)
     });
     const data = await res.json();
     hwHideTyping();
-    const reply = data.content?.[0]?.text || data.error?.message || 'Something went wrong.';
+    const reply = data.content?.[0]?.text || data.error?.message || data.error || 'Something went wrong.';
     hwHistory.push({ role: 'assistant', content: reply });
     hwAddMsg('ai', hwFormatResponse(reply));
   } catch(e) {
