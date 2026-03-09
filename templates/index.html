@@ -1396,6 +1396,7 @@ function doLogout() {
 function goToSignup() { doLogout(); switchTab('signup'); }
 
 function openChat(name, isTrial, email) {
+  document.getElementById('landing-screen').classList.add('hidden');
   document.getElementById('auth-screen').classList.add('hidden');
   document.getElementById('chat-screen').classList.remove('hidden');
   document.getElementById('user-label').textContent = name;
