@@ -630,6 +630,10 @@ app.post('/api/chat', async (req,res)=>{
 });
 
 app.get('/V.png', (req,res) => res.sendFile(path.join(__dirname,'templates','V.png')));
+app.get('/manifest.json', (req,res) => res.sendFile(path.join(__dirname,'templates','manifest.json')));
+app.get('/sw.js', (req,res) => { res.setHeader('Content-Type','application/javascript'); res.sendFile(path.join(__dirname,'templates','sw.js')); });
+app.get('/icon-192.png', (req,res) => res.sendFile(path.join(__dirname,'templates','icon-192.png')));
+app.get('/icon-512.png', (req,res) => res.sendFile(path.join(__dirname,'templates','icon-512.png')));
 app.get('/', (req,res) => res.sendFile(path.join(__dirname,'templates','index.html')));
 const PORT = process.env.PORT||3000;
 app.listen(PORT, ()=>console.log(`Server running on port ${PORT}`));
