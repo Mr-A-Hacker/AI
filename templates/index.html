@@ -2181,10 +2181,12 @@ function hwHandleImage(event) {
   hwImageName = file.name;
   const reader = new FileReader();
   reader.onload = e => {
-    hwImageData = e.target.result; // base64 data URL
+    hwImageData = e.target.result;
     document.getElementById('hw-img-preview').src = hwImageData;
     document.getElementById('hw-img-name').textContent = '📷 ' + file.name;
     document.getElementById('hw-img-bar').style.display = 'flex';
+    // Auto-send immediately — read the image on its own
+    hwSend();
   };
   reader.readAsDataURL(file);
   event.target.value = '';
@@ -2210,7 +2212,7 @@ async function hwSend() {
   hwAddMsg('user', displayHtml);
 
   // Build API message — always plain text in the messages array
-  const textContent = userText || 'Please solve this homework problem step-by-step.';
+  const textContent = userText || 'Look at this homework image carefully. Identify all the questions or problems, then solve each one step-by-step with clear explanations.';
   hwHistory.push({ role: 'user', content: textContent });
   input.value = ''; input.style.height = 'auto';
 
