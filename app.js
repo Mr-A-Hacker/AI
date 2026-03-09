@@ -358,7 +358,7 @@ function callOpenRouter(allMessages) {
 
 function callOpenRouterVision(allMessages) {
   return new Promise((resolve,reject)=>{
-    const payload=JSON.stringify({model:'google/gemini-flash-1.5',max_tokens:2000,messages:allMessages});
+    const payload=JSON.stringify({model:'google/gemini-2.0-flash-001',max_tokens:2000,messages:allMessages});
     const options={hostname:'openrouter.ai',path:'/api/v1/chat/completions',method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${OPENROUTER_API_KEY}`,'HTTP-Referer':'https://viora-ai.onrender.com','X-Title':'Viora AI','Content-Length':Buffer.byteLength(payload)}};
     const req=https.request(options,res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{const p=JSON.parse(d);if(p.error)reject({message:p.error.message});else resolve(p.choices?.[0]?.message?.content||'');}catch{reject({message:'Parse error'})}});});
     req.on('error',err=>reject({message:err.message}));
