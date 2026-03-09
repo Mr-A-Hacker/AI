@@ -366,6 +366,12 @@ header {
   .dev-bubble-ai, .dev-bubble-user { font-size: .81rem; padding: 9px 12px; }
   #dev-input { font-size: .83rem; }
 
+  /* ── Homework Helper on phone ── */
+  #hw-chat { min-height: 180px !important; max-height: 240px !important; }
+  .hw-bubble-ai, .hw-bubble-user { font-size: .81rem; padding: 9px 12px; }
+  #hw-input { font-size: .83rem; }
+  .hw-subj { font-size: .68rem; padding: 4px 9px; }
+
   /* ── Humanizer ── */
   .hum-opts { gap: 5px; }
   .hum-opt { font-size: .72rem; padding: 6px 10px; }
@@ -556,6 +562,19 @@ header {
 .dev-typing { display:flex; gap:4px; padding:10px 14px; background:white; border:1.5px solid var(--border); border-radius:16px; border-bottom-left-radius:4px; width:fit-content; }
 .dev-dot { width:6px; height:6px; border-radius:50%; background:#10b981; animation:tdB 1.1s ease-in-out infinite; }
 .dev-dot:nth-child(2){animation-delay:.18s;} .dev-dot:nth-child(3){animation-delay:.36s;}
+/* Homework Helper */
+.hw-subj { padding:5px 12px; border-radius:20px; border:1.5px solid var(--border); background:none; font-family:var(--font-body); font-size:.72rem; font-weight:700; color:var(--text-mid); cursor:pointer; white-space:nowrap; transition:all .2s; }
+.hw-subj.active { background:linear-gradient(135deg,#f59e0b,#ef4444); border-color:transparent; color:white; }
+.hw-msg { display:flex; gap:8px; align-items:flex-end; }
+.hw-msg.hw-user { flex-direction:row-reverse; }
+.hw-bubble-ai { background:white; border:1.5px solid var(--border); border-radius:16px; border-bottom-left-radius:4px; padding:10px 14px; font-size:.84rem; line-height:1.65; color:var(--text); box-shadow:0 2px 8px rgba(0,0,0,.05); max-width:85%; word-break:break-word; }
+.hw-bubble-user { background:linear-gradient(135deg,#f59e0b,#ef4444); border-radius:16px; border-bottom-right-radius:4px; padding:10px 14px; font-size:.84rem; line-height:1.65; color:white; box-shadow:0 3px 12px rgba(245,158,11,.35); max-width:85%; word-break:break-word; }
+.hw-bubble-ai .hw-step { background:rgba(245,158,11,.07); border-left:3px solid #f59e0b; border-radius:0 8px 8px 0; padding:6px 10px; margin:6px 0; font-size:.82rem; }
+.hw-av { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#f59e0b,#ef4444); display:flex; align-items:center; justify-content:center; font-size:.75rem; flex-shrink:0; }
+.hw-av-user { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#8b5cf6,#6366f1); display:flex; align-items:center; justify-content:center; font-size:.7rem; font-weight:700; color:white; flex-shrink:0; }
+.hw-typing { display:flex; gap:4px; padding:10px 14px; background:white; border:1.5px solid var(--border); border-radius:16px; border-bottom-left-radius:4px; width:fit-content; }
+.hw-dot { width:6px; height:6px; border-radius:50%; background:#f59e0b; animation:tdB 1.1s ease-in-out infinite; }
+.hw-dot:nth-child(2){animation-delay:.18s;} .hw-dot:nth-child(3){animation-delay:.36s;}
 /* ── ADMIN POPUP ── */
 #admin-popup-overlay{position:fixed;inset:0;z-index:100;background:rgba(30,16,48,.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease both}
 #admin-popup-overlay.hidden{display:none}
@@ -1869,6 +1888,7 @@ function switchAimTab(tab) {
   if (tabEl) tabEl.classList.add('active');
   document.getElementById('aim-panel-' + tab).classList.add('show');
   if (tab === 'devagent') setTimeout(() => devScrollBottom(), 50);
+  if (tab === 'homework') setTimeout(() => hwScrollBottom(), 50);
 }
 
 // ══════════════════════════════════════════
@@ -2062,6 +2082,182 @@ function devAgentClear() {
     </div>`;
   const caps = document.getElementById('dev-caps');
   if (caps) caps.style.display = 'flex';
+}
+
+// ══════════════════════════════════════════
+// HOMEWORK HELPER
+// ══════════════════════════════════════════
+let hwHistory = [];
+let hwImageData = null;
+let hwImageName = null;
+let hwBusy = false;
+let hwSubject = 'math';
+
+const HW_SYSTEMS = {
+  math: `You are an expert Math tutor. When solving problems:
+- Always show work step-by-step, numbered clearly
+- Explain WHY each step is done, not just HOW
+- Use simple language a student can understand
+- If the answer is a number, box it clearly at the end like: **Answer: 42**
+- For word problems, identify what's given and what's asked first
+- Check your answer at the end when possible`,
+  ela: `You are a warm, encouraging ELA (English Language Arts) tutor. You help with:
+- Grammar, punctuation, and spelling corrections with clear explanations
+- Essay writing: thesis, structure, evidence, transitions
+- Reading comprehension: finding main ideas, themes, inferences
+- Vocabulary and figurative language
+Always explain WHY something is correct or incorrect. Be encouraging and specific.`,
+  science: `You are a Science tutor who makes concepts click. You help with:
+- Biology, Chemistry, Physics, Earth Science
+- Explain concepts clearly with real-world analogies
+- Show formulas and how to apply them step-by-step
+- Help with lab reports and scientific method
+- Use simple language but don't skip important details`,
+  history: `You are a History tutor who makes the past come alive. You help with:
+- World History, US History, Government, Geography
+- Explain causes and effects clearly
+- Help with essay writing and document analysis
+- Provide context and connections between events
+- Keep explanations clear and memorable`,
+  any: `You are a friendly, expert Homework Helper for all subjects. You help students K-12 with any subject including Math, ELA, Science, History, Foreign Languages, Art, and more.
+- Always give clear, step-by-step explanations
+- Use age-appropriate language
+- Be encouraging and positive
+- Show your work and reasoning`
+};
+
+function hwSetSubject(btn, subj) {
+  document.querySelectorAll('.hw-subj').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  hwSubject = subj;
+}
+
+function hwScrollBottom() {
+  const chat = document.getElementById('hw-chat');
+  if (chat) chat.scrollTop = chat.scrollHeight;
+}
+
+function hwAddMsg(role, html) {
+  const chat = document.getElementById('hw-chat');
+  const session = getSession();
+  const initials = (session?.name || 'U')[0].toUpperCase();
+  const isAi = role === 'ai';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'hw-msg ' + (isAi ? 'hw-ai' : 'hw-user');
+  wrapper.innerHTML = isAi
+    ? `<div class="hw-av">📚</div><div class="hw-bubble-ai">${html}</div>`
+    : `<div class="hw-bubble-user">${html}</div><div class="hw-av-user">${initials}</div>`;
+  chat.appendChild(wrapper);
+  hwScrollBottom();
+}
+
+function hwShowTyping() {
+  const chat = document.getElementById('hw-chat');
+  const el = document.createElement('div');
+  el.className = 'hw-msg hw-ai'; el.id = 'hw-typing-indicator';
+  el.innerHTML = `<div class="hw-av">📚</div><div class="hw-typing"><div class="hw-dot"></div><div class="hw-dot"></div><div class="hw-dot"></div></div>`;
+  chat.appendChild(el);
+  hwScrollBottom();
+}
+function hwHideTyping() {
+  const el = document.getElementById('hw-typing-indicator');
+  if (el) el.remove();
+}
+
+function hwFormatResponse(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^(\d+)\. /gm, '<br><strong>$1.</strong> ')
+    .replace(/^[-•] /gm, '<br>• ')
+    .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,.06);border-radius:4px;padding:1px 5px;font-size:.83rem;">$1</code>')
+    .replace(/^#{1,3} (.+)$/gm, '<strong style="font-size:.92rem;display:block;margin:8px 0 3px;color:#f59e0b;">$1</strong>')
+    .replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+}
+
+function hwHandleImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  hwImageName = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    hwImageData = e.target.result; // base64 data URL
+    document.getElementById('hw-img-preview').src = hwImageData;
+    document.getElementById('hw-img-name').textContent = '📷 ' + file.name;
+    document.getElementById('hw-img-bar').style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function hwClearImage() {
+  hwImageData = null; hwImageName = null;
+  document.getElementById('hw-img-bar').style.display = 'none';
+  document.getElementById('hw-img-preview').src = '';
+}
+
+async function hwSend() {
+  if (hwBusy) return;
+  const input = document.getElementById('hw-input');
+  const userText = input.value.trim();
+  if (!userText && !hwImageData) return;
+  hwBusy = true;
+
+  // Build display message
+  let displayHtml = '';
+  if (hwImageData) displayHtml += `<img src="${hwImageData}" style="max-width:180px;border-radius:10px;display:block;margin-bottom:6px;"/>`;
+  if (userText) displayHtml += userText.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  hwAddMsg('user', displayHtml);
+
+  // Build API message
+  let msgContent;
+  if (hwImageData) {
+    const base64 = hwImageData.split(',')[1];
+    const mimeType = hwImageData.split(';')[0].split(':')[1];
+    msgContent = [
+      { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
+      { type: 'text', text: userText || 'Please solve this homework problem step-by-step.' }
+    ];
+  } else {
+    msgContent = userText;
+  }
+
+  hwHistory.push({ role: 'user', content: msgContent });
+  input.value = ''; input.style.height = 'auto';
+  hwClearImage();
+  hwShowTyping();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        system: HW_SYSTEMS[hwSubject] || HW_SYSTEMS.any,
+        messages: hwHistory
+      })
+    });
+    const data = await res.json();
+    hwHideTyping();
+    const reply = data.content?.[0]?.text || data.error?.message || 'Something went wrong.';
+    hwHistory.push({ role: 'assistant', content: reply });
+    hwAddMsg('ai', hwFormatResponse(reply));
+  } catch(e) {
+    hwHideTyping();
+    hwAddMsg('ai', '❌ Error: ' + e.message);
+  }
+  hwBusy = false;
+}
+
+function hwClear() {
+  hwHistory = [];
+  hwClearImage();
+  document.getElementById('hw-chat').innerHTML = `
+    <div class="hw-msg hw-ai">
+      <div class="hw-av">📚</div>
+      <div class="hw-bubble-ai">Hi! I'm your Homework Helper 👋 I can solve math problems step-by-step, help with essays and grammar, explain science, history, and more.<br><br>Type your question or <strong>upload a photo</strong> of your homework!</div>
+    </div>`;
 }
 function selectHumOpt(btn) {
   document.querySelectorAll('.hum-opt').forEach(b => b.classList.remove('sel'));
@@ -2659,6 +2855,7 @@ function closeAdminPopup() {
       <button class="aim-tab" id="aim-tab-humanizer" onclick="switchAimTab('humanizer')">✍️ Humanizer</button>
       <button class="aim-tab" id="aim-tab-weather" onclick="switchAimTab('weather')">🌦️ Weather</button>
       <button class="aim-tab" id="aim-tab-devagent" onclick="switchAimTab('devagent')">💻 Dev Agent</button>
+      <button class="aim-tab" id="aim-tab-homework" onclick="switchAimTab('homework')">📚 Homework</button>
     </div>
     <div class="aim-body">
 
@@ -2686,6 +2883,16 @@ function closeAdminPopup() {
                 <div class="oac-desc" style="margin-top:2px;">Expert coder. Reads zip files, debugs code, writes full apps, explains anything.</div>
               </div>
               <span class="oac-tag" style="background:rgba(16,185,129,.1);color:#10b981;white-space:nowrap;">Free · Viora</span>
+            </div>
+          </div>
+          <div class="other-ai-card" onclick="switchAimTab('homework')" style="cursor:pointer;grid-column:1/-1;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="oac-logo" style="background:rgba(245,158,11,.12);width:48px;height:48px;border-radius:14px;font-size:1.6rem;">📚</div>
+              <div style="flex:1;">
+                <div class="oac-name" style="font-size:.95rem;">Homework Helper</div>
+                <div class="oac-desc" style="margin-top:2px;">Math, ELA, Science & more. Upload a photo of your homework and get step-by-step help.</div>
+              </div>
+              <span class="oac-tag" style="background:rgba(245,158,11,.1);color:#f59e0b;white-space:nowrap;">Free · Viora</span>
             </div>
           </div>
         </div>
@@ -2803,9 +3010,66 @@ function closeAdminPopup() {
         </div>
       </div>
 
-    </div>
-  </div>
-</div>
+      <!-- HOMEWORK HELPER PANEL -->
+      <div class="aim-panel" id="aim-panel-homework">
+        <div style="display:flex;flex-direction:column;height:100%;">
+
+          <!-- Header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;font-size:1rem;">📚</div>
+              <div>
+                <div style="font-family:var(--font-head);font-size:.9rem;font-weight:800;color:var(--text);">Homework Helper</div>
+                <div style="font-size:.65rem;color:#f59e0b;font-weight:600;">● Ready · Step-by-step answers</div>
+              </div>
+            </div>
+            <button onclick="hwClear()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:none;font-size:.72rem;color:var(--text-mid);cursor:pointer;font-family:var(--font-body);">🗑 Clear</button>
+          </div>
+
+          <!-- Subject pills -->
+          <div id="hw-subjects" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px;">
+            <button class="hw-subj active" onclick="hwSetSubject(this,'math')">🔢 Math</button>
+            <button class="hw-subj" onclick="hwSetSubject(this,'ela')">📝 ELA</button>
+            <button class="hw-subj" onclick="hwSetSubject(this,'science')">🔬 Science</button>
+            <button class="hw-subj" onclick="hwSetSubject(this,'history')">🏛 History</button>
+            <button class="hw-subj" onclick="hwSetSubject(this,'any')">✨ Any Subject</button>
+          </div>
+
+          <!-- Chat window -->
+          <div id="hw-chat" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;min-height:200px;max-height:300px;padding:4px 2px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;margin-bottom:10px;">
+            <div class="hw-msg hw-ai">
+              <div class="hw-av">📚</div>
+              <div class="hw-bubble-ai">Hi! I'm your Homework Helper 👋 I can solve math problems step-by-step, help with essays and grammar, explain science, history, and more.<br><br>Type your question or <strong>upload a photo</strong> of your homework!</div>
+            </div>
+          </div>
+
+          <!-- Image preview -->
+          <div id="hw-img-bar" style="display:none;background:rgba(245,158,11,.07);border:1.5px solid rgba(245,158,11,.25);border-radius:10px;padding:8px 12px;margin-bottom:8px;align-items:center;gap:10px;">
+            <img id="hw-img-preview" src="" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1.5px solid rgba(245,158,11,.3);" />
+            <span id="hw-img-name" style="font-size:.78rem;font-weight:600;color:#f59e0b;flex:1;"></span>
+            <button onclick="hwClearImage()" style="border:none;background:none;cursor:pointer;color:var(--text-light);font-size:.9rem;">✕</button>
+          </div>
+
+          <!-- Input row -->
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <label for="hw-img-input" title="Upload homework photo"
+              style="width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:1rem;transition:all .2s;"
+              onmouseover="this.style.borderColor='#f59e0b'" onmouseout="this.style.borderColor='var(--border)'">
+              📷
+              <input type="file" id="hw-img-input" style="display:none" onchange="hwHandleImage(event)" accept="image/*" />
+            </label>
+            <textarea id="hw-input" rows="1" placeholder="Ask a question or describe what you need help with…"
+              style="flex:1;padding:9px 13px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:.85rem;outline:none;resize:none;max-height:100px;line-height:1.5;transition:border-color .2s;"
+              onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border)'"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();hwSend();}this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+            <button onclick="hwSend()" id="hw-send-btn"
+              style="width:36px;height:36px;border-radius:10px;border:none;background:linear-gradient(135deg,#f59e0b,#ef4444);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 10px rgba(245,158,11,.4);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+          <div style="font-size:.6rem;color:var(--text-light);margin-top:5px;text-align:center;">📷 Upload a photo of your homework · Shift+Enter for new line</div>
+        </div>
+      </div>
 
 <script>
 (function(){
