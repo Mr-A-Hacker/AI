@@ -412,39 +412,68 @@ async function getWeatherRich(lat, lon) {
   const key = _cacheKey(lat, lon);
   const hit = _weatherCache.get(key);
   if (hit && Date.now() - hit.ts < WEATHER_TTL) return hit.data;
+
+  // Try Open-Meteo first (fast, free, no key)
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,apparent_temperature,weathercode,windspeed_10m,relativehumidity_2m,visibility,uv_index` +
-      `&daily=weathercode,temperature_2m_max,temperature_2m_min` +
+      `&current=temperature_2m,apparent_temperature,weather_code,windspeed_10m,relativehumidity_2m,visibility,uv_index` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min` +
       `&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=7&timezone=auto`;
-    const raw = await fetchWithTimeout(url, 5000);
+    const raw = await fetchWithTimeout(url, 6000);
     const d = JSON.parse(raw);
     const cur = d.current;
-    if (!cur) return null;
+    if (!cur) throw new Error('no current data');
+    // API uses weather_code (not weathercode) in newer versions
+    const wc = cur.weather_code ?? cur.weathercode ?? 0;
     const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const daily = (d.daily?.time || []).map((dateStr, i) => {
-      const date = new Date(dateStr);
+      const date = new Date(dateStr + 'T12:00:00');
+      const dc = (d.daily.weather_code ?? d.daily.weathercode)?.[i] ?? 0;
       return {
         day: i === 0 ? 'Today' : days[date.getDay()],
         high: Math.round(d.daily.temperature_2m_max[i]),
         low: Math.round(d.daily.temperature_2m_min[i]),
-        code: wmoCode(d.daily.weathercode[i])
+        code: wmoCode(dc)
       };
     });
     const data = {
       tempF: Math.round(cur.temperature_2m),
       feelsF: Math.round(cur.apparent_temperature),
-      desc: wmoDesc(cur.weathercode),
+      desc: wmoDesc(wc),
       humidity: Math.round(cur.relativehumidity_2m),
       windMph: Math.round(cur.windspeed_10m),
       visibility: Math.round((cur.visibility || 10000) / 1609),
       uvIndex: Math.round(cur.uv_index || 0),
-      code: wmoCode(cur.weathercode),
+      code: wmoCode(wc),
       daily
     };
     _weatherCache.set(key, { data, ts: Date.now() });
     return data;
-  } catch(e) { console.error('Weather error:', e.message); return null; }
+  } catch(e) {
+    console.error('Open-Meteo failed:', e.message, '— trying wttr.in fallback');
+  }
+
+  // Fallback: wttr.in
+  try {
+    const raw = await fetchWithTimeout(`https://wttr.in/${lat},${lon}?format=j1`, 7000);
+    const d = JSON.parse(raw);
+    const cur = d.current_condition?.[0];
+    if (!cur) return null;
+    const weather = d.weather || [];
+    const days2 = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const daily2 = weather.slice(0,7).map(day => {
+      const date = new Date(day.date);
+      return { day: days2[date.getDay()], high: parseInt(day.maxtempF), low: parseInt(day.mintempF), code: parseInt(day.hourly?.[4]?.weatherCode || 113) };
+    });
+    const data2 = {
+      tempF: parseInt(cur.temp_F), feelsF: parseInt(cur.FeelsLikeF),
+      desc: cur.weatherDesc?.[0]?.value || '', humidity: parseInt(cur.humidity),
+      windMph: parseInt(cur.windspeedMiles), visibility: parseInt(cur.visibility),
+      uvIndex: parseInt(cur.uvIndex), code: parseInt(cur.weatherCode), daily: daily2
+    };
+    _weatherCache.set(key, { data: data2, ts: Date.now() });
+    return data2;
+  } catch(e2) { console.error('wttr.in fallback also failed:', e2.message); return null; }
 }
 
 // ── OpenRouter ──
