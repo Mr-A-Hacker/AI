@@ -3205,14 +3205,6 @@ function closeAdminPopup() {
       <div class="aim-title">🤖 Our AI Tools</div>
       <button class="aim-close" onclick="closeAiModal()">✕</button>
     </div>
-
-    <div class="aim-tabs">
-      <button class="aim-tab active" id="aim-tab-tools" onclick="switchAimTab('tools')">🤖 Tools</button>
-      <button class="aim-tab" id="aim-tab-humanizer" onclick="switchAimTab('humanizer')">✍️ Humanizer</button>
-      <button class="aim-tab" id="aim-tab-weather" onclick="switchAimTab('weather')">🌦️ Weather</button>
-      <button class="aim-tab" id="aim-tab-devagent" onclick="switchAimTab('devagent')">💻 Dev Agent</button>
-      <button class="aim-tab" id="aim-tab-homework" onclick="switchAimTab('homework')">📚 Homework</button>
-    </div>
     <div class="aim-body">
 
       <!-- TOOLS GRID -->
@@ -3458,7 +3450,7 @@ function closeAdminPopup() {
 </script>
 
 <!-- ── PWA Download App Button ── -->
-<div id="pwa-btn" style="display:none;position:fixed;bottom:24px;right:20px;z-index:50;align-items:flex-end;flex-direction:column;gap:8px;">
+<div id="pwa-btn" style="display:flex;position:fixed;bottom:24px;right:20px;z-index:50;align-items:flex-end;flex-direction:column;gap:8px;">
 
   <!-- Mini + dot (shown after dismiss) -->
   <button id="pwa-dot" onclick="pwaBtnExpand()" title="Download App"
@@ -3491,6 +3483,45 @@ function closeAdminPopup() {
   <div style="position:absolute;bottom:-9px;right:32px;width:16px;height:16px;background:white;border-right:1.5px solid var(--border);border-bottom:1.5px solid var(--border);transform:rotate(45deg);"></div>
 </div>
 
+
+<!-- SUB-AI FULL-SCREEN CHAT -->
+<div id="sub-chat-screen" class="hidden">
+  <div id="sub-chat-header">
+    <button class="sub-back-btn" onclick="closeSubChat()">←</button>
+    <div class="sub-header-logo" id="sub-header-logo">🤖</div>
+    <div class="sub-header-info">
+      <div class="sub-header-name" id="sub-header-name">AI Assistant</div>
+      <div class="sub-header-sub" id="sub-header-sub">Powered by Viora</div>
+    </div>
+    <div class="sub-header-badge" id="sub-header-badge">
+      <span style="width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.8;animation:pdot 2s ease-in-out infinite;display:inline-block;"></span>
+      Online
+    </div>
+  </div>
+
+  <div id="sub-chat-window">
+    <div class="sub-welcome" id="sub-welcome">
+      <div class="sub-welcome-orb" id="sub-welcome-orb">🤖</div>
+      <h2 id="sub-welcome-title">AI Assistant</h2>
+      <p id="sub-welcome-desc">How can I help you?</p>
+      <div class="sub-chips" id="sub-chips"></div>
+    </div>
+  </div>
+
+  <div id="sub-input-area">
+    <div class="sub-input-card" id="sub-input-card">
+      <textarea id="sub-user-input" rows="1"
+        placeholder="Type a message…"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();subSend();}this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'"
+      ></textarea>
+      <button id="sub-send-btn" onclick="subSend()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+
 <script>
 // ── PWA Service Worker Registration ──
 if ('serviceWorker' in navigator) {
@@ -3503,9 +3534,9 @@ if ('serviceWorker' in navigator) {
 let pwaInstallPrompt = null;
 const pwaBtnWrap = document.getElementById('pwa-btn');
 
-// Show button immediately unless already running as installed app
-if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone) {
-  pwaBtnWrap.style.display = 'flex';
+// Hide if already installed as standalone app
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+  pwaBtnWrap.style.display = 'none';
 }
 
 function pwaBtnDismiss() {
@@ -3586,7 +3617,7 @@ Be concise but thorough. Use code blocks for all code. Lead with the solution.`
     userBubble: 'linear-gradient(135deg, #f59e0b, #d97706)',
     placeholder: 'Ask a question or describe what you need help with…',
     welcome: 'Homework Helper',
-    desc: 'Math, ELA, Science, History & more. I'll walk through everything step by step.',
+    desc: "Math, ELA, Science, History & more. I'll walk through everything step by step.",
     chips: ['Help with math', 'Check my essay', 'Explain a science concept', 'History question'],
     system: `You are a friendly, expert Homework Helper for all subjects. You help students K-12 with any subject including Math, ELA, Science, History, Foreign Languages, and more.
 - Always give clear, step-by-step explanations
@@ -3606,7 +3637,7 @@ Be concise but thorough. Use code blocks for all code. Lead with the solution.`
     userBubble: 'linear-gradient(135deg, #7c3aed, #8b5cf6)',
     placeholder: 'Paste AI-generated text to humanize…',
     welcome: 'AI Humanizer',
-    desc: 'Paste any AI-written text and I'll rewrite it to sound natural and human.',
+    desc: "Paste any AI-written text and I'll rewrite it to sound natural and human.",
     chips: ['Humanize this paragraph', 'Make it sound casual', 'Make it sound professional', 'Fix AI patterns'],
     system: `You are an expert at rewriting AI-generated text to sound natural, human, and authentic. When given text:
 - Remove robotic patterns and AI clichés
@@ -3800,43 +3831,6 @@ async function subSend() {
 }
 
 </script>
-
-<!-- SUB-AI FULL-SCREEN CHAT -->
-<div id="sub-chat-screen" class="hidden">
-  <div id="sub-chat-header">
-    <button class="sub-back-btn" onclick="closeSubChat()">←</button>
-    <div class="sub-header-logo" id="sub-header-logo">🤖</div>
-    <div class="sub-header-info">
-      <div class="sub-header-name" id="sub-header-name">AI Assistant</div>
-      <div class="sub-header-sub" id="sub-header-sub">Powered by Viora</div>
-    </div>
-    <div class="sub-header-badge" id="sub-header-badge">
-      <span style="width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.8;animation:pdot 2s ease-in-out infinite;display:inline-block;"></span>
-      Online
-    </div>
-  </div>
-
-  <div id="sub-chat-window">
-    <div class="sub-welcome" id="sub-welcome">
-      <div class="sub-welcome-orb" id="sub-welcome-orb">🤖</div>
-      <h2 id="sub-welcome-title">AI Assistant</h2>
-      <p id="sub-welcome-desc">How can I help you?</p>
-      <div class="sub-chips" id="sub-chips"></div>
-    </div>
-  </div>
-
-  <div id="sub-input-area">
-    <div class="sub-input-card" id="sub-input-card">
-      <textarea id="sub-user-input" rows="1"
-        placeholder="Type a message…"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();subSend();}this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'"
-      ></textarea>
-      <button id="sub-send-btn" onclick="subSend()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-      </button>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
