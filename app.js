@@ -18,11 +18,28 @@ const B2_ENDPOINT    = process.env.B2_ENDPOINT || '';
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin1';
 
-// Active popup broadcast (in-memory, fast)
-let activePopup = null; // { message, type, id, createdAt }
+// Active popup — persisted to B2
+let activePopup = null;
+async function loadPopup() {
+  try { activePopup = await b2Get('system/popup.json'); } catch {}
+}
+async function savePopupB2() {
+  if (activePopup) await b2Put('system/popup.json', activePopup);
+  else await b2Delete('system/popup.json');
+}
 
-// IP trial tracking
-const usedTrialIPs = new Set();
+// IP trial tracking — persisted to B2
+let usedTrialIPs = new Set();
+async function loadTrialIPs() {
+  try {
+    const data = await b2Get('system/trial-ips.json');
+    if (Array.isArray(data)) usedTrialIPs = new Set(data);
+  } catch {}
+}
+async function saveTrialIPs() {
+  await b2Put('system/trial-ips.json', [...usedTrialIPs]);
+}
+
 function getClientIP(req) {
   const fwd = req.headers['x-forwarded-for'];
   return fwd ? fwd.split(',')[0].trim() : req.socket.remoteAddress;
@@ -235,17 +252,19 @@ app.get('/api/user/avatar', async (req, res) => {
 });
 
 // ── Admin: send popup ──
-app.post('/api/admin/popup', adminAuth, (req, res) => {
+app.post('/api/admin/popup', adminAuth, async (req, res) => {
   const { message, type } = req.body; // type: info | warning | success | error
   if (!message) return res.status(400).json({ error: 'Message required' });
   activePopup = { message, type: type || 'info', id: Date.now(), createdAt: new Date().toISOString() };
+  await savePopupB2();
   console.log('Admin popup set:', activePopup.message);
   res.json({ success: true });
 });
 
 // ── Admin: clear popup ──
-app.delete('/api/admin/popup', adminAuth, (req, res) => {
+app.delete('/api/admin/popup', adminAuth, async (req, res) => {
   activePopup = null;
+  await savePopupB2();
   res.json({ success: true });
 });
 
@@ -264,10 +283,11 @@ app.get('/api/popup', (req, res) => {
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'templates', 'admin.html')));
 
 // ── Trial ──
-app.post('/api/trial-start', (req, res) => {
+app.post('/api/trial-start', async (req, res) => {
   const ip = getClientIP(req);
   if (usedTrialIPs.has(ip)) return res.json({ allowed: false });
   usedTrialIPs.add(ip);
+  saveTrialIPs(); // fire-and-forget save to B2
   return res.json({ allowed: true });
 });
 
@@ -368,7 +388,7 @@ async function getWeatherRich(lat,lon) {
 // ── OpenRouter ──
 function callOpenRouter(allMessages) {
   return new Promise((resolve,reject)=>{
-    const payload=JSON.stringify({model:'mistralai/mistral-7b-instruct:free',messages:allMessages});
+    const payload=JSON.stringify({model:'meta-llama/llama-3.1-8b-instruct:free',messages:allMessages});
     const options={hostname:'openrouter.ai',path:'/api/v1/chat/completions',method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${OPENROUTER_API_KEY}`,'HTTP-Referer':'https://viora-ai.onrender.com','X-Title':'Viora AI','Content-Length':Buffer.byteLength(payload)}};
     const req=https.request(options,res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{const p=JSON.parse(d);if(p.error)reject({message:p.error.message});else resolve(p.choices?.[0]?.message?.content||'');}catch{reject({message:'Parse error'})}});});
     req.on('error',err=>reject({message:err.message}));
@@ -712,7 +732,14 @@ app.get('/icon-192.png', (req,res) => res.sendFile(path.join(__dirname,'template
 app.get('/icon-512.png', (req,res) => res.sendFile(path.join(__dirname,'templates','icon-512.png')));
 app.get('/', (req,res) => res.sendFile(path.join(__dirname,'templates','index.html')));
 const PORT = process.env.PORT||3000;
-app.listen(PORT, ()=>console.log(`Server running on port ${PORT}`));
+
+// ── Boot: restore persisted state from B2 ──
+async function boot() {
+  await Promise.all([loadPopup(), loadTrialIPs()]);
+  console.log(`[boot] popup=${activePopup ? '"'+activePopup.message.slice(0,40)+'"' : 'none'} | trialIPs=${usedTrialIPs.size}`);
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+boot();
 
 // ── Admin: get user chat list ──
 app.get('/api/admin/users/:email/chats', adminAuth, async (req, res) => {
