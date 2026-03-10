@@ -345,44 +345,106 @@ const WEATHER_TTL = 10 * 60 * 1000;
 
 function _cacheKey(lat, lon) { return `${Math.round(lat*100)/100},${Math.round(lon*100)/100}`; }
 
-async function reverseGeocode(lat,lon) {
-  const key = _cacheKey(lat,lon);
+// Fast fetch with timeout
+function fetchWithTimeout(url, timeoutMs = 5000) {
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith('https') ? https : http;
+    const timer = setTimeout(() => reject(new Error('Timeout')), timeoutMs);
+    mod.get(url, { headers: { 'User-Agent': 'VioraAI/1.0' } }, res => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => { clearTimeout(timer); resolve(d.trim()); });
+    }).on('error', e => { clearTimeout(timer); reject(e); });
+  });
+}
+
+// Reverse geocode using Open-Meteo geocoding (fast, no key)
+async function reverseGeocode(lat, lon) {
+  const key = _cacheKey(lat, lon);
   const hit = _geoCache.get(key);
   if (hit && Date.now() - hit.ts < WEATHER_TTL) return hit.data;
   try {
-    const d = await fetchJSON(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
-    const data = d?.address ? {city:d.address.city||d.address.town||d.address.village||'',country:d.address.country||''} : null;
+    const raw = await fetchWithTimeout(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`, 4000
+    );
+    const d = JSON.parse(raw);
+    const data = d?.address
+      ? { city: d.address.city || d.address.town || d.address.village || d.address.county || '', country: d.address.country_code?.toUpperCase() || d.address.country || '' }
+      : null;
     _geoCache.set(key, { data, ts: Date.now() });
     return data;
   } catch { return null; }
 }
-async function getWeatherFromCoords(lat,lon) {
-  try { return await fetchText(`https://wttr.in/${lat},${lon}?format=3`); } catch { return null; }
+
+// WMO weather code → description
+function wmoDesc(code) {
+  const map = {0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Light showers',81:'Showers',82:'Heavy showers',85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm w/ hail',99:'Severe thunderstorm'};
+  return map[code] || 'Clear';
 }
-async function getWeatherRich(lat,lon) {
-  const key = _cacheKey(lat,lon);
+function wmoCode(code) {
+  // Map Open-Meteo WMO codes to wttr-style codes for emoji compat
+  if (code === 0 || code === 1) return 113;
+  if (code === 2) return 116;
+  if (code === 3) return 119;
+  if (code === 45 || code === 48) return 248;
+  if (code >= 51 && code <= 55) return 266;
+  if (code >= 61 && code <= 65) return 302;
+  if (code >= 71 && code <= 77) return 338;
+  if (code >= 80 && code <= 82) return 296;
+  if (code >= 85 && code <= 86) return 368;
+  if (code >= 95) return 389;
+  return 113;
+}
+
+async function getWeatherFromCoords(lat, lon) {
+  try {
+    const raw = await fetchWithTimeout(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weathercode,windspeed_10m,relativehumidity_2m,visibility&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=1`, 5000
+    );
+    const d = JSON.parse(raw);
+    const c = d.current;
+    if (!c) return null;
+    return `${Math.round(c.temperature_2m)}°F, ${wmoDesc(c.weathercode)}, wind ${Math.round(c.windspeed_10m)} mph`;
+  } catch { return null; }
+}
+
+async function getWeatherRich(lat, lon) {
+  const key = _cacheKey(lat, lon);
   const hit = _weatherCache.get(key);
   if (hit && Date.now() - hit.ts < WEATHER_TTL) return hit.data;
   try {
-    const raw = await fetchText(`https://wttr.in/${lat},${lon}?format=j1`);
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&current=temperature_2m,apparent_temperature,weathercode,windspeed_10m,relativehumidity_2m,visibility,uv_index` +
+      `&daily=weathercode,temperature_2m_max,temperature_2m_min` +
+      `&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=7&timezone=auto`;
+    const raw = await fetchWithTimeout(url, 5000);
     const d = JSON.parse(raw);
-    const cur = d.current_condition?.[0];
+    const cur = d.current;
     if (!cur) return null;
-    const weather = d.weather || [];
     const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const daily = weather.slice(0,7).map(day => {
-      const date = new Date(day.date);
-      return { day: days[date.getDay()], high: parseInt(day.maxtempF), low: parseInt(day.mintempF), code: parseInt(day.hourly?.[4]?.weatherCode || 113) };
+    const daily = (d.daily?.time || []).map((dateStr, i) => {
+      const date = new Date(dateStr);
+      return {
+        day: i === 0 ? 'Today' : days[date.getDay()],
+        high: Math.round(d.daily.temperature_2m_max[i]),
+        low: Math.round(d.daily.temperature_2m_min[i]),
+        code: wmoCode(d.daily.weathercode[i])
+      };
     });
     const data = {
-      tempF: parseInt(cur.temp_F), feelsF: parseInt(cur.FeelsLikeF),
-      desc: cur.weatherDesc?.[0]?.value || '', humidity: parseInt(cur.humidity),
-      windMph: parseInt(cur.windspeedMiles), visibility: parseInt(cur.visibility),
-      uvIndex: parseInt(cur.uvIndex), code: parseInt(cur.weatherCode), daily
+      tempF: Math.round(cur.temperature_2m),
+      feelsF: Math.round(cur.apparent_temperature),
+      desc: wmoDesc(cur.weathercode),
+      humidity: Math.round(cur.relativehumidity_2m),
+      windMph: Math.round(cur.windspeed_10m),
+      visibility: Math.round((cur.visibility || 10000) / 1609),
+      uvIndex: Math.round(cur.uv_index || 0),
+      code: wmoCode(cur.weathercode),
+      daily
     };
     _weatherCache.set(key, { data, ts: Date.now() });
     return data;
-  } catch(e) { return null; }
+  } catch(e) { console.error('Weather error:', e.message); return null; }
 }
 
 // ── OpenRouter ──
