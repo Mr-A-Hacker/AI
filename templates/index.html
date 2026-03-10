@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Viora AI</title>
 <link rel="icon" type="image/png" href="/V.png" />
 <link rel="manifest" href="/manifest.json" />
@@ -23,6 +23,11 @@
   --red: #ef4444; --sidebar-w: 272px;
 }
 html, body { height: 100%; background: var(--bg); font-family: var(--font-body); color: var(--text); overflow: hidden; }
+/* Use dynamic viewport height on phones — collapses with browser chrome */
+@supports (height: 100dvh) {
+  html, body { height: 100dvh; }
+  #chat-screen, .screen { height: 100dvh; }
+}
 
 /* BG */
 .mesh { position: fixed; inset: 0; z-index: 0; pointer-events: none;
@@ -64,7 +69,7 @@ html, body { height: 100%; background: var(--bg); font-family: var(--font-body);
 .try-badge { background: linear-gradient(135deg, var(--grad-b), var(--grad-c)); color: white; font-size: .65rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
 
 /* ── CHAT LAYOUT ── */
-#chat-screen { position: fixed; inset: 0; z-index: 10; display: flex; transition: opacity .35s; }
+#chat-screen { position: fixed; inset: 0; z-index: 10; display: flex; transition: opacity .35s; height: 100%; }
 #chat-screen.hidden { opacity: 0; pointer-events: none; }
 
 /* ── SIDEBAR ── */
@@ -198,6 +203,7 @@ html, body { height: 100%; background: var(--bg); font-family: var(--font-body);
 #main-panel {
   flex: 1; display: flex; flex-direction: column; min-width: 0;
   position: relative; z-index: 10;
+  height: 100%; min-height: 0;
 }
 
 header {
@@ -302,11 +308,25 @@ header {
 ══════════════════════════════════════════════ */
 @media (max-width: 640px) {
 
+  /* ── Fill exact screen — no overflow, no white gaps ── */
+  html, body { height: 100dvh; overflow: hidden; overscroll-behavior: none; }
+  #chat-screen { height: 100dvh; }
+  #main-panel { height: 100dvh; }
+
+  /* ── Prevent iOS bounce scroll on background ── */
+  body { position: fixed; width: 100%; }
+
+  /* ── Bigger tap targets (min 44px — Apple HIG standard) ── */
+  #send-btn { width: 44px !important; height: 44px !important; border-radius: 14px; }
+  .btn-toggle-sidebar { width: 44px; height: 44px; }
+  .btn-logout { padding: 10px 14px; min-height: 36px; }
+
   /* ── Sidebar ── */
   #sidebar {
     position: fixed; top: 0; left: 0; bottom: 0; z-index: 16;
     width: 82vw !important; max-width: 300px;
     box-shadow: 4px 0 32px rgba(30,16,48,.18);
+    height: 100dvh;
   }
   #sidebar.collapsed { transform: translateX(-110%); }
 
@@ -318,7 +338,7 @@ header {
   .btn-logout { font-size: .68rem; padding: 5px 10px; }
 
   /* ── Chat ── */
-  #chat-window { padding: 14px 10px 8px; gap: 10px; }
+  #chat-window { padding: 14px 10px 8px; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .bubble-wrap { max-width: 90%; }
   .bubble { font-size: .86rem; padding: 10px 13px; }
   .av { width: 26px; height: 26px; font-size: .6rem; }
@@ -333,7 +353,7 @@ header {
   .chip { padding: 10px 13px; font-size: .79rem; }
 
   /* ── Input bar ── */
-  #input-area { padding: 8px 10px 16px; }
+  #input-area { padding: 8px 10px 16px; flex-shrink: 0; background: var(--bg); }
   .input-card { padding: 9px 9px 9px 13px; border-radius: 16px; gap: 7px; }
   #user-input { font-size: .87rem; }
   #send-btn { width: 34px; height: 34px; border-radius: 11px; }
@@ -442,9 +462,17 @@ header {
 
 /* ── iPhone notch / home bar safe areas ── */
 @supports (padding: max(0px)) {
-  #input-area { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
-  header { padding-top: max(10px, env(safe-area-inset-top)); }
+  #input-area { padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+  header {
+    padding-top: max(14px, env(safe-area-inset-top));
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
   .aim-card, .settings-card, #memory-panel {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  #sidebar {
+    padding-top: env(safe-area-inset-top);
     padding-bottom: max(0px, env(safe-area-inset-bottom));
   }
 }
