@@ -2857,7 +2857,7 @@ Think carefully about:
     return;
   }
 
-  // ── Weather card — show pill first, then fetch ──
+  // ── Weather — fetch Open-Meteo directly from browser (CORS enabled, no server needed) ──
   if (isWeatherQuery(text)) {
     typingEl.classList.remove('show');
     const fetchPill = document.createElement('div');
@@ -2875,46 +2875,74 @@ Think carefully about:
     scrollBot();
 
     try {
-      // Get coords — instant if cached, browser GPS prompt if not
       const coords = await getBrowserLocation();
 
-      // Use client-side cache if fresh
-      let wdata;
+      // Use client cache if fresh
       if (cachedWeatherData && Date.now() - cachedWeatherData.ts < WEATHER_TTL_MS) {
-        wdata = cachedWeatherData;
-      } else {
-        const wres = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
-        wdata = await wres.json();
-        if (wdata.weather) cachedWeatherData = { ...wdata, ts: Date.now() };
-      }
-
-      fetchPill.remove();
-      if (wdata?.weather) {
-        addWeatherCard(wdata.place, wdata.weather);
-        const summary = `${wdata.place?.city || 'Your location'}: ${wdata.weather.tempF}°F, feels like ${wdata.weather.feelsF}°F, ${wdata.weather.desc}, humidity ${wdata.weather.humidity}%, wind ${wdata.weather.windMph} mph.`;
-        history.push({ role: 'assistant', content: summary });
-        await saveChatIfNeeded();
-        const session = getSession();
+        fetchPill.remove();
+        addWeatherCard(cachedWeatherData.place, cachedWeatherData.weather);
+        const w = cachedWeatherData.weather;
+        const sum = `${cachedWeatherData.place?.city||'Your location'}: ${w.tempF}°F, feels ${w.feelsF}°F, ${w.desc}, humidity ${w.humidity}%, wind ${w.windMph}mph.`;
+        history.push({ role: 'assistant', content: sum });
+        await saveChatIfNeeded(); const session = getSession();
         if (session?.email) renderHistory(session.email);
         busy = false; inputEl.focus(); return;
       }
+
+      // Hit Open-Meteo directly from browser — free, CORS open, no server proxy needed
+      const omUrl = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}` +
+        `&current=temperature_2m,apparent_temperature,weather_code,windspeed_10m,relativehumidity_2m,uv_index` +
+        `&daily=weather_code,temperature_2m_max,temperature_2m_min` +
+        `&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=7&timezone=auto`;
+
+      const [omRes] = await Promise.all([
+        Promise.race([fetch(omUrl), new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),9000))])
+      ]);
+      const omData = await omRes.json();
+      const cur = omData.current;
+      if (!cur) throw new Error('no-data');
+
+      const wc = cur.weather_code ?? cur.weathercode ?? 0;
+      const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      const daily = (omData.daily?.time||[]).map((ds,i) => {
+        const dc = (omData.daily.weather_code ?? omData.daily.weathercode)?.[i] ?? 0;
+        return { day: i===0?'Today':DAY_NAMES[new Date(ds+'T12:00:00').getDay()], high: Math.round(omData.daily.temperature_2m_max[i]), low: Math.round(omData.daily.temperature_2m_min[i]), code: dc };
+      });
+
+      // Reverse-geocode via Nominatim (browser-side, free)
+      let place = { city: 'Your location', country: '' };
+      try {
+        const geo = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${coords.lat}&lon=${coords.lon}&format=json`);
+        const gd = await geo.json();
+        place = { city: gd.address?.city||gd.address?.town||gd.address?.village||gd.address?.county||place.city, country: gd.address?.country_code?.toUpperCase()||'' };
+      } catch {}
+
+      const WMO_DESC = {0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Rime fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Moderate rain',65:'Heavy rain',71:'Light snow',73:'Moderate snow',75:'Heavy snow',80:'Rain showers',81:'Moderate showers',82:'Heavy showers',95:'Thunderstorm',96:'Thunderstorm w/ hail',99:'Severe thunderstorm'};
+      const weather = { tempF: Math.round(cur.temperature_2m), feelsF: Math.round(cur.apparent_temperature), desc: WMO_DESC[wc]||'Clear', humidity: Math.round(cur.relativehumidity_2m), windMph: Math.round(cur.windspeed_10m), uvIndex: Math.round(cur.uv_index||0), code: wc, daily };
+
+      cachedWeatherData = { place, weather, ts: Date.now() };
       fetchPill.remove();
+      addWeatherCard(place, weather);
+      const sum2 = `${place.city}: ${weather.tempF}°F, feels ${weather.feelsF}°F, ${weather.desc}, humidity ${weather.humidity}%, wind ${weather.windMph}mph.`;
+      history.push({ role: 'assistant', content: sum2 });
+      await saveChatIfNeeded(); const session2 = getSession();
+      if (session2?.email) renderHistory(session2.email);
+      busy = false; inputEl.focus(); return;
+
     } catch(e) {
       document.getElementById('weather-fetch-pill')?.remove();
       if (e.message === 'permission-denied') {
-        addMsg('ai', '📍 Location access was blocked. To show your weather, please allow location in your browser settings, then try again.');
+        addMsg('ai', '📍 Please allow location access in your browser, then try again.');
         history.push({ role: 'assistant', content: 'Location permission denied.' });
         busy = false; inputEl.focus(); return;
       }
       if (e.message === 'no-geolocation') {
-        addMsg('ai', '📍 Your browser does not support location. Try asking "weather in [your city]" instead.');
+        addMsg('ai', '📍 Your browser does not support location. Try asking "weather in New York" instead.');
         history.push({ role: 'assistant', content: 'Geolocation not supported.' });
         busy = false; inputEl.focus(); return;
       }
-      // GPS unavailable/timeout — show friendly message, don't fall through to AI
-      addMsg('ai', '📍 Could not get your location. Please allow location access in your browser and try again, or ask "weather in [your city]".');
-      history.push({ role: 'assistant', content: 'Location unavailable.' });
-      busy = false; inputEl.focus(); return;
+      // Network / data error — fall through to AI chat
+      console.warn('Browser weather fetch failed:', e.message, '— falling through to AI');
     }
   }
 
@@ -3507,42 +3535,7 @@ function closeAdminPopup() {
 </div>
 
 
-<!-- SUB-AI FULL-SCREEN CHAT -->
-<div id="sub-chat-screen" class="hidden">
-  <div id="sub-chat-header">
-    <button class="sub-back-btn" onclick="closeSubChat()">←</button>
-    <div class="sub-header-logo" id="sub-header-logo">🤖</div>
-    <div class="sub-header-info">
-      <div class="sub-header-name" id="sub-header-name">AI Assistant</div>
-      <div class="sub-header-sub" id="sub-header-sub">Powered by Viora</div>
-    </div>
-    <div class="sub-header-badge" id="sub-header-badge">
-      <span style="width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.8;animation:pdot 2s ease-in-out infinite;display:inline-block;"></span>
-      Online
-    </div>
-  </div>
-
-  <div id="sub-chat-window">
-    <div class="sub-welcome" id="sub-welcome">
-      <div class="sub-welcome-orb" id="sub-welcome-orb">🤖</div>
-      <h2 id="sub-welcome-title">AI Assistant</h2>
-      <p id="sub-welcome-desc">How can I help you?</p>
-      <div class="sub-chips" id="sub-chips"></div>
-    </div>
-  </div>
-
-  <div id="sub-input-area">
-    <div class="sub-input-card" id="sub-input-card">
-      <textarea id="sub-user-input" rows="1"
-        placeholder="Type a message…"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();subSend();}this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'"
-      ></textarea>
-      <button id="sub-send-btn" onclick="subSend()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-      </button>
-    </div>
-  </div>
-</div>
+<!-- sub-chat injected by JS -->
 
 
 <script>
@@ -3608,97 +3601,47 @@ function pwaTriggerInstall() {
 // ══════════════════════════════════════════
 const SUB_AIS = {
   devagent: {
-    name: 'Dev Agent',
-    sub: 'Expert programmer & code debugger',
-    logo: '💻',
-    bg: 'rgba(16,185,129,.15)',
-    color: '#10b981',
-    badgeBg: 'rgba(16,185,129,.1)',
-    sendBg: 'linear-gradient(135deg, #10b981, #059669)',
-    userBubble: 'linear-gradient(135deg, #10b981, #059669)',
-    placeholder: 'Ask anything about code… or drop a ZIP 📦',
-    welcome: 'Dev Agent',
-    desc: 'Expert coder. I can debug, build apps, explain code, and more.',
+    name: 'Dev Agent', sub: 'Expert programmer & code debugger', logo: '💻',
+    bg: 'rgba(16,185,129,.15)', color: '#10b981', sendBg: 'linear-gradient(135deg,#10b981,#059669)',
+    placeholder: 'Ask anything about code…',
+    welcome: 'Dev Agent', desc: 'Expert coder. I can debug, build apps, explain code, and more.',
     chips: ['Debug this code', 'Build a Python script', 'Explain this function', 'Review my code'],
-    system: `You are an expert AI Developer Agent built into Viora. You specialize in:
-- Writing clean, production-ready code in any language
-- Debugging errors and explaining what went wrong
-- Building full apps, scripts, and tools on demand
-- Code review and best practices
-- Explaining technical concepts clearly
-
-Be concise but thorough. Use code blocks for all code. Lead with the solution.`
+    system: `You are an expert AI Developer Agent built into Viora. Write clean production-ready code. Use code blocks for all code. Be concise but thorough.`
   },
   homework: {
-    name: 'Homework Helper',
-    sub: 'Your personal tutor for every subject',
-    logo: '📚',
-    bg: 'rgba(245,158,11,.15)',
-    color: '#f59e0b',
-    badgeBg: 'rgba(245,158,11,.1)',
-    sendBg: 'linear-gradient(135deg, #f59e0b, #d97706)',
-    userBubble: 'linear-gradient(135deg, #f59e0b, #d97706)',
-    placeholder: 'Ask a question or describe what you need help with…',
-    welcome: 'Homework Helper',
-    desc: "Math, ELA, Science, History & more. I'll walk through everything step by step.",
-    chips: ['Help with math', 'Check my essay', 'Explain a science concept', 'History question'],
-    system: `You are a friendly, expert Homework Helper for all subjects. You help students K-12 with any subject including Math, ELA, Science, History, Foreign Languages, and more.
-- Always give clear, step-by-step explanations
-- Use age-appropriate language
-- Be encouraging and positive
-- Show your work and reasoning
-- For math, always box the final answer like: **Answer: 42**`
+    name: 'Homework Helper', sub: 'Your personal tutor for every subject', logo: '📚',
+    bg: 'rgba(245,158,11,.15)', color: '#f59e0b', sendBg: 'linear-gradient(135deg,#f59e0b,#d97706)',
+    placeholder: 'Ask any homework question…',
+    welcome: 'Homework Helper', desc: 'Math, science, history and more. Step-by-step explanations.',
+    chips: ['Solve this math problem', 'Explain photosynthesis', 'Help with an essay', 'Quiz me'],
+    system: `You are a friendly homework helper for students. Give clear step-by-step explanations. Encourage learning, don't just give answers.`
   },
   humanizer: {
-    name: 'AI Humanizer',
-    sub: 'Make AI text sound human and natural',
-    logo: '✍️',
-    bg: 'rgba(124,58,237,.12)',
-    color: '#7c3aed',
-    badgeBg: 'rgba(124,58,237,.1)',
-    sendBg: 'linear-gradient(135deg, #7c3aed, #8b5cf6)',
-    userBubble: 'linear-gradient(135deg, #7c3aed, #8b5cf6)',
-    placeholder: 'Paste AI-generated text to humanize…',
-    welcome: 'AI Humanizer',
-    desc: "Paste any AI-written text and I'll rewrite it to sound natural and human.",
-    chips: ['Humanize this paragraph', 'Make it sound casual', 'Make it sound professional', 'Fix AI patterns'],
-    system: `You are an expert at rewriting AI-generated text to sound natural, human, and authentic. When given text:
-- Remove robotic patterns and AI clichés
-- Vary sentence length and structure naturally
-- Add personality without changing the meaning
-- Keep the tone appropriate (casual or professional based on context)
-- Never say phrases like "certainly", "of course", "delve", "as an AI"
-Return ONLY the rewritten text, no commentary.`
+    name: 'AI Humanizer', sub: 'Make AI text sound natural', logo: '✍️',
+    bg: 'rgba(124,58,237,.15)', color: '#7c3aed', sendBg: 'linear-gradient(135deg,#7c3aed,#6d28d9)',
+    placeholder: 'Paste AI-written text to humanize…',
+    welcome: 'AI Humanizer', desc: 'Paste any AI-generated text and I will rewrite it to sound natural and human.',
+    chips: ['Humanize this paragraph', 'Make it less robotic', 'Rewrite casually', 'Fix AI tone'],
+    system: `You are an AI text humanizer. Rewrite AI-generated text to sound natural, warm and human. Keep the meaning intact but vary sentence structure, add personality, and remove robotic patterns.`
   },
   weather: {
-    name: 'Weather AI',
-    sub: 'Live forecasts & climate questions',
-    logo: '🌦️',
-    bg: 'rgba(56,189,248,.12)',
-    color: '#38bdf8',
-    badgeBg: 'rgba(56,189,248,.1)',
-    sendBg: 'linear-gradient(135deg, #38bdf8, #0ea5e9)',
-    userBubble: 'linear-gradient(135deg, #38bdf8, #0ea5e9)',
+    name: 'Weather AI', sub: 'Detailed forecasts & weather chat', logo: '🌦️',
+    bg: 'rgba(56,189,248,.15)', color: '#38bdf8', sendBg: 'linear-gradient(135deg,#38bdf8,#0ea5e9)',
     placeholder: 'Ask about weather anywhere…',
-    welcome: 'Weather AI',
-    desc: 'Ask me about the weather anywhere in the world.',
-    chips: ['Weather in New York', 'Will it rain this week?', 'Best time to visit Tokyo', 'What to wear today?'],
-    system: `You are a friendly Weather AI. Answer weather questions clearly and helpfully. 
-- Give practical advice (what to wear, whether to bring an umbrella)
-- Use emojis to make forecasts easy to read
-- If asked about a specific city, give as much detail as you know
-- For "today" or "current" weather, let the user know you can give general climate info but for live data they should check a weather app`
+    welcome: 'Weather AI', desc: 'Ask me about weather anywhere in the world.',
+    chips: ['Weather today', 'Will it rain this week?', 'Best time to visit Tokyo', 'Compare climates'],
+    system: `You are a knowledgeable weather assistant. Answer weather questions helpfully. For real-time data you may receive current conditions in the message context. Otherwise use your knowledge to give accurate general forecasts and climate info.`
   }
 };
 
-let subHistory = [];
 let subCurrentAI = null;
+let subHistory = [];
 let subBusy = false;
-
+let _subEl = null;
 
 function subFormatResponse(text, aiId) {
   const colors = { devagent: '#10b981', homework: '#f59e0b', humanizer: '#7c3aed', weather: '#38bdf8' };
-  const c = colors[aiId] || 'var(--violet)';
+  const c = colors[aiId] || '#7c3aed';
   return text
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/```(\w*)\n?([\s\S]*?)```/g, (_,lang,code) =>
@@ -3712,158 +3655,143 @@ function subFormatResponse(text, aiId) {
 
 function openSubChat(aiId) {
   const ai = SUB_AIS[aiId];
-  if (!ai) return;
+  if (!ai) { console.error('Unknown AI:', aiId); return; }
+
+  // Close modal
+  const modal = document.getElementById('ai-modal');
+  if (modal) modal.classList.remove('show');
 
   subCurrentAI = aiId;
   subHistory = [];
+  subBusy = false;
 
-  // Close modal first
-  document.getElementById('ai-modal').classList.remove('show');
+  // Remove any existing sub-chat
+  const old = document.getElementById('sub-chat-screen');
+  if (old) old.remove();
 
-  // Rebuild the entire sub-chat screen HTML at once — no fragile getElementById chains
-  const screen = document.getElementById('sub-chat-screen');
-  screen.innerHTML = `
-    <div id="sub-chat-header" style="display:flex;align-items:center;gap:12px;padding:14px 20px;flex-shrink:0;border-bottom:1.5px solid var(--border);background:rgba(250,248,255,.9);backdrop-filter:blur(10px);">
+  // Build fresh full-screen chat div
+  const el = document.createElement('div');
+  el.id = 'sub-chat-screen';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;background:var(--bg);';
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;padding:14px 20px;flex-shrink:0;border-bottom:1.5px solid var(--border);background:rgba(250,248,255,.95);backdrop-filter:blur(10px);">
       <button onclick="closeSubChat()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--text-mid);padding:4px 8px;border-radius:8px;line-height:1;">←</button>
-      <div style="width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;background:${ai.bg};flex-shrink:0;">${ai.logo}</div>
+      <div style="width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.25rem;background:${ai.bg};flex-shrink:0;">${ai.logo}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:.95rem;color:${ai.color};">${ai.name}</div>
-        <div style="font-size:.75rem;color:var(--text-mid);">${ai.sub}</div>
+        <div style="font-size:.74rem;color:var(--text-mid);">${ai.sub}</div>
       </div>
-      <div style="font-size:.72rem;padding:4px 10px;border-radius:20px;border:1px solid ${ai.color}44;color:${ai.color};background:${ai.badgeBg};">
-        <span style="width:6px;height:6px;border-radius:50%;background:${ai.color};display:inline-block;margin-right:5px;opacity:.85;"></span>Online
+      <div style="font-size:.72rem;padding:4px 10px;border-radius:20px;border:1px solid ${ai.color}44;color:${ai.color};background:${ai.bg};">
+        <span style="width:6px;height:6px;border-radius:50%;background:${ai.color};display:inline-block;margin-right:5px;opacity:.85;animation:pdot 2s ease-in-out infinite;"></span>Online
       </div>
     </div>
 
-    <div id="sub-chat-window" style="flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:12px;">
-      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:40px 20px;gap:14px;margin:auto;">
+    <div id="sub-win" style="flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:40px 20px;gap:14px;margin:auto;" id="sub-welcome-block">
         <div style="width:72px;height:72px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;background:${ai.bg};border:2px solid ${ai.color}33;">${ai.logo}</div>
         <h2 style="font-size:1.3rem;font-weight:800;color:${ai.color};margin:0;">${ai.welcome}</h2>
         <p style="font-size:.85rem;color:var(--text-mid);max-width:280px;line-height:1.6;margin:0;">${ai.desc}</p>
         <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:4px;">
-          ${ai.chips.map(ch => `<button onclick="subSendText(this.textContent)" style="padding:7px 14px;border-radius:20px;border:1.5px solid ${ai.color}33;background:none;color:${ai.color};font-size:.8rem;cursor:pointer;">${ch}</button>`).join('')}
+          ${ai.chips.map(ch => `<button onclick="subSendText('${ch.replace(/'/g,"\\'")}',this)" style="padding:7px 14px;border-radius:20px;border:1.5px solid ${ai.color}33;background:none;color:${ai.color};font-size:.8rem;cursor:pointer;">${ch}</button>`).join('')}
         </div>
       </div>
     </div>
 
     <div style="padding:12px 16px;flex-shrink:0;border-top:1px solid var(--border);">
       <div style="display:flex;align-items:flex-end;gap:10px;background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:10px 14px;">
-        <textarea id="sub-user-input" rows="1" placeholder="${ai.placeholder}"
+        <textarea id="sub-input" rows="1" placeholder="${ai.placeholder}"
           style="flex:1;border:none;background:none;resize:none;outline:none;font-size:.9rem;color:var(--text);max-height:110px;line-height:1.5;"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();subSend();}this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'"
         ></textarea>
-        <button id="sub-send-btn" onclick="subSend()"
-          style="width:36px;height:36px;border-radius:10px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${ai.sendBg};">
+        <button onclick="subSend()" style="width:36px;height:36px;border-radius:10px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${ai.sendBg};">
           <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
     </div>`;
 
-  screen.style.display = 'flex';
-  screen.classList.remove('hidden');
-  setTimeout(() => { const inp = document.getElementById('sub-user-input'); if(inp) inp.focus(); }, 100);
+  document.body.appendChild(el);
+  _subEl = el;
+  setTimeout(() => { const inp = document.getElementById('sub-input'); if(inp) inp.focus(); }, 50);
 }
 
 function closeSubChat() {
-  const screen = document.getElementById('sub-chat-screen');
-  screen.classList.add('hidden');
-  screen.style.display = 'none';
-  subHistory = [];
-  subCurrentAI = null;
+  if (_subEl) { _subEl.remove(); _subEl = null; }
+  const old = document.getElementById('sub-chat-screen');
+  if (old) old.remove();
+  subCurrentAI = null; subHistory = []; subBusy = false;
 }
 
 function subSendText(text) {
-  document.getElementById('sub-user-input').value = text;
-  subSend();
+  const inp = document.getElementById('sub-input');
+  if (inp) { inp.value = text; subSend(); }
 }
 
-function subScrollBottom() {
-  const w = document.getElementById('sub-chat-window');
-  w.scrollTop = w.scrollHeight;
-}
-
-function subAddMsg(role, html, time) {
-  const ai = SUB_AIS[subCurrentAI];
-  const welcome = document.getElementById('sub-welcome');
-  if (welcome) welcome.style.display = 'none';
-
-  // Hide welcome screen when first message appears
-  const welcomeDiv = document.querySelector('#sub-chat-window > div:first-child');
-  if (welcomeDiv && welcomeDiv.querySelector('h2')) welcomeDiv.style.display = 'none';
-
-  const wrap = document.createElement('div');
-  wrap.className = 'sub-msg ' + role;
-  const avatarText = role === 'ai' ? ai.logo : (currentUser?.name?.[0] || '?');
-  const avatarStyle = role === 'ai'
-    ? `background:${ai.bg};font-size:.9rem;`
-    : `background:${ai.sendBg};color:white;font-size:.7rem;font-weight:700;`;
-
-  wrap.innerHTML = `
-    <div class="sub-av" style="${avatarStyle}">${avatarText}</div>
-    <div class="sub-bubble-wrap">
-      <div class="sub-bubble" style="${role==='user'?'background:'+ai.sendBg:''}">${html}</div>
-      <div class="sub-msg-time">${time || new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
-    </div>`;
-  document.getElementById('sub-chat-window').appendChild(wrap);
-  subScrollBottom();
-  return wrap;
+function subAddMsg(role, html) {
+  const win = document.getElementById('sub-win');
+  if (!win) return;
+  const wb = document.getElementById('sub-welcome-block');
+  if (wb) wb.remove();
+  const ai = SUB_AIS[subCurrentAI] || {};
+  const isUser = role === 'user';
+  const d = document.createElement('div');
+  d.style.cssText = `display:flex;gap:10px;align-items:flex-end;${isUser ? 'flex-direction:row-reverse;' : ''}`;
+  d.innerHTML = isUser
+    ? `<div style="max-width:78%;padding:10px 14px;border-radius:18px 18px 4px 18px;background:${ai.sendBg || 'var(--violet)'};color:white;font-size:.9rem;line-height:1.55;">${html}</div>`
+    : `<div style="width:32px;height:32px;border-radius:50%;background:${ai.bg || 'var(--violet-light)'};display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">${ai.logo || '🤖'}</div>
+       <div style="max-width:78%;padding:10px 14px;border-radius:18px 18px 18px 4px;background:var(--card);border:1px solid var(--border);font-size:.9rem;line-height:1.55;color:var(--text);">${html}</div>`;
+  win.appendChild(d);
+  win.scrollTop = win.scrollHeight;
 }
 
 async function subSend() {
-  if (subBusy || !subCurrentAI) return;
-  const ai = SUB_AIS[subCurrentAI];
-  const input = document.getElementById('sub-user-input');
-  const text = input.value.trim();
+  if (subBusy) return;
+  const inp = document.getElementById('sub-input');
+  if (!inp) return;
+  const text = inp.value.trim();
   if (!text) return;
+  inp.value = '';
+  inp.style.height = 'auto';
 
-  input.value = ''; input.style.height = 'auto';
-  subAddMsg('user', escHtml(text));
+  const ai = SUB_AIS[subCurrentAI];
+  if (!ai) return;
+
+  subAddMsg('user', text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
   subHistory.push({ role: 'user', content: text });
   subBusy = true;
 
-  // Show typing
-  let typingEl = document.getElementById('sub-typing');
-  if (!typingEl) {
-    typingEl = document.createElement('div');
-    typingEl.id = 'sub-typing';
-    typingEl.innerHTML = `
-      <div class="sub-av" style="background:${ai.bg};font-size:.9rem;">${ai.logo}</div>
-      <div class="typing-bubble">
-        <div class="td"></div><div class="td"></div><div class="td"></div>
-      </div>`;
-  }
-  typingEl.style.display = 'flex';
-  document.getElementById('sub-chat-window').appendChild(typingEl);
-  subScrollBottom();
+  // Typing indicator
+  const win = document.getElementById('sub-win');
+  const typing = document.createElement('div');
+  typing.id = 'sub-typing';
+  typing.style.cssText = 'display:flex;gap:10px;align-items:flex-end;';
+  typing.innerHTML = `<div style="width:32px;height:32px;border-radius:50%;background:${ai.bg};display:flex;align-items:center;justify-content:center;font-size:1rem;">${ai.logo}</div>
+    <div style="padding:10px 14px;border-radius:18px 18px 18px 4px;background:var(--card);border:1px solid var(--border);">
+      <span style="display:inline-flex;gap:4px;">${[0,150,300].map(d=>`<span style="width:7px;height:7px;border-radius:50%;background:${ai.color};animation:pdot 1.2s ${d}ms ease-in-out infinite;display:inline-block;"></span>`).join('')}</span>
+    </div>`;
+  if (win) { win.appendChild(typing); win.scrollTop = win.scrollHeight; }
 
   try {
     const body = { system: ai.system, messages: subHistory };
     if (currentUser?.email) body.email = currentUser.email;
     if (currentCoords) body.coords = currentCoords;
 
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await res.json();
-    typingEl.style.display = 'none';
+    typing.remove();
 
-    if (data.error) {
-      subAddMsg('ai', '⚠️ ' + escHtml(data.error));
-    } else {
-      const reply = data.content?.[0]?.text || '';
+    const reply = data.content?.[0]?.text || data.reply || '';
+    if (reply) {
       subHistory.push({ role: 'assistant', content: reply });
       subAddMsg('ai', subFormatResponse(reply, subCurrentAI));
+    } else {
+      subAddMsg('ai', '⚠️ ' + (data.error || 'No response received.'));
     }
   } catch (e) {
-    typingEl.style.display = 'none';
+    typing.remove();
     subAddMsg('ai', '⚠️ Network error. Please try again.');
   }
   subBusy = false;
-  subScrollBottom();
 }
-
 </script>
 
 </body>
