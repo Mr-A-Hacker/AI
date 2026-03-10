@@ -838,6 +838,125 @@ header {
 .landing-features { display: flex; gap: 28px; margin-top: 52px; flex-wrap: wrap; justify-content: center; }
 .landing-feat { display: flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--text-mid); font-weight: 600; }
 .landing-feat-icon { font-size: 1rem; }
+
+/* ══════════════════════════════════════════
+   SUB-AI FULL-SCREEN CHAT
+══════════════════════════════════════════ */
+#sub-chat-screen {
+  position: fixed; inset: 0; z-index: 95; display: flex; flex-direction: column;
+  background: var(--bg); transition: opacity .3s, transform .3s;
+}
+#sub-chat-screen.hidden { opacity: 0; pointer-events: none; transform: translateY(20px); }
+
+#sub-chat-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 20px; flex-shrink: 0;
+  border-bottom: 1.5px solid var(--border);
+  background: rgba(250,248,255,.9); backdrop-filter: blur(10px);
+}
+@supports (padding: max(0px)) {
+  #sub-chat-header { padding-top: max(14px, env(safe-area-inset-top)); }
+}
+.sub-back-btn {
+  width: 38px; height: 38px; border-radius: 12px; border: 1.5px solid var(--border);
+  background: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; color: var(--text-mid); transition: all .2s; flex-shrink: 0;
+}
+.sub-back-btn:hover { border-color: var(--violet-light); color: var(--violet); }
+.sub-header-logo {
+  width: 36px; height: 36px; border-radius: 12px; display: flex;
+  align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;
+}
+.sub-header-info { flex: 1; min-width: 0; }
+.sub-header-name { font-family: var(--font-head); font-size: 1rem; font-weight: 800; }
+.sub-header-sub { font-size: .72rem; color: var(--text-mid); margin-top: 1px; }
+.sub-header-badge {
+  display: flex; align-items: center; gap: 5px; padding: 5px 12px;
+  border-radius: 20px; font-size: .7rem; font-weight: 600;
+  border: 1.5px solid; flex-shrink: 0;
+}
+
+#sub-chat-window {
+  flex: 1; overflow-y: auto; padding: 20px 20px 12px;
+  display: flex; flex-direction: column; gap: 14px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+#sub-chat-window::-webkit-scrollbar { width: 4px; }
+#sub-chat-window::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.sub-welcome {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  flex: 1; text-align: center; gap: 12px; padding: 24px 16px;
+  animation: fadeUp .4s ease both;
+}
+.sub-welcome-orb {
+  width: 68px; height: 68px; border-radius: 22px; display: flex;
+  align-items: center; justify-content: center; font-size: 1.8rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,.15);
+}
+.sub-welcome h2 { font-family: var(--font-head); font-size: 1.5rem; font-weight: 800; }
+.sub-welcome p { font-size: .86rem; color: var(--text-mid); max-width: 320px; line-height: 1.65; }
+.sub-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }
+.sub-chip {
+  border: 1.5px solid var(--border); border-radius: 20px; padding: 8px 14px;
+  font-size: .79rem; color: var(--text-mid); cursor: pointer; background: white;
+  transition: all .2s; font-family: var(--font-body);
+}
+.sub-chip:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+
+#sub-input-area {
+  padding: 10px 16px 20px; flex-shrink: 0; background: var(--bg);
+}
+@supports (padding: max(0px)) {
+  #sub-input-area { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+}
+.sub-input-card {
+  background: white; border: 1.5px solid var(--border); border-radius: 20px;
+  padding: 11px 11px 11px 18px; display: flex; align-items: flex-end; gap: 9px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.07); transition: border-color .2s, box-shadow .2s;
+}
+.sub-input-card:focus-within { box-shadow: 0 4px 28px rgba(0,0,0,.1); }
+#sub-user-input {
+  flex: 1; background: none; border: none; outline: none;
+  font-family: var(--font-body); font-size: .9rem; color: var(--text);
+  resize: none; max-height: 110px; line-height: 1.5; scrollbar-width: thin;
+}
+#sub-user-input::placeholder { color: var(--text-light); }
+#sub-send-btn {
+  width: 38px; height: 38px; border-radius: 13px; flex-shrink: 0;
+  border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: white; transition: all .2s;
+}
+#sub-send-btn:hover { transform: scale(1.07); }
+#sub-send-btn:active { transform: scale(.95); }
+#sub-send-btn svg { width: 14px; height: 14px; }
+
+.sub-msg { display: flex; gap: 10px; align-items: flex-end; animation: msgIn .3s cubic-bezier(.34,1.56,.64,1) both; }
+.sub-msg.user { flex-direction: row-reverse; }
+.sub-av { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: .75rem; }
+.sub-bubble-wrap { display: flex; flex-direction: column; max-width: 75%; }
+.sub-bubble {
+  padding: 11px 16px; border-radius: 20px; font-size: .88rem; line-height: 1.6;
+  word-break: break-word;
+}
+.sub-msg.ai .sub-bubble {
+  background: white; border: 1.5px solid var(--border);
+  color: var(--text); border-bottom-left-radius: 5px; box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+.sub-msg.user .sub-bubble { color: white; border-bottom-right-radius: 5px; }
+.sub-msg-time { font-size: .6rem; color: var(--text-light); margin-top: 4px; font-weight: 500; }
+.sub-msg.user .sub-msg-time { text-align: right; }
+
+#sub-typing { display: none; gap: 10px; align-items: flex-end; }
+#sub-typing.show { display: flex; }
+
+@media (max-width: 640px) {
+  #sub-chat-window { padding: 14px 10px 8px; }
+  #sub-input-area { padding: 8px 10px 16px; }
+  .sub-bubble-wrap { max-width: 88%; }
+  .sub-bubble { font-size: .83rem; padding: 9px 13px; }
+}
 </style>
 </head>
 <body>
@@ -3016,19 +3135,19 @@ function closeAdminPopup() {
       <div id="aim-panel-tools" class="aim-panel show">
         <p style="font-size:.78rem;color:var(--text-mid);margin:0 0 14px;">Viora-powered tools — more coming soon.</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div class="other-ai-card" onclick="switchAimTab('humanizer')" style="cursor:pointer;">
+          <div class="other-ai-card" onclick="openSubChat('humanizer')" style="cursor:pointer;">
             <div class="oac-logo" style="background:rgba(124,58,237,.12)">✍️</div>
             <div class="oac-name">AI Humanizer</div>
             <div class="oac-desc">Make AI-written text sound natural and human.</div>
             <span class="oac-tag" style="background:rgba(124,58,237,.1);color:var(--violet-light);">Free · Viora</span>
           </div>
-          <div class="other-ai-card" onclick="switchAimTab('weather')" style="cursor:pointer;">
+          <div class="other-ai-card" onclick="openSubChat('weather')" style="cursor:pointer;">
             <div class="oac-logo" style="background:rgba(56,189,248,.12)">🌦️</div>
             <div class="oac-name">AI Weather</div>
             <div class="oac-desc">Get a detailed weather forecast for any city.</div>
             <span class="oac-tag" style="background:rgba(56,189,248,.1);color:#38bdf8;">Free · Viora</span>
           </div>
-          <div class="other-ai-card" onclick="switchAimTab('devagent')" style="cursor:pointer;grid-column:1/-1;">
+          <div class="other-ai-card" onclick="openSubChat('devagent')" style="cursor:pointer;grid-column:1/-1;">
             <div style="display:flex;align-items:center;gap:12px;">
               <div class="oac-logo" style="background:rgba(16,185,129,.12);width:48px;height:48px;border-radius:14px;font-size:1.6rem;">💻</div>
               <div style="flex:1;">
@@ -3038,7 +3157,7 @@ function closeAdminPopup() {
               <span class="oac-tag" style="background:rgba(16,185,129,.1);color:#10b981;white-space:nowrap;">Free · Viora</span>
             </div>
           </div>
-          <div class="other-ai-card" onclick="switchAimTab('homework')" style="cursor:pointer;grid-column:1/-1;">
+          <div class="other-ai-card" onclick="openSubChat('homework')" style="cursor:pointer;grid-column:1/-1;">
             <div style="display:flex;align-items:center;gap:12px;">
               <div class="oac-logo" style="background:rgba(245,158,11,.12);width:48px;height:48px;border-radius:14px;font-size:1.6rem;">📚</div>
               <div style="flex:1;">
@@ -3345,6 +3464,295 @@ function pwaTriggerInstall() {
     });
   }
 }
+
+// ══════════════════════════════════════════
+// SUB-AI CHAT ENGINE
+// ══════════════════════════════════════════
+const SUB_AIS = {
+  devagent: {
+    name: 'Dev Agent',
+    sub: 'Expert programmer & code debugger',
+    logo: '💻',
+    bg: 'rgba(16,185,129,.15)',
+    color: '#10b981',
+    badgeBg: 'rgba(16,185,129,.1)',
+    sendBg: 'linear-gradient(135deg, #10b981, #059669)',
+    userBubble: 'linear-gradient(135deg, #10b981, #059669)',
+    placeholder: 'Ask anything about code… or drop a ZIP 📦',
+    welcome: 'Dev Agent',
+    desc: 'Expert coder. I can debug, build apps, explain code, and more.',
+    chips: ['Debug this code', 'Build a Python script', 'Explain this function', 'Review my code'],
+    system: `You are an expert AI Developer Agent built into Viora. You specialize in:
+- Writing clean, production-ready code in any language
+- Debugging errors and explaining what went wrong
+- Building full apps, scripts, and tools on demand
+- Code review and best practices
+- Explaining technical concepts clearly
+
+Be concise but thorough. Use code blocks for all code. Lead with the solution.`
+  },
+  homework: {
+    name: 'Homework Helper',
+    sub: 'Your personal tutor for every subject',
+    logo: '📚',
+    bg: 'rgba(245,158,11,.15)',
+    color: '#f59e0b',
+    badgeBg: 'rgba(245,158,11,.1)',
+    sendBg: 'linear-gradient(135deg, #f59e0b, #d97706)',
+    userBubble: 'linear-gradient(135deg, #f59e0b, #d97706)',
+    placeholder: 'Ask a question or describe what you need help with…',
+    welcome: 'Homework Helper',
+    desc: 'Math, ELA, Science, History & more. I'll walk through everything step by step.',
+    chips: ['Help with math', 'Check my essay', 'Explain a science concept', 'History question'],
+    system: `You are a friendly, expert Homework Helper for all subjects. You help students K-12 with any subject including Math, ELA, Science, History, Foreign Languages, and more.
+- Always give clear, step-by-step explanations
+- Use age-appropriate language
+- Be encouraging and positive
+- Show your work and reasoning
+- For math, always box the final answer like: **Answer: 42**`
+  },
+  humanizer: {
+    name: 'AI Humanizer',
+    sub: 'Make AI text sound human and natural',
+    logo: '✍️',
+    bg: 'rgba(124,58,237,.12)',
+    color: '#7c3aed',
+    badgeBg: 'rgba(124,58,237,.1)',
+    sendBg: 'linear-gradient(135deg, #7c3aed, #8b5cf6)',
+    userBubble: 'linear-gradient(135deg, #7c3aed, #8b5cf6)',
+    placeholder: 'Paste AI-generated text to humanize…',
+    welcome: 'AI Humanizer',
+    desc: 'Paste any AI-written text and I'll rewrite it to sound natural and human.',
+    chips: ['Humanize this paragraph', 'Make it sound casual', 'Make it sound professional', 'Fix AI patterns'],
+    system: `You are an expert at rewriting AI-generated text to sound natural, human, and authentic. When given text:
+- Remove robotic patterns and AI clichés
+- Vary sentence length and structure naturally
+- Add personality without changing the meaning
+- Keep the tone appropriate (casual or professional based on context)
+- Never say phrases like "certainly", "of course", "delve", "as an AI"
+Return ONLY the rewritten text, no commentary.`
+  },
+  weather: {
+    name: 'Weather AI',
+    sub: 'Live forecasts & climate questions',
+    logo: '🌦️',
+    bg: 'rgba(56,189,248,.12)',
+    color: '#38bdf8',
+    badgeBg: 'rgba(56,189,248,.1)',
+    sendBg: 'linear-gradient(135deg, #38bdf8, #0ea5e9)',
+    userBubble: 'linear-gradient(135deg, #38bdf8, #0ea5e9)',
+    placeholder: 'Ask about weather anywhere…',
+    welcome: 'Weather AI',
+    desc: 'Ask me about the weather anywhere in the world.',
+    chips: ['Weather in New York', 'Will it rain this week?', 'Best time to visit Tokyo', 'What to wear today?'],
+    system: `You are a friendly Weather AI. Answer weather questions clearly and helpfully. 
+- Give practical advice (what to wear, whether to bring an umbrella)
+- Use emojis to make forecasts easy to read
+- If asked about a specific city, give as much detail as you know
+- For "today" or "current" weather, let the user know you can give general climate info but for live data they should check a weather app`
+  }
+};
+
+let subHistory = [];
+let subCurrentAI = null;
+let subBusy = false;
+
+
+function subFormatResponse(text, aiId) {
+  const colors = { devagent: '#10b981', homework: '#f59e0b', humanizer: '#7c3aed', weather: '#38bdf8' };
+  const c = colors[aiId] || 'var(--violet)';
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```(\w*)\n?([\s\S]*?)```/g, (_,lang,code) =>
+      `<pre style="background:#1e1e2e;border-radius:10px;padding:12px;margin:8px 0;overflow-x:auto;"><code style="font-family:monospace;font-size:.82rem;color:#e2e8f0;white-space:pre;">${code.trim()}</code></pre>`)
+    .replace(/`([^`]+)`/g, `<code style="background:rgba(0,0,0,.08);border-radius:4px;padding:1px 5px;font-size:.83rem;">$1</code>`)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^#{1,3} (.+)$/gm, `<strong style="font-size:.92rem;display:block;margin:8px 0 3px;color:${c};">$1</strong>`)
+    .replace(/^[-•] /gm, '• ')
+    .replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+}
+
+function openSubChat(aiId) {
+  const ai = SUB_AIS[aiId];
+  if (!ai) return;
+  closeAiModal();
+  subCurrentAI = aiId;
+  subHistory = [];
+
+  // Style header
+  document.getElementById('sub-header-logo').textContent = ai.logo;
+  document.getElementById('sub-header-logo').style.background = ai.bg;
+  document.getElementById('sub-header-name').textContent = ai.name;
+  document.getElementById('sub-header-name').style.background = 'none';
+  document.getElementById('sub-header-name').style.webkitTextFillColor = ai.color;
+  document.getElementById('sub-header-name').style.color = ai.color;
+  document.getElementById('sub-header-sub').textContent = ai.sub;
+  const badge = document.getElementById('sub-header-badge');
+  badge.style.background = ai.badgeBg;
+  badge.style.borderColor = ai.color + '44';
+  badge.style.color = ai.color;
+
+  // Style send button
+  document.getElementById('sub-send-btn').style.background = ai.sendBg;
+  document.getElementById('sub-input-card').style.setProperty('--focus-color', ai.color);
+
+  // Style welcome
+  document.getElementById('sub-welcome-orb').textContent = ai.logo;
+  document.getElementById('sub-welcome-orb').style.background = ai.bg;
+  document.getElementById('sub-welcome-orb').style.border = '2px solid ' + ai.color + '44';
+  document.getElementById('sub-welcome-title').textContent = ai.welcome;
+  document.getElementById('sub-welcome-title').style.color = ai.color;
+  document.getElementById('sub-welcome-desc').textContent = ai.desc;
+
+  // Build chips
+  const chipsEl = document.getElementById('sub-chips');
+  chipsEl.innerHTML = ai.chips.map(c =>
+    `<button class="sub-chip" onclick="subSendText(this.textContent)" style="border-color:${ai.color}33;color:${ai.color};">${c}</button>`
+  ).join('');
+
+  // Clear chat
+  const win = document.getElementById('sub-chat-window');
+  win.innerHTML = '';
+  win.appendChild(document.getElementById('sub-welcome'));
+  document.getElementById('sub-welcome').style.display = 'flex';
+
+  document.getElementById('sub-user-input').placeholder = ai.placeholder;
+  document.getElementById('sub-chat-screen').classList.remove('hidden');
+  document.getElementById('sub-user-input').focus();
+}
+
+function closeSubChat() {
+  document.getElementById('sub-chat-screen').classList.add('hidden');
+  subHistory = [];
+  subCurrentAI = null;
+}
+
+function subSendText(text) {
+  document.getElementById('sub-user-input').value = text;
+  subSend();
+}
+
+function subScrollBottom() {
+  const w = document.getElementById('sub-chat-window');
+  w.scrollTop = w.scrollHeight;
+}
+
+function subAddMsg(role, html, time) {
+  const ai = SUB_AIS[subCurrentAI];
+  const welcome = document.getElementById('sub-welcome');
+  if (welcome) welcome.style.display = 'none';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'sub-msg ' + role;
+  const avatarText = role === 'ai' ? ai.logo : (currentUser?.name?.[0] || '?');
+  const avatarStyle = role === 'ai'
+    ? `background:${ai.bg};font-size:.9rem;`
+    : `background:${ai.sendBg};color:white;font-size:.7rem;font-weight:700;`;
+
+  wrap.innerHTML = `
+    <div class="sub-av" style="${avatarStyle}">${avatarText}</div>
+    <div class="sub-bubble-wrap">
+      <div class="sub-bubble" style="${role==='user'?'background:'+ai.sendBg:''}">${html}</div>
+      <div class="sub-msg-time">${time || new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`;
+  document.getElementById('sub-chat-window').appendChild(wrap);
+  subScrollBottom();
+  return wrap;
+}
+
+async function subSend() {
+  if (subBusy || !subCurrentAI) return;
+  const ai = SUB_AIS[subCurrentAI];
+  const input = document.getElementById('sub-user-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = ''; input.style.height = 'auto';
+  subAddMsg('user', escHtml(text));
+  subHistory.push({ role: 'user', content: text });
+  subBusy = true;
+
+  // Show typing
+  let typingEl = document.getElementById('sub-typing');
+  if (!typingEl) {
+    typingEl = document.createElement('div');
+    typingEl.id = 'sub-typing';
+    typingEl.innerHTML = `
+      <div class="sub-av" style="background:${ai.bg};font-size:.9rem;">${ai.logo}</div>
+      <div class="typing-bubble">
+        <div class="td"></div><div class="td"></div><div class="td"></div>
+      </div>`;
+  }
+  typingEl.style.display = 'flex';
+  document.getElementById('sub-chat-window').appendChild(typingEl);
+  subScrollBottom();
+
+  try {
+    const body = { system: ai.system, messages: subHistory };
+    if (currentUser?.email) body.email = currentUser.email;
+    if (currentCoords) body.coords = currentCoords;
+
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    typingEl.style.display = 'none';
+
+    if (data.error) {
+      subAddMsg('ai', '⚠️ ' + escHtml(data.error));
+    } else {
+      const reply = data.content?.[0]?.text || '';
+      subHistory.push({ role: 'assistant', content: reply });
+      subAddMsg('ai', subFormatResponse(reply, subCurrentAI));
+    }
+  } catch (e) {
+    typingEl.style.display = 'none';
+    subAddMsg('ai', '⚠️ Network error. Please try again.');
+  }
+  subBusy = false;
+  subScrollBottom();
+}
+
 </script>
+
+<!-- SUB-AI FULL-SCREEN CHAT -->
+<div id="sub-chat-screen" class="hidden">
+  <div id="sub-chat-header">
+    <button class="sub-back-btn" onclick="closeSubChat()">←</button>
+    <div class="sub-header-logo" id="sub-header-logo">🤖</div>
+    <div class="sub-header-info">
+      <div class="sub-header-name" id="sub-header-name">AI Assistant</div>
+      <div class="sub-header-sub" id="sub-header-sub">Powered by Viora</div>
+    </div>
+    <div class="sub-header-badge" id="sub-header-badge">
+      <span style="width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.8;animation:pdot 2s ease-in-out infinite;display:inline-block;"></span>
+      Online
+    </div>
+  </div>
+
+  <div id="sub-chat-window">
+    <div class="sub-welcome" id="sub-welcome">
+      <div class="sub-welcome-orb" id="sub-welcome-orb">🤖</div>
+      <h2 id="sub-welcome-title">AI Assistant</h2>
+      <p id="sub-welcome-desc">How can I help you?</p>
+      <div class="sub-chips" id="sub-chips"></div>
+    </div>
+  </div>
+
+  <div id="sub-input-area">
+    <div class="sub-input-card" id="sub-input-card">
+      <textarea id="sub-user-input" rows="1"
+        placeholder="Type a message…"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();subSend();}this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'"
+      ></textarea>
+      <button id="sub-send-btn" onclick="subSend()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
