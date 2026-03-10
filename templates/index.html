@@ -957,6 +957,34 @@ header {
   .sub-bubble-wrap { max-width: 88%; }
   .sub-bubble { font-size: .83rem; padding: 9px 13px; }
 }
+
+/* ── Fetching weather pill ── */
+.weather-fetch-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(135deg, rgba(56,189,248,.12), rgba(14,165,233,.08));
+  border: 1.5px solid rgba(56,189,248,.35);
+  border-radius: 20px; padding: 9px 16px;
+  font-size: .82rem; font-weight: 600;
+  color: #38bdf8;
+  box-shadow: 0 0 14px rgba(56,189,248,.25), 0 0 28px rgba(56,189,248,.1);
+  animation: weatherPillGlow 2s ease-in-out infinite;
+}
+@keyframes weatherPillGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(56,189,248,.2), 0 0 20px rgba(56,189,248,.08); }
+  50%       { box-shadow: 0 0 20px rgba(56,189,248,.45), 0 0 40px rgba(56,189,248,.2); }
+}
+.weather-fetch-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #38bdf8;
+  animation: weatherDotPulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 6px #38bdf8;
+}
+.weather-fetch-dot:nth-child(2) { animation-delay: .2s; }
+.weather-fetch-dot:nth-child(3) { animation-delay: .4s; }
+@keyframes weatherDotPulse {
+  0%, 60%, 100% { transform: scale(.7); opacity: .4; }
+  30%            { transform: scale(1.2); opacity: 1; }
+}
 </style>
 </head>
 <body>
@@ -1279,6 +1307,9 @@ let busy = false;
 let trialSeconds = 300;
 let timerInterval = null;
 let sidebarOpen = false;
+let currentCoords = null;        // cached GPS — grabbed once
+let cachedWeatherData = null;    // { place, weather, ts }
+const WEATHER_TTL_MS = 10 * 60 * 1000;
 
 // ── Auth ──
 function showAuth(tab) {
@@ -2657,14 +2688,39 @@ function isLocationQuery(text) {
 }
 
 function getBrowserLocation() {
+  // Return cached coords instantly if we already have them
+  if (currentCoords) return Promise.resolve(currentCoords);
   return new Promise(resolve => {
     if (!navigator.geolocation) { resolve(null); return; }
     navigator.geolocation.getCurrentPosition(
-      pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      pos => {
+        currentCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        resolve(currentCoords);
+      },
       () => resolve(null),
-      { timeout: 6000 }
+      { timeout: 6000, enableHighAccuracy: false }
     );
   });
+}
+
+// Pre-warm: grab GPS silently as soon as app opens
+function prewarmLocation() {
+  if (!navigator.geolocation || currentCoords) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    currentCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+    // Also pre-fetch weather so it's instant on first ask
+    prefetchWeather();
+  }, () => {}, { timeout: 8000, enableHighAccuracy: false });
+}
+
+async function prefetchWeather() {
+  if (!currentCoords) return;
+  if (cachedWeatherData && Date.now() - cachedWeatherData.ts < WEATHER_TTL_MS) return;
+  try {
+    const r = await fetch(`/api/weather?lat=${currentCoords.lat}&lon=${currentCoords.lon}`);
+    const d = await r.json();
+    if (d.weather) cachedWeatherData = { ...d, ts: Date.now() };
+  } catch {}
 }
 
 async function sendMessage() {
@@ -2797,11 +2853,34 @@ Think carefully about:
 
   // ── Weather card ──
   if (isWeatherQuery(text) && coords) {
+    // Swap typing dots for glowing "Fetching weather..." pill
+    typingEl.classList.remove('show');
+    const fetchPill = document.createElement('div');
+    fetchPill.id = 'weather-fetch-pill';
+    fetchPill.className = 'msg ai';
+    fetchPill.innerHTML = `
+      <div class="av" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9);color:white;font-size:.68rem;font-weight:700;">V</div>
+      <div class="weather-fetch-pill">
+        <span class="weather-fetch-dot"></span>
+        <span class="weather-fetch-dot"></span>
+        <span class="weather-fetch-dot"></span>
+        Fetching weather…
+      </div>`;
+    chatEl.insertBefore(fetchPill, typingEl);
+    scrollBot();
+
     try {
-      const wres = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
-      const wdata = await wres.json();
+      // Use cache if fresh, otherwise fetch
+      let wdata;
+      if (cachedWeatherData && Date.now() - cachedWeatherData.ts < WEATHER_TTL_MS) {
+        wdata = cachedWeatherData;
+      } else {
+        const wres = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
+        wdata = await wres.json();
+        if (wdata.weather) cachedWeatherData = { ...wdata, ts: Date.now() };
+      }
+      fetchPill.remove();
       if (wdata.weather) {
-        typingEl.classList.remove('show');
         addWeatherCard(wdata.place, wdata.weather);
         const summary = `${wdata.place?.city || 'Your location'}: ${wdata.weather.tempF}°F, feels like ${wdata.weather.feelsF}°F, ${wdata.weather.desc}, humidity ${wdata.weather.humidity}%, wind ${wdata.weather.windMph} mph.`;
         history.push({ role: 'assistant', content: summary });
@@ -2812,7 +2891,11 @@ Think carefully about:
         inputEl.focus();
         return;
       }
-    } catch(e) { /* fall through to normal chat */ }
+    } catch(e) {
+      document.getElementById('weather-fetch-pill')?.remove();
+      typingEl.classList.add('show');
+      /* fall through to normal chat */
+    }
   }
 
   try {
@@ -2983,6 +3066,7 @@ window.addEventListener('load', async () => {
     openChat(s.name, s.isTrial, s.email || null);
     checkAdminPopup();
     if (!s.isTrial) requestNotificationPermission();
+    prewarmLocation(); // grab GPS + pre-fetch weather silently
     // Restore last active chat on refresh
     if (s.email && !s.isTrial) {
       // handled in openChat now via localStorage
