@@ -2688,17 +2688,21 @@ function isLocationQuery(text) {
 }
 
 function getBrowserLocation() {
-  // Return cached coords instantly if we already have them
+  // Return cached coords instantly if already have them
   if (currentCoords) return Promise.resolve(currentCoords);
-  return new Promise(resolve => {
-    if (!navigator.geolocation) { resolve(null); return; }
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject(new Error('no-geolocation')); return; }
     navigator.geolocation.getCurrentPosition(
       pos => {
         currentCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
         resolve(currentCoords);
       },
-      () => resolve(null),
-      { timeout: 6000, enableHighAccuracy: false }
+      err => {
+        // err.code: 1=denied, 2=unavailable, 3=timeout
+        if (err.code === 1) reject(new Error('permission-denied'));
+        else reject(new Error('location-unavailable'));
+      },
+      { timeout: 10000, enableHighAccuracy: false, maximumAge: 60000 }
     );
   });
 }
@@ -2871,9 +2875,8 @@ Think carefully about:
     scrollBot();
 
     try {
-      // Get coords — instant if cached, otherwise wait for GPS
+      // Get coords — instant if cached, browser GPS prompt if not
       const coords = await getBrowserLocation();
-      if (!coords) throw new Error('no-location');
 
       // Use client-side cache if fresh
       let wdata;
@@ -2893,20 +2896,23 @@ Think carefully about:
         await saveChatIfNeeded();
         const session = getSession();
         if (session?.email) renderHistory(session.email);
-        busy = false;
-        inputEl.focus();
-        return;
+        busy = false; inputEl.focus(); return;
       }
       fetchPill.remove();
     } catch(e) {
       document.getElementById('weather-fetch-pill')?.remove();
-      if (e.message === 'no-location') {
-        // No GPS — ask AI to answer weather question from its knowledge
-        // fall through to normal chat below
-      } else {
-        console.error('Weather fetch error:', e);
-        // fall through to normal chat on other errors
+      if (e.message === 'permission-denied') {
+        addMsg('ai', '📍 Location access was blocked. To show your weather, please allow location in your browser settings, then try again.');
+        history.push({ role: 'assistant', content: 'Location permission denied.' });
+        busy = false; inputEl.focus(); return;
       }
+      if (e.message === 'no-geolocation') {
+        addMsg('ai', '📍 Your browser does not support location. Try asking "weather in [your city]" instead.');
+        history.push({ role: 'assistant', content: 'Geolocation not supported.' });
+        busy = false; inputEl.focus(); return;
+      }
+      // Any other error — fall through to AI chat
+      console.error('Weather error:', e.message);
     }
   }
 
