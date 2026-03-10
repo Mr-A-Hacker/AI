@@ -2705,12 +2705,17 @@ function getBrowserLocation() {
 
 // Pre-warm: grab GPS silently as soon as app opens
 function prewarmLocation() {
-  if (!navigator.geolocation || currentCoords) return;
-  navigator.geolocation.getCurrentPosition(pos => {
-    currentCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-    // Also pre-fetch weather so it's instant on first ask
-    prefetchWeather();
-  }, () => {}, { timeout: 8000, enableHighAccuracy: false });
+  if (!navigator.geolocation) return;
+  if (currentCoords) { prefetchWeather(); return; }
+  // Request with short timeout so it doesn't hang
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      currentCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      prefetchWeather(); // immediately warm the weather cache
+    },
+    () => {},
+    { timeout: 10000, enableHighAccuracy: false, maximumAge: 300000 }
+  );
 }
 
 async function prefetchWeather() {
@@ -2848,18 +2853,14 @@ Think carefully about:
     return;
   }
 
-  let coords = null;
-  if (isWeatherQuery(text) || isLocationQuery(text)) coords = await getBrowserLocation();
-
-  // ── Weather card ──
-  if (isWeatherQuery(text) && coords) {
-    // Swap typing dots for glowing "Fetching weather..." pill
+  // ── Weather card — show pill first, then fetch ──
+  if (isWeatherQuery(text)) {
     typingEl.classList.remove('show');
     const fetchPill = document.createElement('div');
     fetchPill.id = 'weather-fetch-pill';
     fetchPill.className = 'msg ai';
     fetchPill.innerHTML = `
-      <div class="av" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9);color:white;font-size:.68rem;font-weight:700;">V</div>
+      <div class="av" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9);color:white;font-size:.75rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
       <div class="weather-fetch-pill">
         <span class="weather-fetch-dot"></span>
         <span class="weather-fetch-dot"></span>
@@ -2870,7 +2871,11 @@ Think carefully about:
     scrollBot();
 
     try {
-      // Use cache if fresh, otherwise fetch
+      // Get coords — instant if cached, otherwise wait for GPS
+      const coords = await getBrowserLocation();
+      if (!coords) throw new Error('no-location');
+
+      // Use client-side cache if fresh
       let wdata;
       if (cachedWeatherData && Date.now() - cachedWeatherData.ts < WEATHER_TTL_MS) {
         wdata = cachedWeatherData;
@@ -2879,8 +2884,9 @@ Think carefully about:
         wdata = await wres.json();
         if (wdata.weather) cachedWeatherData = { ...wdata, ts: Date.now() };
       }
+
       fetchPill.remove();
-      if (wdata.weather) {
+      if (wdata?.weather) {
         addWeatherCard(wdata.place, wdata.weather);
         const summary = `${wdata.place?.city || 'Your location'}: ${wdata.weather.tempF}°F, feels like ${wdata.weather.feelsF}°F, ${wdata.weather.desc}, humidity ${wdata.weather.humidity}%, wind ${wdata.weather.windMph} mph.`;
         history.push({ role: 'assistant', content: summary });
@@ -2891,12 +2897,20 @@ Think carefully about:
         inputEl.focus();
         return;
       }
+      fetchPill.remove();
     } catch(e) {
       document.getElementById('weather-fetch-pill')?.remove();
-      typingEl.classList.add('show');
-      /* fall through to normal chat */
+      if (e.message === 'no-location') {
+        addMsg('ai', '📍 I need your location to show the weather. Please allow location access and try again.');
+        history.push({ role: 'assistant', content: 'Location access was denied.' });
+        busy = false; inputEl.focus(); return;
+      }
+      // fall through to normal AI chat on other errors
     }
   }
+
+  let coords = null;
+  if (isLocationQuery(text)) coords = await getBrowserLocation();
 
   try {
     const res = await fetch('/api/chat', {
