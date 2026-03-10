@@ -844,9 +844,9 @@ header {
 ══════════════════════════════════════════ */
 #sub-chat-screen {
   position: fixed; inset: 0; z-index: 95; display: flex; flex-direction: column;
-  background: var(--bg); transition: opacity .3s, transform .3s;
+  background: var(--bg);
 }
-#sub-chat-screen.hidden { opacity: 0; pointer-events: none; transform: translateY(20px); }
+#sub-chat-screen.hidden { display: none !important; }
 
 #sub-chat-header {
   display: flex; align-items: center; gap: 12px;
@@ -2901,11 +2901,12 @@ Think carefully about:
     } catch(e) {
       document.getElementById('weather-fetch-pill')?.remove();
       if (e.message === 'no-location') {
-        addMsg('ai', '📍 I need your location to show the weather. Please allow location access and try again.');
-        history.push({ role: 'assistant', content: 'Location access was denied.' });
-        busy = false; inputEl.focus(); return;
+        // No GPS — ask AI to answer weather question from its knowledge
+        // fall through to normal chat below
+      } else {
+        console.error('Weather fetch error:', e);
+        // fall through to normal chat on other errors
       }
-      // fall through to normal AI chat on other errors
     }
   }
 
@@ -3702,8 +3703,9 @@ function subFormatResponse(text, aiId) {
 }
 
 function openSubChat(aiId) {
+  try {
   const ai = SUB_AIS[aiId];
-  if (!ai) return;
+  if (!ai) { console.error('No AI found for:', aiId); return; }
   closeAiModal();
   subCurrentAI = aiId;
   subHistory = [];
@@ -3747,7 +3749,8 @@ function openSubChat(aiId) {
 
   document.getElementById('sub-user-input').placeholder = ai.placeholder;
   document.getElementById('sub-chat-screen').classList.remove('hidden');
-  document.getElementById('sub-user-input').focus();
+  setTimeout(() => document.getElementById('sub-user-input').focus(), 100);
+  } catch(err) { console.error('openSubChat error:', err); }
 }
 
 function closeSubChat() {
