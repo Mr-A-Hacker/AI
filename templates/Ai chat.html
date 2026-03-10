@@ -474,6 +474,14 @@ if (aiId === 'weather') {
     return 'linear-gradient(160deg,#0369a1 0%,#0284c7 50%,#38bdf8 100%)';
   }
 
+  function fmtTime(iso) {
+    // "2024-05-01T05:32" → "5:32 AM"
+    try {
+      const d = new Date(iso);
+      return d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+    } catch { return iso || '—'; }
+  }
+
   function buildWeatherCard(w, locationName) {
     const icon = wxIcon(w.code || 0);
     const bg   = wxBg(w.code || 0);
@@ -488,62 +496,96 @@ if (aiId === 'weather') {
       '</div>'
     ).join('');
 
+    // 6-stat grid: humidity, wind, UV, feels like, pressure, visibility
     const stats = [
-      ['💧', w.humidity + '%',    'Humidity'],
-      ['💨', w.windMph + ' mph',  'Wind'],
-      ['☀️', '' + w.uvIndex,      'UV Index'],
-      ['🌡️', w.feelsF + '°F',    'Feels Like']
+      ['💧', w.humidity + '%',             'Humidity'],
+      ['💨', w.windMph + ' mph',           'Wind'],
+      ['☀️', '' + w.uvIndex,               'UV Index'],
+      ['🌡️', w.feelsF + '°F',             'Feels Like'],
+      ['🧭', w.pressure + ' hPa',          'Pressure'],
+      ['👁️', w.visibilityMi + ' mi',       'Visibility']
     ];
-    const statsHTML = stats.map(([icon, val, lbl]) =>
+    const statsHTML = stats.map(([ico, val, lbl]) =>
       '<div class="weather-stat">' +
-        '<div class="weather-stat-icon">' + icon + '</div>' +
-        '<div class="weather-stat-val">'  + val  + '</div>' +
-        '<div class="weather-stat-lbl">'  + lbl  + '</div>' +
+        '<div class="weather-stat-icon">' + ico + '</div>' +
+        '<div class="weather-stat-val">'  + val + '</div>' +
+        '<div class="weather-stat-lbl">'  + lbl + '</div>' +
       '</div>'
     ).join('');
+
+    // Sunrise / sunset row
+    const sunRow = (w.sunrise || w.sunset) ?
+      '<div style="display:flex;gap:10px;margin-bottom:18px;">' +
+        '<div style="flex:1;background:rgba(255,255,255,.1);border-radius:14px;padding:11px 12px;display:flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.1);">' +
+          '<span style="font-size:1.4rem;">🌅</span>' +
+          '<div><div style="font-size:.6rem;opacity:.45;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Sunrise</div>' +
+          '<div style="font-size:.88rem;font-weight:700;">' + fmtTime(w.sunrise) + '</div></div>' +
+        '</div>' +
+        '<div style="flex:1;background:rgba(255,255,255,.1);border-radius:14px;padding:11px 12px;display:flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.1);">' +
+          '<span style="font-size:1.4rem;">🌇</span>' +
+          '<div><div style="font-size:.6rem;opacity:.45;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Sunset</div>' +
+          '<div style="font-size:.88rem;font-weight:700;">' + fmtTime(w.sunset) + '</div></div>' +
+        '</div>' +
+      '</div>' : '';
 
     return '<div class="weather-card" style="background:' + bg + ';">' +
       '<div class="weather-orb1"></div>' +
       '<div class="weather-orb2"></div>' +
+
+      // Location + icon
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">' +
         '<div>' +
-          '<div style="font-size:.68rem;opacity:.5;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px;">📍 Your Weather</div>' +
-          '<div style="font-size:1.05rem;font-weight:700;">' + locationName + '</div>' +
+          '<div style="font-size:.62rem;opacity:.45;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px;">📍 Current Weather</div>' +
+          '<div style="font-size:1rem;font-weight:700;line-height:1.3;">' + locationName + '</div>' +
         '</div>' +
         '<div style="font-size:3.8rem;line-height:1;filter:drop-shadow(0 2px 10px rgba(0,0,0,.3));">' + icon + '</div>' +
       '</div>' +
+
+      // Temperature
       '<div style="margin-bottom:4px;">' +
         '<span style="font-size:4.5rem;font-weight:800;line-height:1;letter-spacing:-3px;">' + w.tempF + '°</span>' +
         '<span style="font-size:1.6rem;opacity:.55;font-weight:300;">F</span>' +
       '</div>' +
       '<div style="font-size:.9rem;opacity:.8;margin-bottom:3px;font-weight:500;">' + desc + '</div>' +
-      '<div style="font-size:.78rem;opacity:.45;margin-bottom:22px;">Feels like ' + w.feelsF + '°F</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:20px;">' + statsHTML + '</div>' +
+      '<div style="font-size:.78rem;opacity:.45;margin-bottom:20px;">Feels like ' + w.feelsF + '°F</div>' +
+
+      // 6-stat grid
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px;">' + statsHTML + '</div>' +
+
+      // Sunrise / sunset
+      sunRow +
+
+      // 7-day forecast
       '<div style="border-top:1px solid rgba(255,255,255,.14);padding-top:16px;">' +
         '<div style="font-size:.63rem;opacity:.45;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:11px;">7-Day Forecast</div>' +
         '<div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;">' + forecastHTML + '</div>' +
       '</div>' +
+
       '<div style="margin-top:15px;text-align:right;"><span style="font-size:.6rem;opacity:.3;font-weight:600;letter-spacing:.04em;">⚡ VIORA WEATHER</span></div>' +
     '</div>';
   }
 
   async function fetchWeatherCoords(lat, lon) {
+    // Request extra fields: pressure, visibility, sunrise, sunset
     const omUrl =
       'https://api.open-meteo.com/v1/forecast' +
       '?latitude=' + lat + '&longitude=' + lon +
-      '&current=temperature_2m,apparent_temperature,weather_code,windspeed_10m,relativehumidity_2m,uv_index' +
-      '&daily=weather_code,temperature_2m_max,temperature_2m_min' +
+      '&current=temperature_2m,apparent_temperature,weather_code,windspeed_10m,' +
+        'relativehumidity_2m,uv_index,surface_pressure,visibility' +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset' +
       '&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=7&timezone=auto';
 
+    // Use zoom=18 for street-level detail from Nominatim
     const [omRes, geoRes] = await Promise.all([
       fetch(omUrl),
-      fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json')
+      fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json&zoom=18&addressdetails=1')
     ]);
     const omData  = await omRes.json();
     const geoData = await geoRes.json();
 
     const cur = omData.current;
     const wc  = cur.weather_code || cur.weathercode || 0;
+
     const daily = (omData.daily && omData.daily.time || []).map((ds, i) => {
       const dc = ((omData.daily.weather_code || omData.daily.weathercode) || [])[i] || 0;
       return {
@@ -553,20 +595,43 @@ if (aiId === 'weather') {
         code: dc
       };
     });
-    const city    = (geoData.address && (geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county)) || 'Your Location';
-    const country = (geoData.address && geoData.address.country_code && geoData.address.country_code.toUpperCase()) || '';
+
+    // Build precise street-level location string
+    const addr = geoData.address || {};
+    const parts = [];
+    // Street-level: road + house number
+    if (addr.road)          parts.push((addr.house_number ? addr.house_number + ' ' : '') + addr.road);
+    // Neighbourhood / suburb
+    if (addr.neighbourhood) parts.push(addr.neighbourhood);
+    else if (addr.suburb)   parts.push(addr.suburb);
+    // City
+    const city = addr.city || addr.town || addr.village || addr.county || 'Your Location';
+    parts.push(city);
+    // State + country
+    if (addr.state)         parts.push(addr.state);
+    if (addr.country_code)  parts.push(addr.country_code.toUpperCase());
+    const locationStr = parts.join(', ');
+
+    // Visibility: Open-Meteo returns metres, convert to miles
+    const visMi = cur.visibility != null
+      ? (cur.visibility / 1609.34).toFixed(1)
+      : '—';
 
     return {
       weather: {
-        tempF:   Math.round(cur.temperature_2m),
-        feelsF:  Math.round(cur.apparent_temperature),
-        humidity:Math.round(cur.relativehumidity_2m),
-        windMph: Math.round(cur.windspeed_10m),
-        uvIndex: Math.round(cur.uv_index || 0),
+        tempF:        Math.round(cur.temperature_2m),
+        feelsF:       Math.round(cur.apparent_temperature),
+        humidity:     Math.round(cur.relativehumidity_2m),
+        windMph:      Math.round(cur.windspeed_10m),
+        uvIndex:      Math.round(cur.uv_index || 0),
+        pressure:     Math.round(cur.surface_pressure || 0),
+        visibilityMi: visMi,
+        sunrise:      omData.daily && omData.daily.sunrise && omData.daily.sunrise[0],
+        sunset:       omData.daily && omData.daily.sunset  && omData.daily.sunset[0],
         code: wc,
         daily
       },
-      location: city + (country ? ', ' + country : '')
+      location: locationStr
     };
   }
 
@@ -603,7 +668,7 @@ if (aiId === 'weather') {
     const now = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
     d.innerHTML =
       '<div class="sub-av" style="background:' + AI.bg + ';">' + AI.logo + '</div>' +
-      '<div class="bubble-wrap" style="max-width:min(420px,92vw);">' +
+      '<div class="bubble-wrap" style="max-width:min(440px,94vw);">' +
         buildWeatherCard(w, location) +
         '<div class="msg-time">' + now + '</div>' +
       '</div>';
@@ -611,7 +676,7 @@ if (aiId === 'weather') {
     scrollBottom();
   }
 
-  // Auto-fetch GPS on load
+  // Auto-fetch GPS on load — high accuracy for precise street-level location
   window.addEventListener('load', function() {
     if (!navigator.geolocation) return;
     showWeatherLoading();
@@ -620,7 +685,10 @@ if (aiId === 'weather') {
         try {
           const result = await fetchWeatherCoords(pos.coords.latitude, pos.coords.longitude);
           showWeatherCard(result.weather, result.location);
-          const sum = result.location + ': ' + result.weather.tempF + '°F, feels ' + result.weather.feelsF + '°F, ' + (WMO[result.weather.code] || 'Clear') + ', humidity ' + result.weather.humidity + '%, wind ' + result.weather.windMph + ' mph.';
+          const w = result.weather;
+          const sum = result.location + ': ' + w.tempF + '°F, feels ' + w.feelsF + '°F, ' +
+            (WMO[w.code] || 'Clear') + ', humidity ' + w.humidity + '%, wind ' + w.windMph + ' mph, ' +
+            'pressure ' + w.pressure + ' hPa, visibility ' + w.visibilityMi + ' mi.';
           history.push({ role:'assistant', content: sum });
         } catch(e) {
           removeWeatherLoading();
@@ -629,33 +697,32 @@ if (aiId === 'weather') {
         }
       },
       function() {
-        // GPS denied — just remove loading, show welcome with city search
         removeWeatherLoading();
         const wb = document.getElementById('welcome-block');
         if (wb) wb.style.display = '';
       },
-      { timeout: 12000 }
+      // High accuracy = true for precise GPS fix; longer timeout to allow it
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   });
 
-  // City search (called from button / enter key in welcome block)
+  // City search
   window.fetchWeatherCity = async function() {
     const input = document.getElementById('weather-city-input');
     const city  = input && input.value.trim();
     if (!city) return;
     showWeatherLoading();
     try {
-      const geoRes  = await fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(city) + '&format=json&limit=1');
+      const geoRes  = await fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(city) + '&format=json&limit=1&addressdetails=1');
       const geoData = await geoRes.json();
       if (!geoData.length) {
         removeWeatherLoading();
         addMsg('ai', '📍 City not found. Try a different name.');
         return;
       }
-      const { lat, lon, display_name } = geoData[0];
-      const locationName = display_name.split(',').slice(0,2).join(',').trim();
+      const { lat, lon } = geoData[0];
       const result = await fetchWeatherCoords(lat, lon);
-      showWeatherCard(result.weather, locationName);
+      showWeatherCard(result.weather, result.location);
       if (input) input.value = '';
     } catch(e) {
       removeWeatherLoading();
