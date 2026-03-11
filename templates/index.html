@@ -3658,12 +3658,8 @@ function openSubChat(aiId) {
   const modal = document.getElementById('ai-modal');
   if (modal) modal.classList.remove('show');
 
-  // Open the dedicated AI chat page in a new tab
-  const url = '/ai-chat.html?ai=' + encodeURIComponent(aiId);
-  const tab = window.open(url, '_blank');
-  if (!tab) {
-    alert('Pop-up blocked! Please allow pop-ups for this site, then try again.');
-  }
+  // Navigate to the AI chat page in the same tab
+  window.location.href = '/ai-chat.html?ai=' + encodeURIComponent(aiId);
 }
 
 
