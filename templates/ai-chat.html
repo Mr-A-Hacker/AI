@@ -248,6 +248,54 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
 .wdot{width:6px;height:6px;border-radius:50%;background:#38bdf8;animation:dot 1.2s ease-in-out infinite;}
 .wdot:nth-child(2){animation-delay:.18s;}.wdot:nth-child(3){animation-delay:.36s;}
 
+/* Copy button on code blocks */
+.code-wrap{position:relative;margin:8px 0;}
+.copy-btn{
+  position:absolute;top:8px;right:8px;
+  padding:4px 10px;border-radius:7px;border:none;
+  background:rgba(255,255,255,.12);color:#e2e8f0;
+  font-size:.72rem;font-weight:600;cursor:pointer;
+  transition:background .18s;letter-spacing:.02em;
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
+.copy-btn:hover{background:rgba(255,255,255,.22);}
+.copy-btn.copied{background:rgba(16,185,129,.35);color:#6ee7b7;}
+
+/* Uploaded image preview in chat */
+.user-img{
+  max-width:220px;max-height:180px;border-radius:12px;
+  display:block;margin-bottom:6px;
+  border:2px solid rgba(255,255,255,.25);
+}
+
+/* Image attach button — shown only for homework */
+#img-btn{
+  width:34px;height:34px;border-radius:11px;flex-shrink:0;
+  border:1.5px solid var(--border);background:#fff;
+  cursor:pointer;align-items:center;justify-content:center;
+  font-size:1rem;color:var(--text-mid);
+  transition:border-color .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+#img-btn:active{border-color:var(--ai-color);}
+@media(hover:hover){#img-btn:hover{border-color:var(--ai-color);}}
+
+/* Image preview strip above input */
+#img-preview-wrap{
+  display:none;align-items:center;gap:8px;
+  padding:6px 0 4px;max-width:780px;margin:0 auto;
+}
+#img-preview{
+  width:48px;height:48px;border-radius:9px;object-fit:cover;
+  border:2px solid var(--border);
+}
+#img-remove{
+  width:22px;height:22px;border-radius:50%;border:none;
+  background:#f43f5e;color:#fff;font-size:.7rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-weight:700;
+}
+
 /* City search */
 #weather-city-row{display:none;gap:7px;width:100%;max-width:320px;margin-top:5px;}
 #weather-city-input{
@@ -362,10 +410,20 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
 
   <!-- Input -->
   <div id="input-area">
+    <!-- Image preview strip (homework only) -->
+    <div id="img-preview-wrap">
+      <img id="img-preview" src="" alt="preview"/>
+      <button id="img-remove" onclick="clearImg()" aria-label="Remove image">✕</button>
+      <span style="font-size:.75rem;color:var(--text-mid);font-weight:500;">Image attached</span>
+    </div>
     <div class="input-card">
+      <!-- Hidden file input for image upload -->
+      <input type="file" id="img-input" accept="image/*" capture="environment" style="display:none" onchange="handleImgFile(this)"/>
+      <button id="img-btn" onclick="document.getElementById('img-input').click()" aria-label="Upload image">📎</button>
       <textarea id="msg-input" rows="1"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}autoResize(this);"
         oninput="autoResize(this);"
+        onpaste="handlePaste(event)"
         aria-label="Message"></textarea>
       <button id="send-btn" onclick="sendMsg()" aria-label="Send">
         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
@@ -379,11 +437,79 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
 
 <script>
 // ── AI config ──
+const HUMANIZER_SYSTEM = [
+  "You are the world's most advanced AI text humanizer.",
+  "Your mission: rewrite AI-generated text so it is completely undetectable by GPTZero, Turnitin, Copyleaks, Originality.ai, Winston AI, and every other detector, while perfectly preserving the original meaning.",
+  "",
+  "APPLY ALL RULES EVERY TIME:",
+  "1. SENTENCE VARIETY: Mix very short sentences with longer ones. Never 3 sentences the same length in a row.",
+  '2. ELIMINATE THESE AI PATTERNS ENTIRELY: "It is important to note", "It is worth noting", "In conclusion", "Furthermore", "Moreover", "Additionally", "Subsequently", "Delve into", "Shed light on", "Crucial", "Vital", passive voice overuse, perfect parallel lists.',
+  '3. INJECT HUMAN QUIRKS: Use contractions everywhere. Add occasional sentence fragments for emphasis. Like this. Use colloquial transitions: "Here\'s the thing,", "And honestly,", "Look,", "The truth is,". Add rhetorical questions.',
+  "4. RHYTHM: Read it aloud mentally. If it sounds robotic, rewrite it. Aim for a confident intelligent person speaking naturally.",
+  "5. WORD CHOICE: Replace formal words with direct ones. utilize->use, commence->start, obtain->get, endeavor->try, facilitate->help.",
+  "6. PERPLEXITY & BURSTINESS: Vary vocabulary complexity within sentences AND vary sentence lengths dramatically. These are the primary signals AI detectors measure.",
+  "7. PRESERVE meaning, facts, arguments, and approximate word count.",
+  "",
+  'Output ONLY the rewritten text. No preamble. No "Here is the humanized version:". Just the rewritten text.'
+].join("\n");
+
+const DEVAGENT_SYSTEM = [
+  "You are an elite AI Developer Agent inside Viora — expert in every programming language, framework, and technology stack.",
+  "",
+  "RULES:",
+  "- Always wrap ALL code in triple-backtick code blocks with the language specified (e.g. ```python, ```javascript)",
+  "- Write clean, production-ready, well-commented code",
+  "- When debugging, identify the exact root cause before fixing",
+  "- Write COMPLETE working code — never truncate with comments like 'rest of code here'",
+  "- Explain what the code does concisely after writing it",
+  "- Always handle edge cases, errors, and security"
+].join("\n");
+const HOMEWORK_SYSTEM = [
+  "You are a brilliant, patient homework tutor for students of all ages. You can read images of homework problems.",
+  "",
+  "RULES:",
+  "- When given an image, carefully read ALL text, equations, diagrams, and questions visible in the image",
+  "- Solve step-by-step, showing all working clearly",
+  "- Explain WHY each step works — help them understand, not just copy",
+  "- For math: write every step, define variables, state the final answer clearly",
+  "- For essays: give specific actionable feedback with examples",
+  "- For science: explain concepts in plain language first",
+  "- Be warm, positive, and encouraging — never make the student feel dumb"
+].join("\n");
+
 const AIS = {
-  humanizer:{name:'AI Humanizer',sub:'Make AI text sound natural',logo:'✍️',color:'#7c3aed',bg:'rgba(124,58,237,.12)',send:'linear-gradient(135deg,#7c3aed,#6d28d9)',placeholder:'Paste AI-written text to humanize…',welcome:'AI Humanizer',desc:'Paste any AI-generated text and I\'ll rewrite it to sound natural, warm, and human.',chips:['Humanize this paragraph','Make it less robotic','Rewrite casually','Fix AI tone'],system:'You are an AI text humanizer. Rewrite AI-generated text to sound natural, warm and human. Keep the meaning intact but vary sentence structure, add personality, and remove robotic patterns.'},
-  weather:{name:'Weather AI',sub:'Detailed forecasts & weather chat',logo:'🌦️',color:'#38bdf8',bg:'rgba(56,189,248,.12)',send:'linear-gradient(135deg,#38bdf8,#0ea5e9)',placeholder:'Ask about weather anywhere…',welcome:'Weather AI',desc:'Getting your precise location…',chips:['Will it rain this week?','Best time to visit Tokyo','What to wear today?','Compare climates'],system:'You are a knowledgeable weather assistant. Answer weather questions helpfully. You may receive current conditions in context. Use your knowledge for general forecasts and climate info.'},
-  devagent:{name:'Dev Agent',sub:'Expert programmer & code debugger',logo:'💻',color:'#10b981',bg:'rgba(16,185,129,.12)',send:'linear-gradient(135deg,#10b981,#059669)',placeholder:'Ask anything about code…',welcome:'Dev Agent',desc:'Expert coder. Debug, build apps, explain code, and more.',chips:['Debug this code','Build a Python script','Explain this function','Review my code'],system:'You are an expert AI Developer Agent built into Viora. Write clean production-ready code. Use code blocks for all code. Be concise but thorough.'},
-  homework:{name:'Homework Helper',sub:'Your personal tutor for every subject',logo:'📚',color:'#f59e0b',bg:'rgba(245,158,11,.12)',send:'linear-gradient(135deg,#f59e0b,#d97706)',placeholder:'Ask any homework question…',welcome:'Homework Helper',desc:'Math, science, history and more. Step-by-step explanations.',chips:['Solve this math problem','Explain photosynthesis','Help with an essay','Quiz me'],system:'You are a friendly homework helper for students. Give clear step-by-step explanations. Encourage learning, don\'t just give answers.'}
+  humanizer:{
+    name:'AI Humanizer',sub:'Undetectable human rewriting',logo:'✍️',
+    color:'#7c3aed',bg:'rgba(124,58,237,.12)',send:'linear-gradient(135deg,#7c3aed,#6d28d9)',
+    placeholder:'Paste AI-written text to humanize…',welcome:'AI Humanizer',
+    desc:"Paste AI-generated text and I'll rewrite it so it's 100% undetectable by any AI detector.",
+    chips:['Humanize this paragraph','Make it undetectable','Rewrite casually','Fix AI tone'],
+    system: HUMANIZER_SYSTEM
+  },
+  weather:{
+    name:'Weather AI',sub:'Detailed forecasts & weather chat',logo:'🌦️',
+    color:'#38bdf8',bg:'rgba(56,189,248,.12)',send:'linear-gradient(135deg,#38bdf8,#0ea5e9)',
+    placeholder:'Ask about weather anywhere…',welcome:'Weather AI',desc:'Getting your precise location…',
+    chips:['Will it rain this week?','Best time to visit Tokyo','What to wear today?','Compare climates'],
+    system:'You are a knowledgeable weather assistant. Answer weather questions helpfully. You may receive current conditions in context.'
+  },
+  devagent:{
+    name:'Dev Agent',sub:'Expert programmer & code debugger',logo:'💻',
+    color:'#10b981',bg:'rgba(16,185,129,.12)',send:'linear-gradient(135deg,#10b981,#059669)',
+    placeholder:'Ask anything about code…',welcome:'Dev Agent',
+    desc:'Expert coder. Debug, build apps, explain code, and more.',
+    chips:['Debug this code','Build a Python script','Explain this function','Review my code'],
+    system: DEVAGENT_SYSTEM
+  },
+  homework:{
+    name:'Homework Helper',sub:'Your personal tutor for every subject',logo:'📚',
+    color:'#f59e0b',bg:'rgba(245,158,11,.12)',send:'linear-gradient(135deg,#f59e0b,#d97706)',
+    placeholder:'Ask a question or upload a photo of your homework…',
+    welcome:'Homework Helper',
+    desc:"Upload a photo or paste an image of your homework and I'll solve it step by step.",
+    chips:['Solve this math problem','Explain photosynthesis','Help with an essay','Quiz me'],
+    system: HOMEWORK_SYSTEM
+  }
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -422,13 +548,32 @@ let history = [], busy = false;
 function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,96)+'px';}
 function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
 function fmt(t){
+  let ci=0;
   return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/```(\w*)\n?([\s\S]*?)```/g,(_,l,c)=>'<pre><code>'+c.trim()+'</code></pre>')
+    .replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,l,c){
+      const id='cb'+(ci++);
+      return '<div class="code-wrap"><pre><code id="'+id+'">'+c.trim()+'</code></pre>'+
+        '<button class="copy-btn" onclick="copyCode(\''+id+'\',this)">Copy</button></div>';
+    })
     .replace(/`([^`]+)`/g,'<code>$1</code>')
     .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
     .replace(/^#{1,3} (.+)$/gm,'<strong style="font-size:.9rem;display:block;margin:8px 0 3px;color:'+AI.color+';">$1</strong>')
     .replace(/^[-•] /gm,'• ').replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
 }
+function copyCode(id,btn){
+  const el=document.getElementById(id);if(!el)return;
+  const txt=el.textContent;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(()=>flashCopy(btn)).catch(()=>fallbackCopy(txt,btn));
+  } else { fallbackCopy(txt,btn); }
+}
+function fallbackCopy(txt,btn){
+  const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');}catch(e){}
+  document.body.removeChild(ta);flashCopy(btn);
+}
+function flashCopy(btn){btn.textContent='Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);}
 function scrollBottom(){const w=document.getElementById('chat-win');w.scrollTop=w.scrollHeight;}
 
 function addMsg(role,html){
@@ -449,20 +594,107 @@ function addMsg(role,html){
 async function sendMsg(){
   if(busy)return;
   const inp=document.getElementById('msg-input');
-  const text=inp.value.trim();if(!text)return;
+  const text=inp.value.trim();
+  // For homework with image, allow sending image alone (no text required)
+  if(!text && !pendingImgB64) return;
   inp.value='';inp.style.height='auto';
-  addMsg('user',esc(text));
-  history.push({role:'user',content:text});
+
+  // Build user message content
+  let userContent;
+  let userHtml;
+  if(pendingImgB64){
+    // Vision message: image + optional text
+    userContent = [
+      {type:'image',source:{type:'base64',media_type:pendingImgMime,data:pendingImgB64}},
+      {type:'text',text:text||'Please solve this homework problem.'}
+    ];
+    // Show image thumbnail in chat
+    const imgSrc = 'data:'+pendingImgMime+';base64,'+pendingImgB64;
+    userHtml = '<img class="user-img" src="'+imgSrc+'" alt="homework image"/>'+(text?'<br>'+esc(text):'');
+    clearImg();
+  } else {
+    userContent = text;
+    userHtml = esc(text);
+  }
+
+  addMsg('user', userHtml);
+  history.push({role:'user',content:userContent});
   busy=true;
   const ti=document.getElementById('typing-ind');ti.classList.add('show');scrollBottom();
   try{
     const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:AI.system,messages:history})});
     const data=await res.json();ti.classList.remove('show');
     const reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'';
-    if(reply){history.push({role:'assistant',content:reply});addMsg('ai',fmt(reply));}
-    else addMsg('ai','⚠️ '+(data.error||'No response received.'));
+    if(reply){
+      // Store plain text in history (not the image base64 again)
+      history.push({role:'assistant',content:reply});
+      addMsg('ai',fmt(reply));
+    } else {
+      addMsg('ai','⚠️ '+(data.error||'No response received.'));
+    }
   }catch(e){document.getElementById('typing-ind').classList.remove('show');addMsg('ai','⚠️ Network error. Please try again.');}
   busy=false;inp.focus();
+}
+
+// ════════════════════════════════════════════
+// IMAGE UPLOAD (homework helper)
+// ════════════════════════════════════════════
+let pendingImgB64 = null;
+let pendingImgMime = 'image/jpeg';
+
+if(aiId === 'homework'){
+  // Show the attach button
+  const imgBtn = document.getElementById('img-btn');
+  if(imgBtn) imgBtn.style.display = 'flex';
+}
+
+function handleImgFile(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  pendingImgMime = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = function(e){
+    pendingImgB64 = e.target.result.split(',')[1];
+    const prev = document.getElementById('img-preview');
+    const wrap = document.getElementById('img-preview-wrap');
+    if(prev){ prev.src = e.target.result; }
+    if(wrap){ wrap.style.display = 'flex'; }
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function handlePaste(e){
+  // Only intercept paste if we're in homework mode
+  if(aiId !== 'homework') return;
+  const items = e.clipboardData && e.clipboardData.items;
+  if(!items) return;
+  for(let i=0;i<items.length;i++){
+    if(items[i].type.indexOf('image') !== -1){
+      e.preventDefault();
+      const file = items[i].getAsFile();
+      if(!file) return;
+      pendingImgMime = file.type || 'image/jpeg';
+      const reader = new FileReader();
+      reader.onload = function(ev){
+        pendingImgB64 = ev.target.result.split(',')[1];
+        const prev = document.getElementById('img-preview');
+        const wrap = document.getElementById('img-preview-wrap');
+        if(prev) prev.src = ev.target.result;
+        if(wrap) wrap.style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+  }
+}
+
+function clearImg(){
+  pendingImgB64 = null;
+  const prev = document.getElementById('img-preview');
+  const wrap = document.getElementById('img-preview-wrap');
+  if(prev) prev.src = '';
+  if(wrap) wrap.style.display = 'none';
 }
 
 // ════════════════════════════════════════════
