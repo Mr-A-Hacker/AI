@@ -364,9 +364,9 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
 #weather-city-btn:active{transform:scale(.94);}
 @media(hover:hover){#weather-city-btn:hover{transform:translateY(-1px);}}
 
-/* ════════════════════════════
+/* ════════════════════════════════
    BREAKPOINTS
-   ════════════════════════════ */
+   ════════════════════════════════ */
 
 /* Phone small (< 360px) */
 @media(max-width:359px){
@@ -452,6 +452,38 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
 }
 .ss-go-btn:active{transform:scale(.95);}
 @media(hover:hover){.ss-go-btn:hover{transform:translateY(-2px);}}
+
+/* Project description section */
+.ss-project-section {
+  margin: 16px 0 4px;
+  width: 100%;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.ss-project-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ss-project-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ai-color);
+}
+.ss-project-or {
+  font-size: 0.8rem;
+  color: var(--text-mid);
+}
+.ss-project-textarea {
+  min-height: 80px;
+  resize: vertical;
+  width: 100%;
+  margin-bottom: 8px;
+}
+.ss-project-btn {
+  width: 100%;
+}
 
 /* Building state */
 .ss-building{
@@ -553,7 +585,7 @@ body.dark .ss-slide-img-shimmer{background:linear-gradient(90deg,#2d2640 25%,#3d
   font-size:clamp(1rem,3.5vw,1.25rem);
   color:var(--text);line-height:1.25;
 }
-/* ── CHANGE 1: paragraph instead of bullets ── */
+/* paragraph instead of bullets */
 .ss-slide-para{
   font-size:clamp(.84rem,2.2vw,.92rem);
   color:var(--text-mid);
@@ -643,11 +675,14 @@ body.dark .ss-nav-btn{background:#1a1625;border-color:#2d2640;}
       <div class="welcome-orb" style="font-size:2rem;">🎨</div>
       <h2>AI Slideshow Maker</h2>
       <p>Type any topic and I'll build a beautiful slideshow with real images — download as PDF.</p>
+      
+      <!-- Regular topic input -->
       <div class="ss-topic-row">
         <input class="ss-topic-input" id="ss-topic" type="text" placeholder="e.g. The Solar System, World War II…" autocomplete="off"
           onkeydown="if(event.key==='Enter')startSlideshow()"/>
         <button class="ss-go-btn" onclick="startSlideshow()">✨ Build</button>
       </div>
+      
       <div class="ss-num-row">
         <span>Slides:</span>
         <select id="ss-num">
@@ -658,7 +693,19 @@ body.dark .ss-nav-btn{background:#1a1625;border-color:#2d2640;}
           <option value="12">12</option>
         </select>
       </div>
+      
       <div class="ss-chips" id="ss-chips"></div>
+
+      <!-- Project description section - NEW FEATURE -->
+      <div class="ss-project-section">
+        <div class="ss-project-header">
+          <span class="ss-project-label">✨ OR</span>
+          <span class="ss-project-or">Describe your project idea</span>
+        </div>
+        <textarea id="ss-project-desc" class="ss-topic-input ss-project-textarea" 
+          placeholder="e.g. I want to build a mobile app that helps people track their carbon footprint, with gamification features and social sharing..."></textarea>
+        <button class="ss-go-btn ss-project-btn" onclick="startProjectSlideshow()">🚀 Generate Project Slideshow</button>
+      </div>
     </div>
 
     <!-- Building progress -->
@@ -1113,12 +1160,33 @@ if(aiId === 'slideshow'){
   document.getElementById('input-area').style.display       = 'none';
   document.getElementById('slideshow-ui').classList.add('active');
 
-  // Populate topic chips
+  // Populate topic chips with project ideas included
   const ssChips = document.getElementById('ss-chips');
-  AI.chips.forEach(ch => {
+  const chips = [
+    'Climate Change',
+    'The Solar System', 
+    'World War II',
+    'How AI Works',
+    'The Human Body',
+    'Ancient Rome',
+    'Mobile App Idea', 
+    'Startup Pitch',
+    'Product Launch'
+  ];
+  
+  chips.forEach(ch => {
     const b = document.createElement('button');
-    b.className = 'ss-chip'; b.textContent = ch;
-    b.onclick = () => { document.getElementById('ss-topic').value = ch; startSlideshow(); };
+    b.className = 'ss-chip'; 
+    b.textContent = ch;
+    b.onclick = () => { 
+      if (ch.includes('Idea') || ch.includes('Pitch') || ch.includes('Launch')) {
+        document.getElementById('ss-project-desc').value = `Create a ${ch.toLowerCase()} presentation`;
+        document.getElementById('ss-project-desc').focus();
+      } else {
+        document.getElementById('ss-topic').value = ch; 
+        startSlideshow(); 
+      }
+    };
     ssChips.appendChild(b);
   });
 
@@ -1186,6 +1254,96 @@ window.startSlideshow = async function(){
   }
 };
 
+// NEW FUNCTION: Start project-based slideshow
+window.startProjectSlideshow = async function() {
+  const projectDesc = document.getElementById('ss-project-desc').value.trim();
+  if (!projectDesc) { 
+    document.getElementById('ss-project-desc').focus(); 
+    return; 
+  }
+  
+  const num = parseInt(document.getElementById('ss-num').value) || 6;
+  
+  // Show building screen
+  document.getElementById('ss-setup').style.display = 'none';
+  document.getElementById('ss-building').classList.add('show');
+  document.getElementById('ss-viewer').classList.remove('show');
+  setProgress(5, 'Analyzing your project idea…');
+  
+  try {
+    // First, have the AI analyze the project and create a structured slideshow outline
+    const analysisPrompt = `You are a professional project consultant. Based on this project description:
+
+"${projectDesc}"
+
+Create a comprehensive ${num}-slide presentation that covers:
+1. Project overview & vision
+2. Key features / functionality
+3. Target audience / users
+4. Technical requirements (if applicable)
+5. Timeline / milestones
+6. Success metrics / goals
+7. Potential challenges & solutions
+8. Next steps / launch plan
+
+Format as a slideshow JSON with this exact structure:
+{
+  "title": "Project: [catchy title based on description]",
+  "slides": [
+    {
+      "title": "Engaging slide title",
+      "paragraph": "Detailed paragraph about this aspect of the project",
+      "imageQuery": "specific search term for relevant photo"
+    }
+  ]
+}
+
+Each slide should have a clear focus, be informative, and help present the project professionally.`;
+
+    const genRes = await fetch('/api/slideshow/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        topic: analysisPrompt,
+        numSlides: num 
+      })
+    });
+    
+    const genData = await genRes.json();
+    if (genData.error) throw new Error(genData.error);
+    
+    ssSlides = genData.slides || [];
+    ssImgCache = {};
+    setProgress(20, 'Finding relevant images…');
+    
+    // Fetch images
+    let loaded = 0;
+    await Promise.all(ssSlides.map(async (slide, i) => {
+      try {
+        const r = await fetch('/api/slideshow/image?q=' + encodeURIComponent(slide.imageQuery));
+        const d = await r.json();
+        ssImgCache[i] = d.url || '';
+      } catch { 
+        ssImgCache[i] = ''; 
+      }
+      loaded++;
+      setProgress(20 + Math.round((loaded / ssSlides.length) * 70), 
+        'Loading image ' + loaded + ' of ' + ssSlides.length + '…');
+    }));
+    
+    setProgress(100, 'Ready!');
+    await new Promise(r => setTimeout(r, 400));
+    
+    // Render with project-specific title
+    renderViewer(genData.title || 'Project: ' + projectDesc.slice(0, 40) + '…');
+    
+  } catch(err) {
+    document.getElementById('ss-building').classList.remove('show');
+    document.getElementById('ss-setup').style.display = '';
+    alert('Could not generate project slideshow: ' + err.message);
+  }
+};
+
 function renderViewer(title){
   document.getElementById('ss-building').classList.remove('show');
   document.getElementById('ss-pres-title').textContent = title;
@@ -1204,7 +1362,7 @@ function renderViewer(title){
 
     const imgSrc = ssImgCache[i] || '';
 
-    // ── CHANGE 2: render paragraph instead of bullet list ──
+    // render paragraph instead of bullet list
     el.innerHTML =
       '<div class="ss-slide-img-wrap">' +
         '<div class="ss-slide-img-shimmer" id="ss-shimmer-' + i + '"></div>' +
@@ -1293,6 +1451,7 @@ window.resetSlideshow = function(){
   document.getElementById('ss-carousel').innerHTML = '';
   document.getElementById('ss-dots').innerHTML = '';
   document.getElementById('ss-topic').value = '';
+  document.getElementById('ss-project-desc').value = '';
   document.getElementById('ss-topic').focus();
 };
 
@@ -1361,7 +1520,7 @@ window.downloadPDF = async function(){
       const titleLines = doc.splitTextToSize(slide.title, W/2 - 60);
       doc.text(titleLines, 28, 95);
 
-      // ── CHANGE 3: paragraph instead of bullets in PDF ──
+      // paragraph instead of bullets in PDF
       doc.setFontSize(12); doc.setFont('helvetica','normal');
       doc.setTextColor(107, 91, 142);
       let y = 95 + (titleLines.length * 36) + 10;
