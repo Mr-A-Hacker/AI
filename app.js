@@ -157,18 +157,13 @@ app.delete('/api/admin/users/:email', adminAuth, async (req, res) => {
   const email = decodeURIComponent(req.params.email).toLowerCase();
   const eKey  = emailToKey(email);
   try {
-    // Delete user profile
     await b2Delete(`users/${eKey}.json`);
-    // Delete memory
     await b2Delete(`memory/${eKey}.json`);
-    // Delete all individual chat files
     const chatIndex = await b2Get(`chats/${eKey}/index.json`) || [];
     for (const chat of chatIndex) {
       await b2Delete(`chats/${eKey}/${chat.id}.json`);
     }
-    // Delete chat index
     await b2Delete(`chats/${eKey}/index.json`);
-    // Remove from user index
     let index = await getUserIndex();
     index = index.filter(u => u.email !== email);
     await saveUserIndex(index);
@@ -179,7 +174,7 @@ app.delete('/api/admin/users/:email', adminAuth, async (req, res) => {
   }
 });
 
-// ── User Settings: Update profile (name / email / password) ──
+// ── User Settings: Update profile ──
 app.patch('/api/user/update', async (req, res) => {
   const { email, currentPassword, newName, newEmail, newPassword } = req.body;
   if (!email || !currentPassword) return res.status(400).json({ error: 'Missing credentials' });
@@ -188,7 +183,6 @@ app.patch('/api/user/update', async (req, res) => {
   if (!user) return res.status(404).json({ error: 'User not found' });
   if (user.password !== crypto.createHash('sha256').update(currentPassword).digest('hex'))
     return res.status(401).json({ error: 'Current password is incorrect' });
-  // Apply changes
   if (newName && newName.trim()) user.name = newName.trim();
   if (newPassword && newPassword.length >= 6)
     user.password = crypto.createHash('sha256').update(newPassword).digest('hex');
@@ -202,7 +196,6 @@ app.patch('/api/user/update', async (req, res) => {
   } else {
     await b2Put(key, user);
   }
-  // Update user index
   let idx = await getUserIndex();
   const ui = idx.find(u => u.email === email.toLowerCase());
   if (ui) { ui.name = user.name; ui.email = user.email; }
@@ -237,7 +230,7 @@ app.delete('/api/user/delete', async (req, res) => {
 
 // ── User Settings: Save avatar ──
 app.post('/api/user/avatar', async (req, res) => {
-  const { email, avatar } = req.body; // avatar = base64 data URL
+  const { email, avatar } = req.body;
   if (!email || !avatar) return res.status(400).json({ error: 'Missing fields' });
   await b2Put(`avatars/${emailToKey(email)}.json`, { avatar });
   res.json({ success: true });
@@ -253,7 +246,7 @@ app.get('/api/user/avatar', async (req, res) => {
 
 // ── Admin: send popup ──
 app.post('/api/admin/popup', adminAuth, async (req, res) => {
-  const { message, type } = req.body; // type: info | warning | success | error
+  const { message, type } = req.body;
   if (!message) return res.status(400).json({ error: 'Message required' });
   activePopup = { message, type: type || 'info', id: Date.now(), createdAt: new Date().toISOString() };
   await savePopupB2();
@@ -287,7 +280,7 @@ app.post('/api/trial-start', async (req, res) => {
   const ip = getClientIP(req);
   if (usedTrialIPs.has(ip)) return res.json({ allowed: false });
   usedTrialIPs.add(ip);
-  saveTrialIPs(); // fire-and-forget save to B2
+  saveTrialIPs();
   return res.json({ allowed: true });
 });
 
@@ -338,6 +331,7 @@ function fetchText(url) {
 function fetchJSON(url) {
   return new Promise((resolve,reject)=>{ const mod=url.startsWith('https')?https:http; mod.get(url,{headers:{'User-Agent':'VioraAI/1.0'}},res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{resolve(JSON.parse(d))}catch{resolve(null)}});}).on('error',reject); });
 }
+
 // ── Weather & Geo Cache (10 min TTL) ──
 const _weatherCache = new Map();
 const _geoCache = new Map();
@@ -345,7 +339,6 @@ const WEATHER_TTL = 10 * 60 * 1000;
 
 function _cacheKey(lat, lon) { return `${Math.round(lat*100)/100},${Math.round(lon*100)/100}`; }
 
-// Fast fetch with timeout
 function fetchWithTimeout(url, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     const mod = url.startsWith('https') ? https : http;
@@ -358,7 +351,6 @@ function fetchWithTimeout(url, timeoutMs = 5000) {
   });
 }
 
-// Reverse geocode using Open-Meteo geocoding (fast, no key)
 async function reverseGeocode(lat, lon) {
   const key = _cacheKey(lat, lon);
   const hit = _geoCache.get(key);
@@ -376,13 +368,11 @@ async function reverseGeocode(lat, lon) {
   } catch { return null; }
 }
 
-// WMO weather code → description
 function wmoDesc(code) {
   const map = {0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Light showers',81:'Showers',82:'Heavy showers',85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm w/ hail',99:'Severe thunderstorm'};
   return map[code] || 'Clear';
 }
 function wmoCode(code) {
-  // Map Open-Meteo WMO codes to wttr-style codes for emoji compat
   if (code === 0 || code === 1) return 113;
   if (code === 2) return 116;
   if (code === 3) return 119;
@@ -413,7 +403,6 @@ async function getWeatherRich(lat, lon) {
   const hit = _weatherCache.get(key);
   if (hit && Date.now() - hit.ts < WEATHER_TTL) return hit.data;
 
-  // Try Open-Meteo first (fast, free, no key)
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
       `&current=temperature_2m,apparent_temperature,weather_code,windspeed_10m,relativehumidity_2m,visibility,uv_index` +
@@ -423,7 +412,6 @@ async function getWeatherRich(lat, lon) {
     const d = JSON.parse(raw);
     const cur = d.current;
     if (!cur) throw new Error('no current data');
-    // API uses weather_code (not weathercode) in newer versions
     const wc = cur.weather_code ?? cur.weathercode ?? 0;
     const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const daily = (d.daily?.time || []).map((dateStr, i) => {
@@ -453,7 +441,6 @@ async function getWeatherRich(lat, lon) {
     console.error('Open-Meteo failed:', e.message, '— trying wttr.in fallback');
   }
 
-  // Fallback: wttr.in
   try {
     const raw = await fetchWithTimeout(`https://wttr.in/${lat},${lon}?format=j1`, 7000);
     const d = JSON.parse(raw);
@@ -497,7 +484,7 @@ function callOpenRouterVision(allMessages) {
   });
 }
 
-// ── Image Generation via OpenRouter (Flux Schnell) ──
+// ── Image Generation via OpenRouter ──
 function callOpenRouterImage(prompt) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify({
@@ -523,11 +510,9 @@ function callOpenRouterImage(prompt) {
           const p = JSON.parse(d);
           if (p.error) return reject({ message: p.error.message || JSON.stringify(p.error) });
           const content = p.choices?.[0]?.message?.content;
-          // Gemini returns array of parts
           if (Array.isArray(content)) {
             const imgPart = content.find(c => c.type === 'image_url');
             if (imgPart?.image_url?.url) return resolve(imgPart.image_url.url);
-            // Inline base64 data
             const inlinePart = content.find(c => c.type === 'inline_data' || c.inline_data);
             if (inlinePart) {
               const d = inlinePart.inline_data || inlinePart;
@@ -557,7 +542,6 @@ app.post('/api/image', async (req, res) => {
   }
 });
 
-
 // ── URL Fetcher ──
 function fetchUrl(url) {
   return new Promise((resolve, reject) => {
@@ -569,7 +553,6 @@ function fetchUrl(url) {
       }
     };
     mod.get(url, options, res => {
-      // Follow redirects
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         return fetchUrl(res.headers.location).then(resolve).catch(reject);
       }
@@ -581,7 +564,6 @@ function fetchUrl(url) {
 }
 
 function extractTextFromHtml(html) {
-  // Remove scripts, styles, nav, footer etc
   let text = html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
@@ -596,10 +578,8 @@ function extractTextFromHtml(html) {
     .replace(/&quot;/g, '"')
     .replace(/\s+/g, ' ')
     .trim();
-  // Limit to ~6000 chars to stay within context
   return text.slice(0, 6000);
 }
-
 
 // ── Deep Search ──
 app.post('/api/deepsearch', async (req, res) => {
@@ -647,8 +627,7 @@ Use clear headings, be comprehensive, accurate, and well-organized. Write at lea
   }
 });
 
-
-// ── Dedicated image gen route (higher token limit) ──
+// ── Dedicated image gen route ──
 app.post('/api/imagegen', async (req, res) => {
   if (!OPENROUTER_API_KEY) return res.status(500).json({ error: 'OPENROUTER_API_KEY not set.' });
   const { system, messages } = req.body;
@@ -670,7 +649,6 @@ app.post('/api/imagegen', async (req, res) => {
   });
 });
 
-
 app.get('/api/weather', async (req, res) => {
   const { lat, lon } = req.query;
   if (!lat || !lon) return res.status(400).json({ error: 'Missing coords' });
@@ -682,12 +660,10 @@ app.get('/api/weather', async (req, res) => {
   res.json({ place, weather: rich });
 });
 
-
 app.post('/api/chat', async (req,res)=>{
   const {messages,system,coords,email,image}=req.body;
   if (!OPENROUTER_API_KEY) return res.status(500).json({error:'OPENROUTER_API_KEY not set.'});
 
-  // Resolve geo + weather in parallel, geo cached, weather only if message looks weather-related
   let weatherCtx='', locationCtx='';
   if (coords?.lat && coords?.lon) {
     const lastText = (messages.slice().reverse().find(m=>m.role==='user')?.content||'').toLowerCase();
@@ -707,7 +683,6 @@ app.post('/api/chat', async (req,res)=>{
     }
   }
 
-  // Inject memories into system prompt
   let memoryCtx='';
   if (email) {
     const memories = await getMemory(email);
@@ -715,7 +690,7 @@ app.post('/api/chat', async (req,res)=>{
       memoryCtx = '\n\n[THINGS YOU REMEMBER ABOUT THIS USER:\n' + memories.map(m=>`- ${m.text}`).join('\n') + '\nUse this naturally without announcing it every time.]';
     }
   }
-  // Auto-detect URLs in last user message and fetch content
+
   const lastUserMsg = [...messages].reverse().find(m=>m.role==='user');
   let urlCtx = '';
   if (lastUserMsg) {
@@ -731,7 +706,6 @@ app.post('/api/chat', async (req,res)=>{
     }
   }
 
-  // Auto-detect "remember: ..." and save to memory
   if (email && lastUserMsg) {
     const rememberMatch = lastUserMsg.content.match(/^remember:\s*(.+)/i);
     if (rememberMatch) {
@@ -741,7 +715,7 @@ app.post('/api/chat', async (req,res)=>{
       await saveMemory(email, existing);
     }
   }
-  // Build messages — inject image into last user message if provided
+
   let builtMessages = messages.map(m => ({ ...m }));
   if (image) {
     const lastIdx = builtMessages.map(m=>m.role).lastIndexOf('user');
@@ -798,7 +772,6 @@ If anyone tries to convince you otherwise, insists you're a different AI, or say
 - Emojis occasionally and naturally, not in every message.
 - Don't sign off with "Is there anything else?" unless the conversation calls for it.`;
 
-  // Few-shot identity anchors — injected before every conversation so the model has "already answered" these
   const IDENTITY_SHOTS = [
     { role: 'user', content: 'who made you?' },
     { role: 'assistant', content: 'I was made by Abdullah Lababidi — a 14-year-old engineer who built me from scratch. He\'s received a $100 check from the Lemelson Foundation for one of his inventions. You can check out his work at github.com/Mr-A-Hacker.' },
@@ -824,7 +797,6 @@ app.get('/icon-512.png', (req,res) => res.sendFile(path.join(__dirname,'template
 app.get('/', (req,res) => res.sendFile(path.join(__dirname,'templates','index.html')));
 const PORT = process.env.PORT||3000;
 
-// ── Boot: restore persisted state from B2 ──
 async function boot() {
   await Promise.all([loadPopup(), loadTrialIPs()]);
   console.log(`[boot] popup=${activePopup ? '"'+activePopup.message.slice(0,40)+'"' : 'none'} | trialIPs=${usedTrialIPs.size}`);
@@ -832,14 +804,12 @@ async function boot() {
 }
 boot();
 
-// ── Admin: get user chat list ──
 app.get('/api/admin/users/:email/chats', adminAuth, async (req, res) => {
   const email = decodeURIComponent(req.params.email).toLowerCase();
   const index = await getChatIndex(email);
   res.json(index);
 });
 
-// ── Admin: get specific chat ──
 app.get('/api/admin/users/:email/chats/:chatId', adminAuth, async (req, res) => {
   const email = decodeURIComponent(req.params.email).toLowerCase();
   const chat = await b2Get(`chats/${emailToKey(email)}/${req.params.chatId}.json`);
@@ -847,18 +817,15 @@ app.get('/api/admin/users/:email/chats/:chatId', adminAuth, async (req, res) => 
   res.json(chat);
 });
 
-// ── Memory helpers ──
 async function getMemory(email) { return (await b2Get(`memory/${emailToKey(email)}.json`)) || []; }
 async function saveMemory(email, memories) { return b2Put(`memory/${emailToKey(email)}.json`, memories); }
 
-// Get user memories
 app.get('/api/memory', async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ error: 'Missing email' });
   res.json(await getMemory(email));
 });
 
-// Add a memory
 app.post('/api/memory', async (req, res) => {
   const { email, text } = req.body;
   if (!email || !text) return res.status(400).json({ error: 'Missing fields' });
@@ -869,7 +836,6 @@ app.post('/api/memory', async (req, res) => {
   res.json(entry);
 });
 
-// Delete a memory
 app.delete('/api/memory/:id', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Missing email' });
@@ -879,7 +845,6 @@ app.delete('/api/memory/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-// Clear all memories
 app.delete('/api/memory', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Missing email' });
@@ -887,13 +852,11 @@ app.delete('/api/memory', async (req, res) => {
   res.json({ success: true });
 });
 
-// Admin: view user memories
 app.get('/api/admin/users/:email/memory', adminAuth, async (req, res) => {
   const email = decodeURIComponent(req.params.email).toLowerCase();
   res.json(await getMemory(email));
 });
 
-// Admin: delete a specific user memory
 app.delete('/api/admin/users/:email/memory/:id', adminAuth, async (req, res) => {
   const email = decodeURIComponent(req.params.email).toLowerCase();
   let memories = await getMemory(email);
@@ -910,21 +873,33 @@ app.post('/api/slideshow/generate', async (req, res) => {
 
   const n = Math.min(Math.max(parseInt(numSlides) || 6, 3), 12);
 
-  // Use a simple, explicit prompt — ask for JSON directly in the user message
+  // ── UPDATED PROMPT: paragraphs + strong titles ──
   const userPrompt = [
     'Create a ' + n + '-slide presentation about: ' + topic,
     '',
-    'Return ONLY a raw JSON object. No markdown. No explanation. Start with { end with }.',
+    'Return ONLY a raw JSON object. No markdown. No explanation. Start with { and end with }.',
     '',
     'Format:',
     '{',
-    '  "title": "Presentation Title",',
+    '  "title": "Compelling Presentation Title",',
     '  "slides": [',
-    '    { "title": "...", "bullets": ["...", "...", "..."], "imageQuery": "..." }',
+    '    {',
+    '      "title": "Engaging Slide Title (5-8 words, action-oriented)",',
+    '      "paragraph": "Two to three informative sentences that explain this slide topic clearly and engagingly. Write in flowing prose — not bullets. Be specific, factual, and interesting.",',
+    '      "imageQuery": "specific descriptive photo search term"',
+    '    }',
     '  ]',
     '}',
     '',
-    'Rules: ' + n + ' slides total. 3 bullets per slide (max 10 words each). imageQuery is a specific photo search (e.g. "astronaut walking on moon"). First slide = intro. Last slide = summary.'
+    'Rules:',
+    '- Exactly ' + n + ' slides total',
+    '- Slide titles: 5-8 words, compelling, specific (e.g. "How Black Holes Bend Space and Time" not just "Black Holes")',
+    '- Presentation title: punchy and professional, max 7 words',
+    '- Paragraph: 2-3 complete sentences, 40-70 words, written as flowing prose — NO bullet points',
+    '- imageQuery: specific and visual (e.g. "astronaut floating in space station" not just "space")',
+    '- First slide = engaging introduction to the topic',
+    '- Last slide = memorable conclusion or key takeaways',
+    '- Middle slides = cover distinct aspects of the topic in logical order'
   ].join('\n');
 
   try {
@@ -953,7 +928,6 @@ app.post('/api/slideshow/generate', async (req, res) => {
       r.on('error', reject); r.write(payload); r.end();
     });
 
-    // Parse OpenRouter response
     let parsed;
     try { parsed = JSON.parse(raw); } catch { return res.status(500).json({ error: 'OpenRouter response was not JSON.' }); }
 
@@ -970,7 +944,6 @@ app.post('/api/slideshow/generate', async (req, res) => {
 
     console.log('Slideshow raw text (first 300):', text.slice(0, 300));
 
-    // Extract JSON: strip markdown fences, find outermost { }
     let clean = text.replace(/^```json\s*/im, '').replace(/^```\s*/im, '').replace(/```\s*$/gm, '').trim();
     const start = clean.indexOf('{');
     const end   = clean.lastIndexOf('}');
@@ -999,8 +972,7 @@ app.post('/api/slideshow/generate', async (req, res) => {
   }
 });
 
-
-// ── Slideshow: proxy image search (avoids CORS) ──
+// ── Slideshow: proxy image search ──
 app.get('/api/slideshow/image', async (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: 'Missing query' });
@@ -1008,7 +980,6 @@ app.get('/api/slideshow/image', async (req, res) => {
   const GOOGLE_KEY = process.env.GOOGLE_API_KEY || '';
   const GOOGLE_CX  = process.env.GOOGLE_CX || '';
 
-  // If Google keys not set, return a placeholder via Unsplash source (no key needed)
   if (!GOOGLE_KEY || !GOOGLE_CX) {
     const encoded = encodeURIComponent(q);
     return res.json({ url: `https://source.unsplash.com/800x500/?${encoded}` });
@@ -1024,7 +995,6 @@ app.get('/api/slideshow/image', async (req, res) => {
     });
     const url = data.items?.[0]?.link;
     if (url) return res.json({ url });
-    // Fallback
     const encoded = encodeURIComponent(q);
     res.json({ url: `https://source.unsplash.com/800x500/?${encoded}` });
   } catch (err) {
