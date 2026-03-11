@@ -487,50 +487,110 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
 }
 .ss-new-btn:active{border-color:var(--ai-color);color:var(--ai-color);}
 
-/* Slide carousel */
+/* ── Slide stage: one slide fills the area ── */
 .ss-carousel{
-  flex:1;overflow-y:auto;overflow-x:hidden;
-  padding:16px;display:flex;flex-direction:column;gap:14px;
-  -webkit-overflow-scrolling:touch;
+  flex:1;overflow:hidden;position:relative;
 }
+/* Each slide is absolute, fills the stage */
 .ss-slide{
-  border-radius:16px;overflow:hidden;
-  box-shadow:0 4px 20px rgba(0,0,0,.1);
-  background:#fff;border:1.5px solid var(--border);
-  flex-shrink:0;
-  animation:msgIn .3s cubic-bezier(.34,1.56,.64,1) both;
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  background:#fff;
+  opacity:0;pointer-events:none;
+  transition:opacity .3s ease, transform .3s ease;
+  transform:translateX(40px);
+  overflow:hidden;
 }
+body.dark .ss-slide{background:#1a1625;}
+.ss-slide.active{
+  opacity:1;pointer-events:auto;
+  transform:translateX(0);
+}
+.ss-slide.exit-left{ opacity:0; transform:translateX(-40px); }
+.ss-slide.exit-right{ opacity:0; transform:translateX(40px); }
+
+/* Image: top half */
+.ss-slide-img-wrap{
+  flex-shrink:0;height:48%;position:relative;overflow:hidden;
+  background:#e5e7eb;
+}
+body.dark .ss-slide-img-wrap{background:#2d2640;}
 .ss-slide-img{
-  width:100%;height:clamp(130px,30vw,200px);
-  object-fit:cover;display:block;background:#e5e7eb;
+  width:100%;height:100%;object-fit:cover;display:block;
+  transition:opacity .4s;
 }
-.ss-slide-img.loading{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;}
+.ss-slide-img.loading{opacity:0;}
+.ss-slide-img-shimmer{
+  position:absolute;inset:0;
+  background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);
+  background-size:200% 100%;animation:shimmer 1.2s infinite;
+}
+body.dark .ss-slide-img-shimmer{background:linear-gradient(90deg,#2d2640 25%,#3d3557 50%,#2d2640 75%);background-size:200% 100%;}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.ss-slide-body{padding:14px 16px 16px;}
-.ss-slide-num{font-size:.6rem;opacity:.4;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;}
-.ss-slide-title{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(.95rem,3vw,1.1rem);color:var(--text);margin-bottom:10px;line-height:1.3;}
-.ss-slide-bullets{list-style:none;display:flex;flex-direction:column;gap:6px;}
-.ss-slide-bullets li{
-  font-size:clamp(.78rem,2.1vw,.85rem);color:var(--text-mid);
-  line-height:1.5;padding-left:14px;position:relative;
+/* gradient overlay on image */
+.ss-slide-img-wrap::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:40%;
+  background:linear-gradient(to bottom,transparent,rgba(0,0,0,.35));
+  pointer-events:none;
 }
-.ss-slide-bullets li::before{content:"•";position:absolute;left:0;color:var(--ai-color);font-weight:700;}
+
+/* Slide number badge on image */
+.ss-slide-badge{
+  position:absolute;top:12px;left:12px;z-index:2;
+  background:rgba(0,0,0,.45);backdrop-filter:blur(6px);
+  color:#fff;font-size:.62rem;font-weight:700;letter-spacing:.07em;
+  padding:4px 10px;border-radius:20px;text-transform:uppercase;
+}
+
+/* Text content: bottom half */
+.ss-slide-body{
+  flex:1;overflow-y:auto;
+  padding:16px 20px 20px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.ss-slide-title{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:clamp(1rem,3.5vw,1.25rem);
+  color:var(--text);line-height:1.25;
+}
+.ss-slide-bullets{list-style:none;display:flex;flex-direction:column;gap:8px;margin-top:2px;}
+.ss-slide-bullets li{
+  font-size:clamp(.82rem,2.2vw,.9rem);color:var(--text-mid);
+  line-height:1.55;padding-left:18px;position:relative;
+}
+.ss-slide-bullets li::before{
+  content:"";position:absolute;left:0;top:8px;
+  width:7px;height:7px;border-radius:50%;
+  background:var(--ai-color);flex-shrink:0;
+}
 
 /* Nav bar */
 .ss-nav{
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  padding:10px 16px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px 12px;flex-shrink:0;
   border-top:1px solid var(--border);background:var(--bg);
+  gap:10px;
 }
 .ss-nav-btn{
-  width:34px;height:34px;border-radius:10px;border:1.5px solid var(--border);
+  width:42px;height:42px;border-radius:12px;border:1.5px solid var(--border);
   background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  font-size:.85rem;color:var(--text-mid);transition:all .18s;
+  font-size:1.2rem;color:var(--text-mid);transition:all .18s;flex-shrink:0;
   -webkit-tap-highlight-color:transparent;
 }
-.ss-nav-btn:disabled{opacity:.35;cursor:default;}
-.ss-nav-btn:not(:disabled):active{border-color:var(--ai-color);color:var(--ai-color);}
-.ss-nav-count{font-size:.8rem;color:var(--text-mid);font-weight:600;min-width:60px;text-align:center;}
+body.dark .ss-nav-btn{background:#1a1625;border-color:#2d2640;}
+.ss-nav-btn:disabled{opacity:.3;cursor:default;}
+.ss-nav-btn:not(:disabled):active{background:var(--ai-bg);border-color:var(--ai-color);color:var(--ai-color);}
+@media(hover:hover){.ss-nav-btn:not(:disabled):hover{background:var(--ai-bg);border-color:var(--ai-color);color:var(--ai-color);}}
+
+/* Progress dots */
+.ss-dots{display:flex;gap:6px;align-items:center;justify-content:center;flex:1;}
+.ss-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--border);transition:all .2s;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.ss-dot.active{background:var(--ai-color);width:20px;border-radius:4px;}
+.ss-nav-count{font-size:.78rem;color:var(--text-mid);font-weight:700;white-space:nowrap;min-width:44px;text-align:center;}
 
 </style>
 </head>
@@ -624,9 +684,10 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
       </div>
       <div class="ss-carousel" id="ss-carousel"></div>
       <div class="ss-nav">
-        <button class="ss-nav-btn" id="ss-prev" onclick="navSlide(-1)">&#8249;</button>
+        <button class="ss-nav-btn" id="ss-prev" onclick="navSlide(-1)" aria-label="Previous">&#8592;</button>
+        <div class="ss-dots" id="ss-dots"></div>
         <span class="ss-nav-count" id="ss-nav-count">1 / 6</span>
-        <button class="ss-nav-btn" id="ss-next" onclick="navSlide(1)">&#8250;</button>
+        <button class="ss-nav-btn" id="ss-next" onclick="navSlide(1)" aria-label="Next">&#8594;</button>
       </div>
     </div>
 
@@ -1133,31 +1194,50 @@ function renderViewer(title){
   document.getElementById('ss-pres-title').textContent = title;
 
   const carousel = document.getElementById('ss-carousel');
+  const dotsWrap = document.getElementById('ss-dots');
   carousel.innerHTML = '';
+  dotsWrap.innerHTML = '';
   ssCurrent = 0;
 
   ssSlides.forEach((slide, i) => {
+    // ── Slide element ──
     const el = document.createElement('div');
-    el.className  = 'ss-slide';
-    el.id         = 'ss-slide-' + i;
-    el.style.display = i === 0 ? '' : 'none';
+    el.className = 'ss-slide' + (i === 0 ? ' active' : '');
+    el.id = 'ss-slide-' + i;
 
     const imgSrc  = ssImgCache[i] || '';
     const bullets = (slide.bullets || []).map(b => '<li>' + escSS(b) + '</li>').join('');
 
     el.innerHTML =
-      '<img class="ss-slide-img" src="' + escAttr(imgSrc) + '" alt="" ' +
-        'onerror="this.style.display=\'none\'" ' +
-        'onload="this.classList.remove(\'loading\')">' +
+      '<div class="ss-slide-img-wrap">' +
+        '<div class="ss-slide-img-shimmer" id="ss-shimmer-' + i + '"></div>' +
+        (imgSrc ? '<img class="ss-slide-img loading" src="' + escAttr(imgSrc) + '" alt="" ' +
+          'onload="this.classList.remove('loading');var s=document.getElementById('ss-shimmer-' + i + '');if(s)s.remove();" ' +
+          'onerror="this.remove();var s=document.getElementById('ss-shimmer-' + i + '');if(s)s.style.animation='none';">' : '') +
+        '<div class="ss-slide-badge">Slide ' + (i+1) + ' of ' + ssSlides.length + '</div>' +
+      '</div>' +
       '<div class="ss-slide-body">' +
-        '<div class="ss-slide-num">Slide ' + (i+1) + ' of ' + ssSlides.length + '</div>' +
         '<div class="ss-slide-title">' + escSS(slide.title) + '</div>' +
         '<ul class="ss-slide-bullets">' + bullets + '</ul>' +
       '</div>';
 
-    if(imgSrc) el.querySelector('.ss-slide-img').classList.add('loading');
     carousel.appendChild(el);
+
+    // ── Dot ──
+    const dot = document.createElement('div');
+    dot.className = 'ss-dot' + (i === 0 ? ' active' : '');
+    dot.id = 'ss-dot-' + i;
+    dot.onclick = () => goSlide(i);
+    dotsWrap.appendChild(dot);
   });
+
+  // Swipe support
+  let touchStartX = 0;
+  carousel.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive:true});
+  carousel.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if(Math.abs(dx) > 40) navSlide(dx < 0 ? 1 : -1);
+  }, {passive:true});
 
   updateNav();
   document.getElementById('ss-viewer').classList.add('show');
@@ -1170,23 +1250,41 @@ function updateNav(){
   document.getElementById('ss-nav-count').textContent = (ssCurrent+1) + ' / ' + ssSlides.length;
   document.getElementById('ss-prev').disabled = ssCurrent === 0;
   document.getElementById('ss-next').disabled = ssCurrent === ssSlides.length - 1;
+  document.querySelectorAll('.ss-dot').forEach((d,i) => d.classList.toggle('active', i === ssCurrent));
 }
 
-window.navSlide = function(dir){
-  const next = ssCurrent + dir;
-  if(next < 0 || next >= ssSlides.length) return;
-  document.getElementById('ss-slide-' + ssCurrent).style.display = 'none';
-  ssCurrent = next;
-  document.getElementById('ss-slide-' + ssCurrent).style.display = '';
+function goSlide(idx){
+  if(idx === ssCurrent || idx < 0 || idx >= ssSlides.length) return;
+  const dir = idx > ssCurrent ? 1 : -1;
+  const cur = document.getElementById('ss-slide-' + ssCurrent);
+  const nxt = document.getElementById('ss-slide-' + idx);
+  // Position next slide off-screen in correct direction
+  nxt.style.transform = dir > 0 ? 'translateX(40px)' : 'translateX(-40px)';
+  nxt.style.opacity = '0';
+  nxt.classList.add('active');
+  // Force reflow
+  nxt.offsetHeight;
+  nxt.style.transform = '';
+  nxt.style.opacity = '';
+  cur.classList.add(dir > 0 ? 'exit-left' : 'exit-right');
+  setTimeout(() => {
+    cur.classList.remove('active','exit-left','exit-right');
+    nxt.style.transform = '';
+    nxt.style.opacity = '';
+  }, 300);
+  ssCurrent = idx;
   updateNav();
-  document.getElementById('ss-carousel').scrollTop = 0;
-};
+}
+
+window.navSlide = function(dir){ goSlide(ssCurrent + dir); };
 
 window.resetSlideshow = function(){
   ssSlides = []; ssImgCache = {}; ssCurrent = 0;
   document.getElementById('ss-viewer').classList.remove('show');
   document.getElementById('ss-building').classList.remove('show');
   document.getElementById('ss-setup').style.display = '';
+  document.getElementById('ss-carousel').innerHTML = '';
+  document.getElementById('ss-dots').innerHTML = '';
   document.getElementById('ss-topic').value = '';
   document.getElementById('ss-topic').focus();
 };
