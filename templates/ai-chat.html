@@ -362,6 +362,128 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
   .input-card{max-width:860px;}
   .bubble-wrap{max-width:min(60%,520px);}
 }
+
+/* ── Slideshow ── */
+#slideshow-ui{display:none;flex-direction:column;flex:1;overflow:hidden;}
+#slideshow-ui.active{display:flex;}
+.ss-setup{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex:1;gap:16px;padding:24px 20px;text-align:center;animation:fadeUp .4s ease both;
+}
+.ss-setup h2{font-family:'Syne',sans-serif;font-weight:800;color:var(--ai-color);font-size:clamp(1.1rem,4vw,1.4rem);}
+.ss-setup p{font-size:.84rem;color:var(--text-mid);max-width:300px;line-height:1.6;}
+.ss-topic-row{display:flex;gap:8px;width:100%;max-width:420px;}
+.ss-topic-input{
+  flex:1;padding:11px 16px;border-radius:14px;
+  border:1.5px solid var(--border);background:#fff;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:.9rem;
+  color:var(--text);outline:none;transition:border-color .2s;
+}
+.ss-topic-input:focus{border-color:var(--ai-color);}
+.ss-topic-input::placeholder{color:var(--text-light);}
+.ss-num-row{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--text-mid);}
+.ss-num-row select{
+  padding:6px 10px;border-radius:9px;border:1.5px solid var(--border);
+  background:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:.82rem;
+  color:var(--text);outline:none;cursor:pointer;
+}
+.ss-chips{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;max-width:380px;}
+.ss-chip{
+  border:1.5px solid var(--border);border-radius:20px;
+  padding:6px 12px;font-size:.75rem;color:var(--text-mid);
+  cursor:pointer;background:#fff;transition:all .2s;
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
+.ss-chip:active{border-color:var(--ai-color);color:var(--ai-color);}
+@media(hover:hover){.ss-chip:hover{border-color:var(--ai-color);color:var(--ai-color);transform:translateY(-1px);}}
+.ss-go-btn{
+  padding:12px 32px;border-radius:14px;border:none;
+  background:var(--ai-send);color:#fff;font-family:'Syne',sans-serif;
+  font-weight:700;font-size:.95rem;cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.2);transition:transform .18s;
+}
+.ss-go-btn:active{transform:scale(.95);}
+@media(hover:hover){.ss-go-btn:hover{transform:translateY(-2px);}}
+
+/* Building state */
+.ss-building{
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  flex:1;gap:14px;text-align:center;padding:24px;
+}
+.ss-building.show{display:flex;}
+.ss-prog-bar{width:240px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+.ss-prog-fill{height:100%;background:var(--ai-send);border-radius:3px;transition:width .4s ease;width:0%;}
+.ss-prog-label{font-size:.8rem;color:var(--text-mid);font-weight:500;}
+
+/* Viewer */
+.ss-viewer{display:none;flex-direction:column;flex:1;overflow:hidden;}
+.ss-viewer.show{display:flex;}
+.ss-viewer-header{
+  display:flex;align-items:center;gap:10px;padding:10px 16px;
+  border-bottom:1.5px solid var(--border);flex-shrink:0;
+  background:rgba(250,248,255,.96);
+}
+.ss-title-txt{flex:1;font-family:'Syne',sans-serif;font-weight:800;font-size:.92rem;color:var(--ai-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ss-dl-btn{
+  padding:7px 14px;border-radius:10px;border:none;
+  background:var(--ai-send);color:#fff;font-weight:700;
+  font-size:.75rem;cursor:pointer;display:flex;align-items:center;gap:6px;
+  transition:transform .15s;white-space:nowrap;flex-shrink:0;
+}
+.ss-dl-btn:active{transform:scale(.94);}
+@media(hover:hover){.ss-dl-btn:hover{transform:translateY(-1px);}}
+.ss-new-btn{
+  padding:7px 12px;border-radius:10px;border:1.5px solid var(--border);
+  background:#fff;color:var(--text-mid);font-size:.75rem;
+  cursor:pointer;font-weight:600;transition:all .15s;flex-shrink:0;
+}
+.ss-new-btn:active{border-color:var(--ai-color);color:var(--ai-color);}
+
+/* Slide carousel */
+.ss-carousel{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  padding:16px;display:flex;flex-direction:column;gap:14px;
+  -webkit-overflow-scrolling:touch;
+}
+.ss-slide{
+  border-radius:16px;overflow:hidden;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);
+  background:#fff;border:1.5px solid var(--border);
+  flex-shrink:0;
+  animation:msgIn .3s cubic-bezier(.34,1.56,.64,1) both;
+}
+.ss-slide-img{
+  width:100%;height:clamp(130px,30vw,200px);
+  object-fit:cover;display:block;background:#e5e7eb;
+}
+.ss-slide-img.loading{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.ss-slide-body{padding:14px 16px 16px;}
+.ss-slide-num{font-size:.6rem;opacity:.4;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;}
+.ss-slide-title{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(.95rem,3vw,1.1rem);color:var(--text);margin-bottom:10px;line-height:1.3;}
+.ss-slide-bullets{list-style:none;display:flex;flex-direction:column;gap:6px;}
+.ss-slide-bullets li{
+  font-size:clamp(.78rem,2.1vw,.85rem);color:var(--text-mid);
+  line-height:1.5;padding-left:14px;position:relative;
+}
+.ss-slide-bullets li::before{content:"•";position:absolute;left:0;color:var(--ai-color);font-weight:700;}
+
+/* Nav bar */
+.ss-nav{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:10px 16px;flex-shrink:0;
+  border-top:1px solid var(--border);background:var(--bg);
+}
+.ss-nav-btn{
+  width:34px;height:34px;border-radius:10px;border:1.5px solid var(--border);
+  background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;color:var(--text-mid);transition:all .18s;
+  -webkit-tap-highlight-color:transparent;
+}
+.ss-nav-btn:disabled{opacity:.35;cursor:default;}
+.ss-nav-btn:not(:disabled):active{border-color:var(--ai-color);color:var(--ai-color);}
+.ss-nav-count{font-size:.8rem;color:var(--text-mid);font-weight:600;min-width:60px;text-align:center;}
+
 </style>
 </head>
 <body>
@@ -406,6 +528,60 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
       </div>
 
     </div>
+  </div>
+
+  <!-- Slideshow UI (replaces chat for slideshow AI) -->
+  <div id="slideshow-ui">
+
+    <!-- Setup screen -->
+    <div class="ss-setup" id="ss-setup">
+      <div class="welcome-orb" style="font-size:2rem;">🎨</div>
+      <h2>AI Slideshow Maker</h2>
+      <p>Type any topic and I'll build a beautiful slideshow with real images — download as PDF.</p>
+      <div class="ss-topic-row">
+        <input class="ss-topic-input" id="ss-topic" type="text" placeholder="e.g. The Solar System, World War II…" autocomplete="off"
+          onkeydown="if(event.key==='Enter')startSlideshow()"/>
+        <button class="ss-go-btn" onclick="startSlideshow()">✨ Build</button>
+      </div>
+      <div class="ss-num-row">
+        <span>Slides:</span>
+        <select id="ss-num">
+          <option value="4">4</option>
+          <option value="6" selected>6</option>
+          <option value="8">8</option>
+          <option value="10">10</option>
+          <option value="12">12</option>
+        </select>
+      </div>
+      <div class="ss-chips" id="ss-chips"></div>
+    </div>
+
+    <!-- Building progress -->
+    <div class="ss-building" id="ss-building">
+      <div style="font-size:2.5rem;">🎨</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--ai-color);">Building your slideshow…</div>
+      <div class="ss-prog-bar"><div class="ss-prog-fill" id="ss-prog-fill"></div></div>
+      <div class="ss-prog-label" id="ss-prog-label">Generating slide content…</div>
+    </div>
+
+    <!-- Viewer -->
+    <div class="ss-viewer" id="ss-viewer">
+      <div class="ss-viewer-header">
+        <span class="ss-title-txt" id="ss-pres-title"></span>
+        <button class="ss-new-btn" onclick="resetSlideshow()">↺ New</button>
+        <button class="ss-dl-btn" id="ss-dl-btn" onclick="downloadPDF()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PDF
+        </button>
+      </div>
+      <div class="ss-carousel" id="ss-carousel"></div>
+      <div class="ss-nav">
+        <button class="ss-nav-btn" id="ss-prev" onclick="navSlide(-1)">&#8249;</button>
+        <span class="ss-nav-count" id="ss-nav-count">1 / 6</span>
+        <button class="ss-nav-btn" id="ss-next" onclick="navSlide(1)">&#8250;</button>
+      </div>
+    </div>
+
   </div>
 
   <!-- Input -->
@@ -509,6 +685,15 @@ const AIS = {
     desc:"Upload a photo or paste an image of your homework and I'll solve it step by step.",
     chips:['Solve this math problem','Explain photosynthesis','Help with an essay','Quiz me'],
     system: HOMEWORK_SYSTEM
+  },
+  slideshow:{
+    name:'AI Slideshow Maker',sub:'Beautiful slideshows with real images',logo:'🎨',
+    color:'#ea580c',bg:'rgba(234,88,12,.12)',send:'linear-gradient(135deg,#ea580c,#c2410c)',
+    placeholder:'Enter a topic for your slideshow…',
+    welcome:'AI Slideshow Maker',
+    desc:'Type any topic and I'll build a beautiful slideshow with real images you can download as PDF.',
+    chips:['Climate Change','The Solar System','World War II','How AI Works','The Human Body','Ancient Rome'],
+    system:''
   }
 };
 
@@ -812,6 +997,275 @@ if(aiId==='weather'){
     }catch(e){removeLoading();addMsg('ai','⚠️ Could not fetch weather: '+e.message);}
   };
 }
+
+// ════════════════════════════════════════════
+// SLIDESHOW ENGINE
+// ════════════════════════════════════════════
+if(aiId === 'slideshow'){
+  // Hide normal chat UI, show slideshow UI
+  document.getElementById('chat-scroll-wrap').style.display = 'none';
+  document.getElementById('input-area').style.display       = 'none';
+  document.getElementById('slideshow-ui').classList.add('active');
+
+  // Populate topic chips
+  const ssChips = document.getElementById('ss-chips');
+  AI.chips.forEach(ch => {
+    const b = document.createElement('button');
+    b.className = 'ss-chip'; b.textContent = ch;
+    b.onclick = () => { document.getElementById('ss-topic').value = ch; startSlideshow(); };
+    ssChips.appendChild(b);
+  });
+
+  // Focus topic input
+  setTimeout(() => { const t = document.getElementById('ss-topic'); if(t) t.focus(); }, 300);
+}
+
+let ssSlides = [];
+let ssCurrent = 0;
+let ssImgCache = {};
+
+function setProgress(pct, label){
+  const fill  = document.getElementById('ss-prog-fill');
+  const lbl   = document.getElementById('ss-prog-label');
+  if(fill) fill.style.width = pct + '%';
+  if(lbl)  lbl.textContent  = label;
+}
+
+window.startSlideshow = async function(){
+  const topic = (document.getElementById('ss-topic').value || '').trim();
+  if(!topic){ document.getElementById('ss-topic').focus(); return; }
+  const num = parseInt(document.getElementById('ss-num').value) || 6;
+
+  // Show building screen
+  document.getElementById('ss-setup').style.display    = 'none';
+  document.getElementById('ss-building').classList.add('show');
+  document.getElementById('ss-viewer').classList.remove('show');
+  setProgress(5, 'Generating slide content…');
+
+  try {
+    // 1. Generate slide content
+    const genRes  = await fetch('/api/slideshow/generate', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ topic, numSlides: num })
+    });
+    const genData = await genRes.json();
+    if(genData.error) throw new Error(genData.error);
+
+    ssSlides = genData.slides || [];
+    ssImgCache = {};
+    setProgress(20, 'Fetching images…');
+
+    // 2. Fetch images in parallel (with progress)
+    let loaded = 0;
+    await Promise.all(ssSlides.map(async (slide, i) => {
+      try {
+        const r = await fetch('/api/slideshow/image?q=' + encodeURIComponent(slide.imageQuery));
+        const d = await r.json();
+        ssImgCache[i] = d.url || '';
+      } catch { ssImgCache[i] = ''; }
+      loaded++;
+      setProgress(20 + Math.round((loaded / ssSlides.length) * 70), 'Loading image ' + loaded + ' of ' + ssSlides.length + '…');
+    }));
+
+    setProgress(100, 'Done!');
+    await new Promise(r => setTimeout(r, 400));
+
+    // 3. Render
+    renderViewer(genData.title || topic);
+
+  } catch(err) {
+    document.getElementById('ss-building').classList.remove('show');
+    document.getElementById('ss-setup').style.display = '';
+    alert('Could not build slideshow: ' + err.message);
+  }
+};
+
+function renderViewer(title){
+  document.getElementById('ss-building').classList.remove('show');
+  document.getElementById('ss-pres-title').textContent = title;
+
+  const carousel = document.getElementById('ss-carousel');
+  carousel.innerHTML = '';
+  ssCurrent = 0;
+
+  ssSlides.forEach((slide, i) => {
+    const el = document.createElement('div');
+    el.className  = 'ss-slide';
+    el.id         = 'ss-slide-' + i;
+    el.style.display = i === 0 ? '' : 'none';
+
+    const imgSrc  = ssImgCache[i] || '';
+    const bullets = (slide.bullets || []).map(b => '<li>' + escSS(b) + '</li>').join('');
+
+    el.innerHTML =
+      '<img class="ss-slide-img" src="' + escAttr(imgSrc) + '" alt="" ' +
+        'onerror="this.style.display=\'none\'" ' +
+        'onload="this.classList.remove(\'loading\')">' +
+      '<div class="ss-slide-body">' +
+        '<div class="ss-slide-num">Slide ' + (i+1) + ' of ' + ssSlides.length + '</div>' +
+        '<div class="ss-slide-title">' + escSS(slide.title) + '</div>' +
+        '<ul class="ss-slide-bullets">' + bullets + '</ul>' +
+      '</div>';
+
+    if(imgSrc) el.querySelector('.ss-slide-img').classList.add('loading');
+    carousel.appendChild(el);
+  });
+
+  updateNav();
+  document.getElementById('ss-viewer').classList.add('show');
+}
+
+function escSS(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(t){ return String(t).replace(/"/g,'&quot;'); }
+
+function updateNav(){
+  document.getElementById('ss-nav-count').textContent = (ssCurrent+1) + ' / ' + ssSlides.length;
+  document.getElementById('ss-prev').disabled = ssCurrent === 0;
+  document.getElementById('ss-next').disabled = ssCurrent === ssSlides.length - 1;
+}
+
+window.navSlide = function(dir){
+  const next = ssCurrent + dir;
+  if(next < 0 || next >= ssSlides.length) return;
+  document.getElementById('ss-slide-' + ssCurrent).style.display = 'none';
+  ssCurrent = next;
+  document.getElementById('ss-slide-' + ssCurrent).style.display = '';
+  updateNav();
+  document.getElementById('ss-carousel').scrollTop = 0;
+};
+
+window.resetSlideshow = function(){
+  ssSlides = []; ssImgCache = {}; ssCurrent = 0;
+  document.getElementById('ss-viewer').classList.remove('show');
+  document.getElementById('ss-building').classList.remove('show');
+  document.getElementById('ss-setup').style.display = '';
+  document.getElementById('ss-topic').value = '';
+  document.getElementById('ss-topic').focus();
+};
+
+// ── PDF export using jsPDF (loaded from CDN) ──
+window.downloadPDF = async function(){
+  const btn = document.getElementById('ss-dl-btn');
+  btn.textContent = '⏳ Building…'; btn.disabled = true;
+
+  try {
+    // Load jsPDF if not already loaded
+    if(!window.jspdf){
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+
+    const { jsPDF } = window.jspdf;
+    // Landscape 16:9 (960×540 pt)
+    const doc = new jsPDF({ orientation:'landscape', unit:'pt', format:[960,540] });
+    const W = 960, H = 540;
+
+    // Colour palette based on AI colour
+    const accent = AI.color || '#ea580c';
+
+    for(let i = 0; i < ssSlides.length; i++){
+      if(i > 0) doc.addPage([W, H], 'landscape');
+      const slide = ssSlides[i];
+
+      // Background
+      doc.setFillColor(250,248,255);
+      doc.rect(0, 0, W, H, 'F');
+
+      // Left colour bar
+      doc.setFillColor(...hexToRgb(accent));
+      doc.rect(0, 0, 8, H, 'F');
+
+      // Slide image (right half)
+      const imgUrl = ssImgCache[i];
+      if(imgUrl){
+        try {
+          const b64 = await urlToBase64(imgUrl);
+          if(b64){
+            doc.addImage(b64, 'JPEG', W/2, 0, W/2, H, '', 'FAST');
+            // Gradient overlay on image
+            doc.setFillColor(250,248,255);
+            doc.setGState(new doc.GState({opacity:0.18}));
+            doc.rect(W/2, 0, W/2, H, 'F');
+            doc.setGState(new doc.GState({opacity:1}));
+          }
+        } catch{}
+      }
+
+      // Slide number pill
+      doc.setFillColor(...hexToRgb(accent), 0.12);
+      doc.roundedRect(28, 28, 72, 20, 5, 5, 'F');
+      doc.setTextColor(...hexToRgb(accent));
+      doc.setFontSize(9); doc.setFont('helvetica','bold');
+      doc.text('SLIDE ' + (i+1) + ' / ' + ssSlides.length, 36, 42);
+
+      // Title
+      doc.setTextColor(30, 16, 48);
+      doc.setFontSize(28); doc.setFont('helvetica','bold');
+      const titleLines = doc.splitTextToSize(slide.title, W/2 - 60);
+      doc.text(titleLines, 28, 95);
+
+      // Bullets
+      doc.setFontSize(13); doc.setFont('helvetica','normal');
+      doc.setTextColor(107, 91, 142);
+      let y = 95 + (titleLines.length * 36) + 10;
+      (slide.bullets || []).forEach(b => {
+        doc.setTextColor(...hexToRgb(accent));
+        doc.setFontSize(11); doc.setFont('helvetica','bold');
+        doc.text('•', 28, y);
+        doc.setTextColor(107, 91, 142);
+        doc.setFontSize(12); doc.setFont('helvetica','normal');
+        const lines = doc.splitTextToSize(b, W/2 - 65);
+        doc.text(lines, 42, y);
+        y += lines.length * 17 + 6;
+        if(y > H - 50) return;
+      });
+
+      // Footer
+      doc.setFillColor(237,233,248);
+      doc.rect(0, H-30, W, 30, 'F');
+      doc.setTextColor(168,152,200);
+      doc.setFontSize(8); doc.setFont('helvetica','normal');
+      doc.text('⚡ Viora AI', 28, H-12);
+      doc.text(document.getElementById('ss-pres-title').textContent, W/2, H-12, {align:'center'});
+    }
+
+    const safeTitle = (document.getElementById('ss-pres-title').textContent || 'slideshow').replace(/[^a-z0-9]+/gi,'-').toLowerCase();
+    doc.save(safeTitle + '.pdf');
+
+  } catch(err){
+    alert('PDF export failed: ' + err.message);
+  }
+
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> PDF';
+  btn.disabled = false;
+};
+
+function hexToRgb(hex){
+  const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return r ? [parseInt(r[1],16), parseInt(r[2],16), parseInt(r[3],16)] : [0,0,0];
+}
+
+async function urlToBase64(url){
+  return new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img,0,0);
+      try { resolve(c.toDataURL('image/jpeg',0.85)); }
+      catch { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+// ── end slideshow ──
+
 </script>
 </body>
 </html>
