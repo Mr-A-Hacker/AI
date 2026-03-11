@@ -901,3 +901,100 @@ app.delete('/api/admin/users/:email/memory/:id', adminAuth, async (req, res) => 
   await saveMemory(email, memories);
   res.json({ success: true });
 });
+
+// ── Slideshow: generate slide content via AI ──
+app.post('/api/slideshow/generate', async (req, res) => {
+  const { topic, numSlides } = req.body;
+  if (!topic) return res.status(400).json({ error: 'Missing topic' });
+  if (!OPENROUTER_API_KEY) return res.status(500).json({ error: 'OPENROUTER_API_KEY not set.' });
+
+  const n = Math.min(Math.max(parseInt(numSlides) || 6, 3), 12);
+
+  const systemPrompt = `You are a professional presentation designer. Generate exactly ${n} slides for a presentation on the given topic.
+
+Respond with ONLY valid JSON in this exact format — no markdown, no explanation:
+{
+  "title": "Presentation Title",
+  "slides": [
+    {
+      "title": "Slide Title",
+      "bullets": ["Point one", "Point two", "Point three"],
+      "imageQuery": "specific google image search query for a relevant photo"
+    }
+  ]
+}
+
+Rules:
+- Each slide has 2-4 bullet points, each under 12 words
+- imageQuery should be specific and visual (e.g. "solar panels on roof sunny day" not just "solar energy")
+- First slide is a title/intro slide
+- Last slide is a summary or conclusion
+- Make content accurate, engaging, and professional`;
+
+  try {
+    const payload = JSON.stringify({
+      model: 'openrouter/auto',
+      max_tokens: 3000,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Create a ${n}-slide presentation about: ${topic}` }
+      ]
+    });
+    const options = {
+      hostname: 'openrouter.ai', path: '/api/v1/chat/completions', method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}`, 'HTTP-Referer': 'https://viora-ai.onrender.com', 'X-Title': 'Viora AI', 'Content-Length': Buffer.byteLength(payload) }
+    };
+    const text = await new Promise((resolve, reject) => {
+      const r = https.request(options, resp => {
+        let d = ''; resp.on('data', c => d += c);
+        resp.on('end', () => {
+          try {
+            const p = JSON.parse(d);
+            resolve(p.choices?.[0]?.message?.content || '');
+          } catch { reject(new Error('Parse error')); }
+        });
+      });
+      r.on('error', reject); r.write(payload); r.end();
+    });
+
+    // Strip markdown fences if present
+    const clean = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/,'').trim();
+    const slides = JSON.parse(clean);
+    res.json(slides);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Slideshow: proxy image search (avoids CORS) ──
+app.get('/api/slideshow/image', async (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ error: 'Missing query' });
+
+  const GOOGLE_KEY = process.env.GOOGLE_API_KEY || '';
+  const GOOGLE_CX  = process.env.GOOGLE_CX || '';
+
+  // If Google keys not set, return a placeholder via Unsplash source (no key needed)
+  if (!GOOGLE_KEY || !GOOGLE_CX) {
+    const encoded = encodeURIComponent(q);
+    return res.json({ url: `https://source.unsplash.com/800x500/?${encoded}` });
+  }
+
+  try {
+    const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_KEY}&cx=${GOOGLE_CX}&searchType=image&q=${encodeURIComponent(q)}&num=1&imgSize=large&safe=active`;
+    const data = await new Promise((resolve, reject) => {
+      https.get(searchUrl, resp => {
+        let d = ''; resp.on('data', c => d += c);
+        resp.on('end', () => { try { resolve(JSON.parse(d)); } catch { reject(new Error('Parse')); } });
+      }).on('error', reject);
+    });
+    const url = data.items?.[0]?.link;
+    if (url) return res.json({ url });
+    // Fallback
+    const encoded = encodeURIComponent(q);
+    res.json({ url: `https://source.unsplash.com/800x500/?${encoded}` });
+  } catch (err) {
+    const encoded = encodeURIComponent(q);
+    res.json({ url: `https://source.unsplash.com/800x500/?${encoded}` });
+  }
+});
