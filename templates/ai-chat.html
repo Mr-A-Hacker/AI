@@ -21,7 +21,6 @@
   r.setProperty('--ai-color',t.c);
   r.setProperty('--ai-bg',t.bg);
   r.setProperty('--ai-send',t.s);
-  // Apply dark mode immediately to avoid flash
   var dark = localStorage.getItem('viora_dark_mode') === '1';
   var sys  = localStorage.getItem('viora_system_theme') === '1';
   if (sys ? window.matchMedia('(prefers-color-scheme: dark)').matches : dark) {
@@ -30,7 +29,6 @@
 })();
 </script>
 <title>Viora AI</title>
-<!-- Tab favicon -->
 <link rel="icon" type="image/png" href="/V.png"/>
 <link rel="apple-touch-icon" href="/icon-192.png"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
@@ -44,7 +42,6 @@
   --text:#1e1030; --text-mid:#6b5b8e; --text-light:#a898c8;
   --ai-color:#7c3aed; --ai-bg:rgba(124,58,237,.12);
   --ai-send:linear-gradient(135deg,#7c3aed,#6d28d9);
-  /* safe areas */
   --sat:env(safe-area-inset-top,0px);
   --sar:env(safe-area-inset-right,0px);
   --sab:env(safe-area-inset-bottom,0px);
@@ -108,7 +105,6 @@ html,body{
 #app{
   position:fixed;inset:0;z-index:10;
   display:flex;flex-direction:column;
-  /* honour notch + home bar */
   padding-top:var(--sat);
   padding-right:var(--sar);
   padding-bottom:var(--sab);
@@ -163,7 +159,6 @@ html,body{
   display:flex;flex-direction:column;gap:12px;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:thin;scrollbar-color:var(--border) transparent;
-  /* centred column on wide screens */
   padding:16px 16px 10px;
   width:100%;
 }
@@ -316,7 +311,7 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
   border:2px solid rgba(255,255,255,.25);
 }
 
-/* Image attach button — shown only for homework */
+/* ── FIX 2: Dev Agent & Homework file attach button ── */
 #img-btn{
   width:34px;height:34px;border-radius:11px;flex-shrink:0;
   border:1.5px solid var(--border);background:#fff;
@@ -324,9 +319,23 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
   font-size:1rem;color:var(--text-mid);
   transition:border-color .2s;
   -webkit-tap-highlight-color:transparent;
+  display:none; /* shown per-AI in JS */
 }
 #img-btn:active{border-color:var(--ai-color);}
 @media(hover:hover){#img-btn:hover{border-color:var(--ai-color);}}
+
+/* ── FIX 3: Homework camera button ── */
+#cam-btn{
+  width:34px;height:34px;border-radius:11px;flex-shrink:0;
+  border:1.5px solid var(--border);background:#fff;
+  cursor:pointer;align-items:center;justify-content:center;
+  font-size:1rem;color:var(--text-mid);
+  transition:border-color .2s;
+  -webkit-tap-highlight-color:transparent;
+  display:none; /* shown only for homework */
+}
+#cam-btn:active{border-color:#f59e0b;color:#f59e0b;}
+@media(hover:hover){#cam-btn:hover{border-color:#f59e0b;color:#f59e0b;}}
 
 /* Image preview strip above input */
 #img-preview-wrap{
@@ -364,25 +373,37 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
 #weather-city-btn:active{transform:scale(.94);}
 @media(hover:hover){#weather-city-btn:hover{transform:translateY(-1px);}}
 
+/* ── FIX 1: Slideshow red "still in development" banner ── */
+.ss-dev-banner{
+  display:flex;align-items:center;gap:10px;
+  background:#fee2e2;border:1.5px solid #fca5a5;
+  border-radius:12px;padding:10px 14px;
+  font-size:.82rem;font-weight:600;color:#dc2626;
+  animation:fadeUp .4s ease both;
+  flex-shrink:0;
+  margin:0 0 4px 0;
+  max-width:420px;
+  width:100%;
+}
+body.dark .ss-dev-banner{background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.35);color:#f87171;}
+.ss-dev-icon{font-size:1.1rem;flex-shrink:0;}
+.ss-dev-text{line-height:1.4;}
+.ss-dev-text strong{display:block;font-size:.85rem;}
+.ss-dev-text span{font-size:.75rem;font-weight:400;opacity:.8;}
+
 /* ════════════════════════════════
    BREAKPOINTS
    ════════════════════════════════ */
-
-/* Phone small (< 360px) */
 @media(max-width:359px){
   .online-badge,.ai-sub{display:none;}
   #chat-win{padding:12px 10px 8px;}
   .bubble-wrap{max-width:88%;}
   .chips-wrap{gap:5px;}
 }
-
-/* Phone (360–430px) — default mobile styles already handle this */
 @media(max-width:430px){
   .bubble-wrap{max-width:84%;}
   .online-badge{padding:3px 8px;}
 }
-
-/* Tablet (600–900px) */
 @media(min-width:600px){
   #chat-win{padding:20px 24px 12px;}
   .bubble-wrap{max-width:72%;}
@@ -390,11 +411,8 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
   #input-area{padding:10px 24px 14px;}
   #welcome-block p{max-width:340px;}
 }
-
-/* Laptop (1024–1440px) */
 @media(min-width:1024px){
   #chat-win{padding:24px 0 14px;max-width:760px;margin:0 auto;width:100%;}
-  /* wrapper to allow chat to centre while still scrolling full height */
   #chat-scroll-wrap{display:flex;flex-direction:column;align-items:center;overflow:hidden;flex:1;}
   #chat-scroll-wrap > #chat-win{align-self:stretch;}
   .bubble-wrap{max-width:min(65%,500px);}
@@ -403,8 +421,6 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
   .input-card{max-width:760px;}
   #welcome-block p{max-width:380px;}
 }
-
-/* Desktop (1440px+) */
 @media(min-width:1440px){
   #chat-win{max-width:860px;}
   .input-card{max-width:860px;}
@@ -417,6 +433,7 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
 .ss-setup{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   flex:1;gap:16px;padding:24px 20px;text-align:center;animation:fadeUp .4s ease both;
+  overflow-y:auto;
 }
 .ss-setup h2{font-family:'Syne',sans-serif;font-weight:800;color:var(--ai-color);font-size:clamp(1.1rem,4vw,1.4rem);}
 .ss-setup p{font-size:.84rem;color:var(--text-mid);max-width:300px;line-height:1.6;}
@@ -453,7 +470,6 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
 .ss-go-btn:active{transform:scale(.95);}
 @media(hover:hover){.ss-go-btn:hover{transform:translateY(-2px);}}
 
-/* Project description section */
 .ss-project-section {
   margin: 16px 0 4px;
   width: 100%;
@@ -519,11 +535,10 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
 }
 .ss-new-btn:active{border-color:var(--ai-color);color:var(--ai-color);}
 
-/* ── Slide stage: one slide fills the area ── */
+/* ── Slide stage ── */
 .ss-carousel{
   flex:1;overflow:hidden;position:relative;
 }
-/* Each slide is absolute, fills the stage */
 .ss-slide{
   position:absolute;inset:0;
   display:flex;flex-direction:column;
@@ -541,7 +556,6 @@ body.dark .ss-slide{background:#1a1625;}
 .ss-slide.exit-left{ opacity:0; transform:translateX(-40px); }
 .ss-slide.exit-right{ opacity:0; transform:translateX(40px); }
 
-/* Image: top half */
 .ss-slide-img-wrap{
   flex-shrink:0;height:48%;position:relative;overflow:hidden;
   background:#e5e7eb;
@@ -559,14 +573,12 @@ body.dark .ss-slide-img-wrap{background:#2d2640;}
 }
 body.dark .ss-slide-img-shimmer{background:linear-gradient(90deg,#2d2640 25%,#3d3557 50%,#2d2640 75%);background-size:200% 100%;}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-/* gradient overlay on image */
 .ss-slide-img-wrap::after{
   content:'';position:absolute;bottom:0;left:0;right:0;height:40%;
   background:linear-gradient(to bottom,transparent,rgba(0,0,0,.35));
   pointer-events:none;
 }
 
-/* Slide number badge on image */
 .ss-slide-badge{
   position:absolute;top:12px;left:12px;z-index:2;
   background:rgba(0,0,0,.45);backdrop-filter:blur(6px);
@@ -574,7 +586,6 @@ body.dark .ss-slide-img-shimmer{background:linear-gradient(90deg,#2d2640 25%,#3d
   padding:4px 10px;border-radius:20px;text-transform:uppercase;
 }
 
-/* Text content: bottom half */
 .ss-slide-body{
   flex:1;overflow-y:auto;
   padding:16px 20px 20px;
@@ -585,7 +596,6 @@ body.dark .ss-slide-img-shimmer{background:linear-gradient(90deg,#2d2640 25%,#3d
   font-size:clamp(1rem,3.5vw,1.25rem);
   color:var(--text);line-height:1.25;
 }
-/* paragraph instead of bullets */
 .ss-slide-para{
   font-size:clamp(.84rem,2.2vw,.92rem);
   color:var(--text-mid);
@@ -620,6 +630,24 @@ body.dark .ss-nav-btn{background:#1a1625;border-color:#2d2640;}
 }
 .ss-dot.active{background:var(--ai-color);width:20px;border-radius:4px;}
 .ss-nav-count{font-size:.78rem;color:var(--text-mid);font-weight:700;white-space:nowrap;min-width:44px;text-align:center;}
+
+/* ── Dev Agent: file reading UI ── */
+.dev-file-info{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(16,185,129,.08);border:1.5px solid rgba(16,185,129,.25);
+  border-radius:10px;padding:7px 11px;
+  font-size:.76rem;color:#059669;font-weight:600;
+  max-width:780px;margin:0 auto 4px;
+}
+body.dark .dev-file-info{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.3);color:#34d399;}
+.dev-file-icon{font-size:1rem;flex-shrink:0;}
+.dev-file-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dev-file-remove{
+  width:18px;height:18px;border-radius:50%;border:none;
+  background:#f43f5e;color:#fff;font-size:.6rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-weight:700;
+}
 
 </style>
 </head>
@@ -675,7 +703,16 @@ body.dark .ss-nav-btn{background:#1a1625;border-color:#2d2640;}
       <div class="welcome-orb" style="font-size:2rem;">🎨</div>
       <h2>AI Slideshow Maker</h2>
       <p>Type any topic and I'll build a beautiful slideshow with real images — download as PDF.</p>
-      
+
+      <!-- ✅ FIX 1: Red "still in development" banner -->
+      <div class="ss-dev-banner">
+        <span class="ss-dev-icon">🔴</span>
+        <div class="ss-dev-text">
+          <strong>Still in Development</strong>
+          <span>Some features may not work as expected. We're actively fixing this.</span>
+        </div>
+      </div>
+
       <!-- Regular topic input -->
       <div class="ss-topic-row">
         <input class="ss-topic-input" id="ss-topic" type="text" placeholder="e.g. The Solar System, World War II…" autocomplete="off"
@@ -696,7 +733,7 @@ body.dark .ss-nav-btn{background:#1a1625;border-color:#2d2640;}
       
       <div class="ss-chips" id="ss-chips"></div>
 
-      <!-- Project description section - NEW FEATURE -->
+      <!-- Project description section -->
       <div class="ss-project-section">
         <div class="ss-project-header">
           <span class="ss-project-label">✨ OR</span>
@@ -745,10 +782,28 @@ body.dark .ss-nav-btn{background:#1a1625;border-color:#2d2640;}
       <button id="img-remove" onclick="clearImg()" aria-label="Remove image">✕</button>
       <span style="font-size:.75rem;color:var(--text-mid);font-weight:500;">Image attached</span>
     </div>
+    <!-- Dev Agent file info strip -->
+    <div id="dev-file-strip" style="display:none;">
+      <div class="dev-file-info" style="max-width:780px;margin:0 auto 4px;">
+        <span class="dev-file-icon">📄</span>
+        <span class="dev-file-name" id="dev-file-name">file.txt</span>
+        <button class="dev-file-remove" onclick="clearDevFile()" aria-label="Remove file">✕</button>
+      </div>
+    </div>
     <div class="input-card">
-      <!-- Hidden file input for image upload -->
-      <input type="file" id="img-input" accept="image/*" capture="environment" style="display:none" onchange="handleImgFile(this)"/>
-      <button id="img-btn" onclick="document.getElementById('img-input').click()" aria-label="Upload image">📎</button>
+      <!-- Hidden file inputs -->
+      <!-- Homework: image only, camera capture -->
+      <input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleImgFile(this)"/>
+      <!-- Camera input for homework (mobile direct camera) -->
+      <input type="file" id="cam-input" accept="image/*" capture="environment" style="display:none" onchange="handleImgFile(this)"/>
+      <!-- Dev Agent: any file type -->
+      <input type="file" id="dev-file-input" accept="*/*" style="display:none" onchange="handleDevFile(this)"/>
+
+      <!-- 📎 attach button — shown for homework (images) AND devagent (any file) -->
+      <button id="img-btn" onclick="handleAttachClick()" aria-label="Attach file">📎</button>
+      <!-- 📷 camera button — shown only for homework -->
+      <button id="cam-btn" onclick="document.getElementById('cam-input').click()" aria-label="Take photo">📷</button>
+
       <textarea id="msg-input" rows="1"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}autoResize(this);"
         oninput="autoResize(this);"
@@ -784,15 +839,19 @@ const HUMANIZER_SYSTEM = [
 
 const DEVAGENT_SYSTEM = [
   "You are an elite AI Developer Agent inside Viora — expert in every programming language, framework, and technology stack.",
+  "You can read and analyze ANY file type the user uploads: .html, .css, .js, .ts, .jsx, .tsx, .py, .java, .c, .cpp, .json, .xml, .yaml, .md, .txt, .sql, .sh, .php, .rb, .go, .rs, and more.",
   "",
   "RULES:",
-  "- Always wrap ALL code in triple-backtick code blocks with the language specified (e.g. ```python, ```javascript)",
+  "- Always wrap ALL code in triple-backtick code blocks with the language specified (e.g. ```python, ```javascript, ```html)",
   "- Write clean, production-ready, well-commented code",
+  "- When a file is shared, carefully read its FULL content before responding",
   "- When debugging, identify the exact root cause before fixing",
   "- Write COMPLETE working code — never truncate with comments like 'rest of code here'",
   "- Explain what the code does concisely after writing it",
-  "- Always handle edge cases, errors, and security"
+  "- Always handle edge cases, errors, and security",
+  "- For HTML files: analyze structure, styles, scripts, and suggest improvements"
 ].join("\n");
+
 const HOMEWORK_SYSTEM = [
   "You are a brilliant, patient homework tutor for students of all ages. You can read images of homework problems.",
   "",
@@ -825,17 +884,17 @@ const AIS = {
   devagent:{
     name:'Dev Agent',sub:'Expert programmer & code debugger',logo:'💻',
     color:'#10b981',bg:'rgba(16,185,129,.12)',send:'linear-gradient(135deg,#10b981,#059669)',
-    placeholder:'Ask anything about code…',welcome:'Dev Agent',
-    desc:'Expert coder. Debug, build apps, explain code, and more.',
+    placeholder:'Ask anything about code, or attach any file…',welcome:'Dev Agent',
+    desc:'Expert coder. Debug, build apps, read files, explain code, and more.',
     chips:['Debug this code','Build a Python script','Explain this function','Review my code'],
     system: DEVAGENT_SYSTEM
   },
   homework:{
     name:'Homework Helper',sub:'Your personal tutor for every subject',logo:'📚',
     color:'#f59e0b',bg:'rgba(245,158,11,.12)',send:'linear-gradient(135deg,#f59e0b,#d97706)',
-    placeholder:'Ask a question or upload a photo of your homework…',
+    placeholder:'Ask a question or take a photo of your homework…',
     welcome:'Homework Helper',
-    desc:"Upload a photo or paste an image of your homework and I'll solve it step by step.",
+    desc:'📷 Take a photo of your homework or paste an image — I\'ll solve it step by step!',
     chips:['Solve this math problem','Explain photosynthesis','Help with an essay','Quiz me'],
     system: HOMEWORK_SYSTEM
   },
@@ -879,6 +938,24 @@ AI.chips.forEach(ch => {
   b.onclick = () => { document.getElementById('msg-input').value = ch; sendMsg(); };
   cw.appendChild(b);
 });
+
+// ── Show correct buttons per AI ──
+if(aiId === 'homework'){
+  document.getElementById('img-btn').style.display = 'flex'; // 📎 gallery
+  document.getElementById('cam-btn').style.display = 'flex'; // 📷 camera
+}
+if(aiId === 'devagent'){
+  document.getElementById('img-btn').style.display = 'flex'; // 📎 any file
+}
+
+// ── Attach button: routes to correct input per AI ──
+function handleAttachClick(){
+  if(aiId === 'devagent'){
+    document.getElementById('dev-file-input').click();
+  } else {
+    document.getElementById('img-input').click();
+  }
+}
 
 // ── Chat engine ──
 let history = [], busy = false;
@@ -933,23 +1010,27 @@ async function sendMsg(){
   if(busy)return;
   const inp=document.getElementById('msg-input');
   const text=inp.value.trim();
-  // For homework with image, allow sending image alone (no text required)
-  if(!text && !pendingImgB64) return;
+  if(!text && !pendingImgB64 && !pendingDevFileContent) return;
   inp.value='';inp.style.height='auto';
 
-  // Build user message content
   let userContent;
   let userHtml;
+
   if(pendingImgB64){
     // Vision message: image + optional text
     userContent = [
       {type:'image',source:{type:'base64',media_type:pendingImgMime,data:pendingImgB64}},
       {type:'text',text:text||'Please solve this homework problem.'}
     ];
-    // Show image thumbnail in chat
     const imgSrc = 'data:'+pendingImgMime+';base64,'+pendingImgB64;
     userHtml = '<img class="user-img" src="'+imgSrc+'" alt="homework image"/>'+(text?'<br>'+esc(text):'');
     clearImg();
+  } else if(pendingDevFileContent !== null){
+    // Dev Agent file message
+    const fname = pendingDevFileName || 'file';
+    userContent = 'I\'m sharing a file with you.\n\nFilename: ' + fname + '\n\nFile contents:\n```\n' + pendingDevFileContent + '\n```\n\n' + (text || 'Please review this file and tell me what you think.');
+    userHtml = '📄 <strong>' + esc(fname) + '</strong>' + (text ? '<br>' + esc(text) : '');
+    clearDevFile();
   } else {
     userContent = text;
     userHtml = esc(text);
@@ -964,7 +1045,6 @@ async function sendMsg(){
     const data=await res.json();ti.classList.remove('show');
     const reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'';
     if(reply){
-      // Store plain text in history (not the image base64 again)
       history.push({role:'assistant',content:reply});
       addMsg('ai',fmt(reply));
     } else {
@@ -975,16 +1055,10 @@ async function sendMsg(){
 }
 
 // ════════════════════════════════════════════
-// IMAGE UPLOAD (homework helper)
+// FIX 3: HOMEWORK — image from gallery OR camera
 // ════════════════════════════════════════════
 let pendingImgB64 = null;
 let pendingImgMime = 'image/jpeg';
-
-if(aiId === 'homework'){
-  // Show the attach button
-  const imgBtn = document.getElementById('img-btn');
-  if(imgBtn) imgBtn.style.display = 'flex';
-}
 
 function handleImgFile(input){
   const file = input.files && input.files[0];
@@ -1003,7 +1077,6 @@ function handleImgFile(input){
 }
 
 function handlePaste(e){
-  // Only intercept paste if we're in homework mode
   if(aiId !== 'homework') return;
   const items = e.clipboardData && e.clipboardData.items;
   if(!items) return;
@@ -1033,6 +1106,67 @@ function clearImg(){
   const wrap = document.getElementById('img-preview-wrap');
   if(prev) prev.src = '';
   if(wrap) wrap.style.display = 'none';
+}
+
+// ════════════════════════════════════════════
+// FIX 2: DEV AGENT — read any file type
+// ════════════════════════════════════════════
+let pendingDevFileContent = null;
+let pendingDevFileName = null;
+
+function handleDevFile(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  pendingDevFileName = file.name;
+
+  // Binary or image file — convert to base64 description
+  const isBinary = /\.(png|jpg|jpeg|gif|webp|pdf|zip|exe|bin|wasm)$/i.test(file.name);
+
+  if(isBinary){
+    // For images, use vision-style handling
+    if(/\.(png|jpg|jpeg|gif|webp)$/i.test(file.name)){
+      pendingImgMime = file.type || 'image/png';
+      const reader = new FileReader();
+      reader.onload = function(e){
+        pendingImgB64 = e.target.result.split(',')[1];
+        pendingDevFileContent = null;
+        // Show as image preview
+        const prev = document.getElementById('img-preview');
+        const wrap = document.getElementById('img-preview-wrap');
+        if(prev){ prev.src = e.target.result; }
+        if(wrap){ wrap.style.display = 'flex'; }
+        showDevFileStrip(file.name);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      pendingDevFileContent = '[Binary file — cannot display raw content. File: ' + file.name + ', Size: ' + (file.size/1024).toFixed(1) + ' KB]';
+      showDevFileStrip(file.name);
+    }
+  } else {
+    // Text-based file — read as text
+    const reader = new FileReader();
+    reader.onload = function(e){
+      pendingDevFileContent = e.target.result;
+      showDevFileStrip(file.name);
+    };
+    reader.onerror = function(){
+      pendingDevFileContent = '[Could not read file: ' + file.name + ']';
+      showDevFileStrip(file.name);
+    };
+    reader.readAsText(file);
+  }
+  input.value = '';
+}
+
+function showDevFileStrip(name){
+  document.getElementById('dev-file-name').textContent = name;
+  document.getElementById('dev-file-strip').style.display = 'block';
+}
+
+function clearDevFile(){
+  pendingDevFileContent = null;
+  pendingDevFileName = null;
+  document.getElementById('dev-file-strip').style.display = 'none';
 }
 
 // ════════════════════════════════════════════
@@ -1155,42 +1289,32 @@ if(aiId==='weather'){
 // SLIDESHOW ENGINE
 // ════════════════════════════════════════════
 if(aiId === 'slideshow'){
-  // Hide normal chat UI, show slideshow UI
   document.getElementById('chat-scroll-wrap').style.display = 'none';
   document.getElementById('input-area').style.display       = 'none';
   document.getElementById('slideshow-ui').classList.add('active');
 
-  // Populate topic chips with project ideas included
   const ssChips = document.getElementById('ss-chips');
   const chips = [
-    'Climate Change',
-    'The Solar System', 
-    'World War II',
-    'How AI Works',
-    'The Human Body',
-    'Ancient Rome',
-    'Mobile App Idea', 
-    'Startup Pitch',
-    'Product Launch'
+    'Climate Change','The Solar System','World War II',
+    'How AI Works','The Human Body','Ancient Rome',
+    'Mobile App Idea','Startup Pitch','Product Launch'
   ];
-  
   chips.forEach(ch => {
     const b = document.createElement('button');
-    b.className = 'ss-chip'; 
+    b.className = 'ss-chip';
     b.textContent = ch;
-    b.onclick = () => { 
+    b.onclick = () => {
       if (ch.includes('Idea') || ch.includes('Pitch') || ch.includes('Launch')) {
         document.getElementById('ss-project-desc').value = `Create a ${ch.toLowerCase()} presentation`;
         document.getElementById('ss-project-desc').focus();
       } else {
-        document.getElementById('ss-topic').value = ch; 
-        startSlideshow(); 
+        document.getElementById('ss-topic').value = ch;
+        startSlideshow();
       }
     };
     ssChips.appendChild(b);
   });
 
-  // Focus topic input
   setTimeout(() => { const t = document.getElementById('ss-topic'); if(t) t.focus(); }, 300);
 }
 
@@ -1210,14 +1334,12 @@ window.startSlideshow = async function(){
   if(!topic){ document.getElementById('ss-topic').focus(); return; }
   const num = parseInt(document.getElementById('ss-num').value) || 6;
 
-  // Show building screen
   document.getElementById('ss-setup').style.display    = 'none';
   document.getElementById('ss-building').classList.add('show');
   document.getElementById('ss-viewer').classList.remove('show');
   setProgress(5, 'Generating slide content…');
 
   try {
-    // 1. Generate slide content
     const genRes  = await fetch('/api/slideshow/generate', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ topic, numSlides: num })
@@ -1229,7 +1351,6 @@ window.startSlideshow = async function(){
     ssImgCache = {};
     setProgress(20, 'Fetching images…');
 
-    // 2. Fetch images in parallel (with progress)
     let loaded = 0;
     await Promise.all(ssSlides.map(async (slide, i) => {
       try {
@@ -1243,8 +1364,6 @@ window.startSlideshow = async function(){
 
     setProgress(100, 'Done!');
     await new Promise(r => setTimeout(r, 400));
-
-    // 3. Render
     renderViewer(genData.title || topic);
 
   } catch(err) {
@@ -1254,89 +1373,46 @@ window.startSlideshow = async function(){
   }
 };
 
-// NEW FUNCTION: Start project-based slideshow
 window.startProjectSlideshow = async function() {
   const projectDesc = document.getElementById('ss-project-desc').value.trim();
-  if (!projectDesc) { 
-    document.getElementById('ss-project-desc').focus(); 
-    return; 
-  }
-  
+  if (!projectDesc) { document.getElementById('ss-project-desc').focus(); return; }
   const num = parseInt(document.getElementById('ss-num').value) || 6;
-  
-  // Show building screen
+
   document.getElementById('ss-setup').style.display = 'none';
   document.getElementById('ss-building').classList.add('show');
   document.getElementById('ss-viewer').classList.remove('show');
   setProgress(5, 'Analyzing your project idea…');
-  
+
   try {
-    // First, have the AI analyze the project and create a structured slideshow outline
-    const analysisPrompt = `You are a professional project consultant. Based on this project description:
-
-"${projectDesc}"
-
-Create a comprehensive ${num}-slide presentation that covers:
-1. Project overview & vision
-2. Key features / functionality
-3. Target audience / users
-4. Technical requirements (if applicable)
-5. Timeline / milestones
-6. Success metrics / goals
-7. Potential challenges & solutions
-8. Next steps / launch plan
-
-Format as a slideshow JSON with this exact structure:
-{
-  "title": "Project: [catchy title based on description]",
-  "slides": [
-    {
-      "title": "Engaging slide title",
-      "paragraph": "Detailed paragraph about this aspect of the project",
-      "imageQuery": "specific search term for relevant photo"
-    }
-  ]
-}
-
-Each slide should have a clear focus, be informative, and help present the project professionally.`;
+    const analysisPrompt = `You are a professional project consultant. Based on this project description:\n\n"${projectDesc}"\n\nCreate a comprehensive ${num}-slide presentation that covers:\n1. Project overview & vision\n2. Key features / functionality\n3. Target audience / users\n4. Technical requirements (if applicable)\n5. Timeline / milestones\n6. Success metrics / goals\n7. Potential challenges & solutions\n8. Next steps / launch plan\n\nFormat as a slideshow JSON with this exact structure:\n{\n  "title": "Project: [catchy title based on description]",\n  "slides": [\n    {\n      "title": "Engaging slide title",\n      "paragraph": "Detailed paragraph about this aspect of the project",\n      "imageQuery": "specific search term for relevant photo"\n    }\n  ]\n}\n\nEach slide should have a clear focus, be informative, and help present the project professionally.`;
 
     const genRes = await fetch('/api/slideshow/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        topic: analysisPrompt,
-        numSlides: num 
-      })
+      body: JSON.stringify({ topic: analysisPrompt, numSlides: num })
     });
-    
     const genData = await genRes.json();
     if (genData.error) throw new Error(genData.error);
-    
+
     ssSlides = genData.slides || [];
     ssImgCache = {};
     setProgress(20, 'Finding relevant images…');
-    
-    // Fetch images
+
     let loaded = 0;
     await Promise.all(ssSlides.map(async (slide, i) => {
       try {
         const r = await fetch('/api/slideshow/image?q=' + encodeURIComponent(slide.imageQuery));
         const d = await r.json();
         ssImgCache[i] = d.url || '';
-      } catch { 
-        ssImgCache[i] = ''; 
-      }
+      } catch { ssImgCache[i] = ''; }
       loaded++;
-      setProgress(20 + Math.round((loaded / ssSlides.length) * 70), 
-        'Loading image ' + loaded + ' of ' + ssSlides.length + '…');
+      setProgress(20 + Math.round((loaded / ssSlides.length) * 70), 'Loading image ' + loaded + ' of ' + ssSlides.length + '…');
     }));
-    
+
     setProgress(100, 'Ready!');
     await new Promise(r => setTimeout(r, 400));
-    
-    // Render with project-specific title
     renderViewer(genData.title || 'Project: ' + projectDesc.slice(0, 40) + '…');
-    
+
   } catch(err) {
     document.getElementById('ss-building').classList.remove('show');
     document.getElementById('ss-setup').style.display = '';
@@ -1355,30 +1431,23 @@ function renderViewer(title){
   ssCurrent = 0;
 
   ssSlides.forEach((slide, i) => {
-    // ── Slide element ──
     const el = document.createElement('div');
     el.className = 'ss-slide' + (i === 0 ? ' active' : '');
     el.id = 'ss-slide-' + i;
-
     const imgSrc = ssImgCache[i] || '';
-
-    // render paragraph instead of bullet list
     el.innerHTML =
       '<div class="ss-slide-img-wrap">' +
         '<div class="ss-slide-img-shimmer" id="ss-shimmer-' + i + '"></div>' +
         (imgSrc ? '<img class="ss-slide-img" data-idx="' + i + '" src="' + escAttr(imgSrc) + '" alt="" ' +
-          'onload="ssImgLoaded(this)" ' +
-          'onerror="ssImgError(this)">' : '') +
+          'onload="ssImgLoaded(this)" onerror="ssImgError(this)">' : '') +
         '<div class="ss-slide-badge">Slide ' + (i+1) + ' of ' + ssSlides.length + '</div>' +
       '</div>' +
       '<div class="ss-slide-body">' +
         '<div class="ss-slide-title">' + escSS(slide.title) + '</div>' +
         '<p class="ss-slide-para">' + escSS(slide.paragraph || '') + '</p>' +
       '</div>';
-
     carousel.appendChild(el);
 
-    // ── Dot ──
     const dot = document.createElement('div');
     dot.className = 'ss-dot' + (i === 0 ? ' active' : '');
     dot.id = 'ss-dot-' + i;
@@ -1386,7 +1455,6 @@ function renderViewer(title){
     dotsWrap.appendChild(dot);
   });
 
-  // Swipe support
   let touchStartX = 0;
   carousel.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive:true});
   carousel.addEventListener('touchend', e => {
@@ -1423,11 +1491,9 @@ function goSlide(idx){
   const dir = idx > ssCurrent ? 1 : -1;
   const cur = document.getElementById('ss-slide-' + ssCurrent);
   const nxt = document.getElementById('ss-slide-' + idx);
-  // Position next slide off-screen in correct direction
   nxt.style.transform = dir > 0 ? 'translateX(40px)' : 'translateX(-40px)';
   nxt.style.opacity = '0';
   nxt.classList.add('active');
-  // Force reflow
   nxt.offsetHeight;
   nxt.style.transform = '';
   nxt.style.opacity = '';
@@ -1455,13 +1521,12 @@ window.resetSlideshow = function(){
   document.getElementById('ss-topic').focus();
 };
 
-// ── PDF export using jsPDF (loaded from CDN) ──
+// ── PDF export ──
 window.downloadPDF = async function(){
   const btn = document.getElementById('ss-dl-btn');
   btn.textContent = '⏳ Building…'; btn.disabled = true;
 
   try {
-    // Load jsPDF if not already loaded
     if(!window.jspdf){
       await new Promise((res, rej) => {
         const s = document.createElement('script');
@@ -1472,33 +1537,24 @@ window.downloadPDF = async function(){
     }
 
     const { jsPDF } = window.jspdf;
-    // Landscape 16:9 (960×540 pt)
     const doc = new jsPDF({ orientation:'landscape', unit:'pt', format:[960,540] });
     const W = 960, H = 540;
-
-    // Colour palette based on AI colour
     const accent = AI.color || '#ea580c';
 
     for(let i = 0; i < ssSlides.length; i++){
       if(i > 0) doc.addPage([W, H], 'landscape');
       const slide = ssSlides[i];
-
-      // Background
       doc.setFillColor(250,248,255);
       doc.rect(0, 0, W, H, 'F');
-
-      // Left colour bar
       doc.setFillColor(...hexToRgb(accent));
       doc.rect(0, 0, 8, H, 'F');
 
-      // Slide image (right half)
       const imgUrl = ssImgCache[i];
       if(imgUrl){
         try {
           const b64 = await urlToBase64(imgUrl);
           if(b64){
             doc.addImage(b64, 'JPEG', W/2, 0, W/2, H, '', 'FAST');
-            // Gradient overlay on image
             doc.setFillColor(250,248,255);
             doc.setGState(new doc.GState({opacity:0.18}));
             doc.rect(W/2, 0, W/2, H, 'F');
@@ -1507,27 +1563,23 @@ window.downloadPDF = async function(){
         } catch{}
       }
 
-      // Slide number pill
       doc.setFillColor(...hexToRgb(accent), 0.12);
       doc.roundedRect(28, 28, 72, 20, 5, 5, 'F');
       doc.setTextColor(...hexToRgb(accent));
       doc.setFontSize(9); doc.setFont('helvetica','bold');
       doc.text('SLIDE ' + (i+1) + ' / ' + ssSlides.length, 36, 42);
 
-      // Title
       doc.setTextColor(30, 16, 48);
       doc.setFontSize(28); doc.setFont('helvetica','bold');
       const titleLines = doc.splitTextToSize(slide.title, W/2 - 60);
       doc.text(titleLines, 28, 95);
 
-      // paragraph instead of bullets in PDF
       doc.setFontSize(12); doc.setFont('helvetica','normal');
       doc.setTextColor(107, 91, 142);
       let y = 95 + (titleLines.length * 36) + 10;
       const paraLines = doc.splitTextToSize(slide.paragraph || '', W/2 - 65);
       doc.text(paraLines, 28, y);
 
-      // Footer
       doc.setFillColor(237,233,248);
       doc.rect(0, H-30, W, 30, 'F');
       doc.setTextColor(168,152,200);
@@ -1567,8 +1619,6 @@ async function urlToBase64(url){
     img.src = url;
   });
 }
-// ── end slideshow ──
-
 </script>
 </body>
 </html>
