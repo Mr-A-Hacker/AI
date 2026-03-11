@@ -1873,20 +1873,48 @@ document.addEventListener('paste', e => {
   }
 });
 
-function scrollBot() { chatEl.scrollTop = chatEl.scrollHeight; }
+function scrollBot() { 
+  chatEl.scrollTo({
+    top: chatEl.scrollHeight,
+    behavior: 'smooth'
+  });
+}
 
+// IMPROVED addMsg function with proper formatting
 function addMsg(role, text) {
   const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const d = document.createElement('div');
   d.className = `msg ${role}`;
   const session = getSession();
   const initials = session?.name ? session.name[0].toUpperCase() : 'U';
+  
+  // Format the text properly - convert markdown-style to HTML
+  let formattedText = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+  
+  // Wrap in paragraph if not starting with HTML tag
+  if (!formattedText.startsWith('<')) {
+    formattedText = '<p>' + formattedText + '</p>';
+  }
+  
   d.innerHTML = `
     <div class="av">${role === 'ai' ? 'V' : initials}</div>
     <div class="bubble-wrap">
-      <div class="bubble">${escHtml(text)}</div>
+      <div class="bubble">${formattedText}</div>
       <div class="msg-time">${now}</div>
     </div>`;
+  
+  const chatEl = document.getElementById('chat-window');
+  const typingEl = document.getElementById('typing');
   chatEl.insertBefore(d, typingEl);
   scrollBot();
 }
