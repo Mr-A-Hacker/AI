@@ -553,15 +553,12 @@ body.dark .ss-slide-img-shimmer{background:linear-gradient(90deg,#2d2640 25%,#3d
   font-size:clamp(1rem,3.5vw,1.25rem);
   color:var(--text);line-height:1.25;
 }
-.ss-slide-bullets{list-style:none;display:flex;flex-direction:column;gap:8px;margin-top:2px;}
-.ss-slide-bullets li{
-  font-size:clamp(.82rem,2.2vw,.9rem);color:var(--text-mid);
-  line-height:1.55;padding-left:18px;position:relative;
-}
-.ss-slide-bullets li::before{
-  content:"";position:absolute;left:0;top:8px;
-  width:7px;height:7px;border-radius:50%;
-  background:var(--ai-color);flex-shrink:0;
+/* ── CHANGE 1: paragraph instead of bullets ── */
+.ss-slide-para{
+  font-size:clamp(.84rem,2.2vw,.92rem);
+  color:var(--text-mid);
+  line-height:1.7;
+  margin-top:4px;
 }
 
 /* Nav bar */
@@ -1205,9 +1202,9 @@ function renderViewer(title){
     el.className = 'ss-slide' + (i === 0 ? ' active' : '');
     el.id = 'ss-slide-' + i;
 
-    const imgSrc  = ssImgCache[i] || '';
-    const bullets = (slide.bullets || []).map(b => '<li>' + escSS(b) + '</li>').join('');
+    const imgSrc = ssImgCache[i] || '';
 
+    // ── CHANGE 2: render paragraph instead of bullet list ──
     el.innerHTML =
       '<div class="ss-slide-img-wrap">' +
         '<div class="ss-slide-img-shimmer" id="ss-shimmer-' + i + '"></div>' +
@@ -1218,7 +1215,7 @@ function renderViewer(title){
       '</div>' +
       '<div class="ss-slide-body">' +
         '<div class="ss-slide-title">' + escSS(slide.title) + '</div>' +
-        '<ul class="ss-slide-bullets">' + bullets + '</ul>' +
+        '<p class="ss-slide-para">' + escSS(slide.paragraph || '') + '</p>' +
       '</div>';
 
     carousel.appendChild(el);
@@ -1364,21 +1361,12 @@ window.downloadPDF = async function(){
       const titleLines = doc.splitTextToSize(slide.title, W/2 - 60);
       doc.text(titleLines, 28, 95);
 
-      // Bullets
-      doc.setFontSize(13); doc.setFont('helvetica','normal');
+      // ── CHANGE 3: paragraph instead of bullets in PDF ──
+      doc.setFontSize(12); doc.setFont('helvetica','normal');
       doc.setTextColor(107, 91, 142);
       let y = 95 + (titleLines.length * 36) + 10;
-      (slide.bullets || []).forEach(b => {
-        doc.setTextColor(...hexToRgb(accent));
-        doc.setFontSize(11); doc.setFont('helvetica','bold');
-        doc.text('•', 28, y);
-        doc.setTextColor(107, 91, 142);
-        doc.setFontSize(12); doc.setFont('helvetica','normal');
-        const lines = doc.splitTextToSize(b, W/2 - 65);
-        doc.text(lines, 42, y);
-        y += lines.length * 17 + 6;
-        if(y > H - 50) return;
-      });
+      const paraLines = doc.splitTextToSize(slide.paragraph || '', W/2 - 65);
+      doc.text(paraLines, 28, y);
 
       // Footer
       doc.setFillColor(237,233,248);
