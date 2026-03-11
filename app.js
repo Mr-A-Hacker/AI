@@ -910,39 +910,44 @@ app.post('/api/slideshow/generate', async (req, res) => {
 
   const n = Math.min(Math.max(parseInt(numSlides) || 6, 3), 12);
 
-  const systemPrompt = `You are a professional presentation designer. Generate exactly ${n} slides for a presentation on the given topic.
-
-Respond with ONLY valid JSON in this exact format — no markdown, no explanation:
-{
-  "title": "Presentation Title",
-  "slides": [
-    {
-      "title": "Slide Title",
-      "bullets": ["Point one", "Point two", "Point three"],
-      "imageQuery": "specific google image search query for a relevant photo"
-    }
-  ]
-}
-
-Rules:
-- Each slide has 2-4 bullet points, each under 12 words
-- imageQuery should be specific and visual (e.g. "solar panels on roof sunny day" not just "solar energy")
-- First slide is a title/intro slide
-- Last slide is a summary or conclusion
-- Make content accurate, engaging, and professional`;
+  const systemPrompt = [
+    'You are a professional presentation designer.',
+    'Generate exactly ' + n + ' slides for a presentation on the given topic.',
+    '',
+    'YOU MUST respond with ONLY raw JSON — no markdown fences, no explanation, no preamble.',
+    'Start your response with { and end with }. Nothing else.',
+    '',
+    'Required format:',
+    '{',
+    '  "title": "Presentation Title",',
+    '  "slides": [',
+    '    {',
+    '      "title": "Slide Title",',
+    '      "bullets": ["Point one", "Point two", "Point three"],',
+    '      "imageQuery": "specific visual photo search query"',
+    '    }',
+    '  ]',
+    '}',
+    '',
+    'Rules:',
+    '- Each slide: exactly 3 bullet points, each under 10 words',
+    '- imageQuery: specific and visual (e.g. "solar panels roof sunny day")',
+    '- First slide: title/intro. Last slide: summary/conclusion.',
+    '- Output valid, complete JSON only. Do not truncate.'
+  ].join('\n');
 
   try {
     const payload = JSON.stringify({
-      model: 'openrouter/auto',
-      max_tokens: 3000,
+      model: 'google/gemini-flash-1.5',  // fast + large context, reliable JSON
+      max_tokens: 6000,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Create a ${n}-slide presentation about: ${topic}` }
+        { role: 'user', content: 'Create a ' + n + '-slide presentation about: ' + topic }
       ]
     });
     const options = {
       hostname: 'openrouter.ai', path: '/api/v1/chat/completions', method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}`, 'HTTP-Referer': 'https://viora-ai.onrender.com', 'X-Title': 'Viora AI', 'Content-Length': Buffer.byteLength(payload) }
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENROUTER_API_KEY, 'HTTP-Referer': 'https://viora-ai.onrender.com', 'X-Title': 'Viora AI', 'Content-Length': Buffer.byteLength(payload) }
     };
     const text = await new Promise((resolve, reject) => {
       const r = https.request(options, resp => {
@@ -957,9 +962,31 @@ Rules:
       r.on('error', reject); r.write(payload); r.end();
     });
 
-    // Strip markdown fences if present
-    const clean = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/,'').trim();
-    const slides = JSON.parse(clean);
+    // Robustly extract JSON: strip fences, find first { ... last }
+    let clean = text
+      .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/g, '').trim();
+    // Find outermost { } in case there's any preamble
+    const start = clean.indexOf('{');
+    const end   = clean.lastIndexOf('}');
+    if (start === -1 || end === -1 || end <= start) {
+      return res.status(500).json({ error: 'Model did not return valid JSON. Try a simpler topic or fewer slides.' });
+    }
+    clean = clean.slice(start, end + 1);
+
+    let slides;
+    try {
+      slides = JSON.parse(clean);
+    } catch (parseErr) {
+      // Last resort: attempt to repair truncated JSON by trimming to last complete slide
+      console.error('Slideshow JSON parse error:', parseErr.message);
+      console.error('Raw text length:', text.length, 'Clean length:', clean.length);
+      return res.status(500).json({ error: 'Could not parse slide data. Try fewer slides.' });
+    }
+
+    if (!slides.slides || !Array.isArray(slides.slides) || slides.slides.length === 0) {
+      return res.status(500).json({ error: 'No slides returned. Try a different topic.' });
+    }
+
     res.json(slides);
   } catch (err) {
     res.status(500).json({ error: err.message });
