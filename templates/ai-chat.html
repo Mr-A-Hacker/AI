@@ -517,9 +517,9 @@ body.dark .ss-slide{background:#1a1625;}
 body.dark .ss-slide-img-wrap{background:#2d2640;}
 .ss-slide-img{
   width:100%;height:100%;object-fit:cover;display:block;
-  transition:opacity .4s;
+  opacity:0;transition:opacity .4s;
 }
-.ss-slide-img.loading{opacity:0;}
+.ss-slide-img.loaded{opacity:1;}
 .ss-slide-img-shimmer{
   position:absolute;inset:0;
   background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);
@@ -1211,9 +1211,9 @@ function renderViewer(title){
     el.innerHTML =
       '<div class="ss-slide-img-wrap">' +
         '<div class="ss-slide-img-shimmer" id="ss-shimmer-' + i + '"></div>' +
-        (imgSrc ? '<img class="ss-slide-img loading" src="' + escAttr(imgSrc) + '" alt="" ' +
-          'onload="this.classList.remove('loading');var s=document.getElementById('ss-shimmer-' + i + '');if(s)s.remove();" ' +
-          'onerror="this.remove();var s=document.getElementById('ss-shimmer-' + i + '');if(s)s.style.animation='none';">' : '') +
+        (imgSrc ? '<img class="ss-slide-img" data-idx="' + i + '" src="' + escAttr(imgSrc) + '" alt="" ' +
+          'onload="ssImgLoaded(this)" ' +
+          'onerror="ssImgError(this)">' : '') +
         '<div class="ss-slide-badge">Slide ' + (i+1) + ' of ' + ssSlides.length + '</div>' +
       '</div>' +
       '<div class="ss-slide-body">' +
@@ -1245,6 +1245,16 @@ function renderViewer(title){
 
 function escSS(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(t){ return String(t).replace(/"/g,'&quot;'); }
+function ssImgLoaded(img){
+  img.classList.add('loaded');
+  var s = document.getElementById('ss-shimmer-' + img.dataset.idx);
+  if(s) s.remove();
+}
+function ssImgError(img){
+  img.remove();
+  var s = document.getElementById('ss-shimmer-' + img.dataset.idx);
+  if(s){ s.style.animation='none'; s.style.background='#e5e7eb'; }
+}
 
 function updateNav(){
   document.getElementById('ss-nav-count').textContent = (ssCurrent+1) + ' / ' + ssSlides.length;
