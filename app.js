@@ -910,88 +910,95 @@ app.post('/api/slideshow/generate', async (req, res) => {
 
   const n = Math.min(Math.max(parseInt(numSlides) || 6, 3), 12);
 
-  const systemPrompt = [
-    'You are a professional presentation designer.',
-    'Generate exactly ' + n + ' slides for a presentation on the given topic.',
+  // Use a simple, explicit prompt — ask for JSON directly in the user message
+  const userPrompt = [
+    'Create a ' + n + '-slide presentation about: ' + topic,
     '',
-    'YOU MUST respond with ONLY raw JSON — no markdown fences, no explanation, no preamble.',
-    'Start your response with { and end with }. Nothing else.',
+    'Return ONLY a raw JSON object. No markdown. No explanation. Start with { end with }.',
     '',
-    'Required format:',
+    'Format:',
     '{',
     '  "title": "Presentation Title",',
     '  "slides": [',
-    '    {',
-    '      "title": "Slide Title",',
-    '      "bullets": ["Point one", "Point two", "Point three"],',
-    '      "imageQuery": "specific visual photo search query"',
-    '    }',
+    '    { "title": "...", "bullets": ["...", "...", "..."], "imageQuery": "..." }',
     '  ]',
     '}',
     '',
-    'Rules:',
-    '- Each slide: exactly 3 bullet points, each under 10 words',
-    '- imageQuery: specific and visual (e.g. "solar panels roof sunny day")',
-    '- First slide: title/intro. Last slide: summary/conclusion.',
-    '- Output valid, complete JSON only. Do not truncate.'
+    'Rules: ' + n + ' slides total. 3 bullets per slide (max 10 words each). imageQuery is a specific photo search (e.g. "astronaut walking on moon"). First slide = intro. Last slide = summary.'
   ].join('\n');
 
   try {
     const payload = JSON.stringify({
-      model: 'google/gemini-flash-1.5',  // fast + large context, reliable JSON
-      max_tokens: 6000,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: 'Create a ' + n + '-slide presentation about: ' + topic }
-      ]
+      model: 'google/gemini-2.0-flash-001',
+      max_tokens: 8000,
+      messages: [{ role: 'user', content: userPrompt }]
     });
+
     const options = {
       hostname: 'openrouter.ai', path: '/api/v1/chat/completions', method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENROUTER_API_KEY, 'HTTP-Referer': 'https://viora-ai.onrender.com', 'X-Title': 'Viora AI', 'Content-Length': Buffer.byteLength(payload) }
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OPENROUTER_API_KEY,
+        'HTTP-Referer': 'https://viora-ai.onrender.com',
+        'X-Title': 'Viora AI',
+        'Content-Length': Buffer.byteLength(payload)
+      }
     };
-    const text = await new Promise((resolve, reject) => {
+
+    const raw = await new Promise((resolve, reject) => {
       const r = https.request(options, resp => {
         let d = ''; resp.on('data', c => d += c);
-        resp.on('end', () => {
-          try {
-            const p = JSON.parse(d);
-            resolve(p.choices?.[0]?.message?.content || '');
-          } catch { reject(new Error('Parse error')); }
-        });
+        resp.on('end', () => resolve(d));
       });
       r.on('error', reject); r.write(payload); r.end();
     });
 
-    // Robustly extract JSON: strip fences, find first { ... last }
-    let clean = text
-      .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/g, '').trim();
-    // Find outermost { } in case there's any preamble
+    // Parse OpenRouter response
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch { return res.status(500).json({ error: 'OpenRouter response was not JSON.' }); }
+
+    if (parsed.error) {
+      console.error('OpenRouter error:', parsed.error);
+      return res.status(500).json({ error: 'AI error: ' + (parsed.error.message || JSON.stringify(parsed.error)) });
+    }
+
+    const text = parsed.choices?.[0]?.message?.content || '';
+    if (!text) {
+      console.error('Empty content. Full response:', JSON.stringify(parsed).slice(0, 500));
+      return res.status(500).json({ error: 'AI returned empty content.' });
+    }
+
+    console.log('Slideshow raw text (first 300):', text.slice(0, 300));
+
+    // Extract JSON: strip markdown fences, find outermost { }
+    let clean = text.replace(/^```json\s*/im, '').replace(/^```\s*/im, '').replace(/```\s*$/gm, '').trim();
     const start = clean.indexOf('{');
     const end   = clean.lastIndexOf('}');
     if (start === -1 || end === -1 || end <= start) {
-      return res.status(500).json({ error: 'Model did not return valid JSON. Try a simpler topic or fewer slides.' });
+      console.error('No JSON braces found in:', clean.slice(0, 300));
+      return res.status(500).json({ error: 'AI did not return JSON. Raw: ' + clean.slice(0, 120) });
     }
     clean = clean.slice(start, end + 1);
 
     let slides;
     try {
       slides = JSON.parse(clean);
-    } catch (parseErr) {
-      // Last resort: attempt to repair truncated JSON by trimming to last complete slide
-      console.error('Slideshow JSON parse error:', parseErr.message);
-      console.error('Raw text length:', text.length, 'Clean length:', clean.length);
-      return res.status(500).json({ error: 'Could not parse slide data. Try fewer slides.' });
+    } catch (e) {
+      console.error('JSON parse failed:', e.message, '\nClean (first 300):', clean.slice(0, 300));
+      return res.status(500).json({ error: 'JSON parse failed: ' + e.message });
     }
 
-    if (!slides.slides || !Array.isArray(slides.slides) || slides.slides.length === 0) {
-      return res.status(500).json({ error: 'No slides returned. Try a different topic.' });
+    if (!Array.isArray(slides.slides) || slides.slides.length === 0) {
+      return res.status(500).json({ error: 'No slides in response.' });
     }
 
     res.json(slides);
   } catch (err) {
+    console.error('Slideshow generate error:', err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // ── Slideshow: proxy image search (avoids CORS) ──
 app.get('/api/slideshow/image', async (req, res) => {
