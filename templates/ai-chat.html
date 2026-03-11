@@ -4,6 +4,25 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="theme-color" content="#faf8ff"/>
+<meta name="color-scheme" content="light"/>
+<style>html,body{background:#faf8ff!important;color:#1e1030!important;}</style>
+<script>
+(function(){
+  var T={
+    humanizer:{c:'#7c3aed',bg:'rgba(124,58,237,.12)',s:'linear-gradient(135deg,#7c3aed,#6d28d9)'},
+    weather:  {c:'#38bdf8',bg:'rgba(56,189,248,.12)',s:'linear-gradient(135deg,#38bdf8,#0ea5e9)'},
+    devagent: {c:'#10b981',bg:'rgba(16,185,129,.12)',s:'linear-gradient(135deg,#10b981,#059669)'},
+    homework: {c:'#f59e0b',bg:'rgba(245,158,11,.12)',s:'linear-gradient(135deg,#f59e0b,#d97706)'},
+    slideshow:{c:'#ea580c',bg:'rgba(234,88,12,.12)', s:'linear-gradient(135deg,#ea580c,#c2410c)'}
+  };
+  var id=(new URLSearchParams(window.location.search)).get('ai')||'humanizer';
+  var t=T[id]||T.humanizer;
+  var r=document.documentElement.style;
+  r.setProperty('--ai-color',t.c);
+  r.setProperty('--ai-bg',t.bg);
+  r.setProperty('--ai-send',t.s);
+})();
+</script>
 <title>Viora AI</title>
 <!-- Tab favicon -->
 <link rel="icon" type="image/png" href="/V.png"/>
@@ -510,9 +529,9 @@ code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-size:.82r
 
       <!-- Welcome -->
       <div id="welcome-block">
-        <div class="welcome-orb" id="wel-logo"></div>
-        <h2 id="wel-name"></h2>
-        <p  id="wel-desc"></p>
+        <div class="welcome-orb" id="wel-logo" style="background:var(--ai-bg);">⏳</div>
+        <h2 id="wel-name" style="color:var(--ai-color);">Loading…</h2>
+        <p id="wel-desc" style="color:#6b5b8e;"></p>
         <div id="weather-city-row">
           <input id="weather-city-input" type="text" placeholder="Search a city…"
             onkeydown="if(event.key==='Enter')fetchWeatherCity()" autocomplete="off"/>
@@ -691,7 +710,7 @@ const AIS = {
     color:'#ea580c',bg:'rgba(234,88,12,.12)',send:'linear-gradient(135deg,#ea580c,#c2410c)',
     placeholder:'Enter a topic for your slideshow…',
     welcome:'AI Slideshow Maker',
-    desc:'Type any topic and I'll build a beautiful slideshow with real images you can download as PDF.',
+    desc:"Type any topic and I'll build a beautiful slideshow with real images you can download as PDF.",
     chips:['Climate Change','The Solar System','World War II','How AI Works','The Human Body','Ancient Rome'],
     system:''
   }
