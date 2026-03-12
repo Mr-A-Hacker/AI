@@ -3035,8 +3035,16 @@ Think carefully about:
     }
   }
 
+  // --- Location query for POIs (non-weather) ---
   let coords = null;
-  if (isLocationQuery(text)) coords = await getBrowserLocation();
+  try {
+    if (isLocationQuery(text)) {
+      coords = await getBrowserLocation();
+    }
+  } catch (locErr) {
+    // If location fails, just continue without coords
+    console.warn('Location query failed, continuing without coords:', locErr.message);
+  }
 
   try {
     const res = await fetch('/api/chat', {
@@ -3819,8 +3827,9 @@ async function subSend() {
   if (win) { win.appendChild(typing); win.scrollTop = win.scrollHeight; }
 
   try {
+    const session = getSession();
     const body = { system: ai.system, messages: subHistory };
-    if (currentUser?.email) body.email = currentUser.email;
+    if (session?.email) body.email = session.email;
     if (currentCoords) body.coords = currentCoords;
 
     const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
