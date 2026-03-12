@@ -1061,6 +1061,8 @@ let pendingImgB64 = null;
 let pendingImgMime = 'image/jpeg';
 
 function handleImgFile(input){
+  // Clear any pending Dev Agent file first
+  clearDevFile();
   const file = input.files && input.files[0];
   if(!file) return;
   pendingImgMime = file.type || 'image/jpeg';
@@ -1115,6 +1117,8 @@ let pendingDevFileContent = null;
 let pendingDevFileName = null;
 
 function handleDevFile(input){
+  // Clear any pending image first
+  clearImg();
   const file = input.files && input.files[0];
   if(!file) return;
   pendingDevFileName = file.name;
@@ -1123,7 +1127,7 @@ function handleDevFile(input){
   const isBinary = /\.(png|jpg|jpeg|gif|webp|pdf|zip|exe|bin|wasm)$/i.test(file.name);
 
   if(isBinary){
-    // For images, use vision-style handling
+    // For images, use vision-style handling and show image preview (not file strip)
     if(/\.(png|jpg|jpeg|gif|webp)$/i.test(file.name)){
       pendingImgMime = file.type || 'image/png';
       const reader = new FileReader();
@@ -1135,7 +1139,7 @@ function handleDevFile(input){
         const wrap = document.getElementById('img-preview-wrap');
         if(prev){ prev.src = e.target.result; }
         if(wrap){ wrap.style.display = 'flex'; }
-        showDevFileStrip(file.name);
+        // Do NOT show dev file strip for images
       };
       reader.readAsDataURL(file);
     } else {
