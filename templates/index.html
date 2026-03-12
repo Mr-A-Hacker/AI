@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -328,12 +327,12 @@ header {
 .expired-card p { font-size: .88rem; color: var(--text-mid); line-height: 1.7; margin-bottom: 24px; }
 .hidden { display: none !important; }
 
-/* ══════════════════════════════════════════
+/* ══════════════════════════════════════════════
    MOBILE / PHONE MODE  (≤ 640px)
-══════════════════════════════════════════ */
-/* ══════════════════════════════════════════
+══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════
    MOBILE / PHONE MODE  (≤ 640px)
-══════════════════════════════════════════ */
+══════════════════════════════════════════════ */
 @media (max-width: 640px) {
 
   /* ── Fill exact screen — no overflow, no white gaps ── */
@@ -575,7 +574,7 @@ header {
 .dm-toggle { position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0; cursor:pointer; }
 .dm-toggle input { opacity:0; width:0; height:0; position:absolute; }
 .dm-slider { position:absolute; inset:0; background:#d1d5db; border-radius:24px; transition:background .2s; }
-.dm-slider::before { content:\"\"; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:transform .2s; box-shadow:0 1px 4px rgba(0,0,0,.2); }
+.dm-slider::before { content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:transform .2s; box-shadow:0 1px 4px rgba(0,0,0,.2); }
 .dm-toggle input:checked + .dm-slider { background:var(--violet); }
 .dm-toggle input:checked + .dm-slider::before { transform:translateX(20px); }
 body.dark .dm-slider { background:#3d3557; }
@@ -631,7 +630,7 @@ body.dark .dm-slider { background:#3d3557; }
 .dev-av-user { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#f97316,#fbbf24); display:flex; align-items:center;justify-content:center; font-size:.7rem; font-weight:700; color:white; flex-shrink:0; }
 .dev-typing { display:flex; gap:4px; padding:10px 14px; background:white; border:1.5px solid var(--border); border-radius:16px; border-bottom-left-radius:4px; width:fit-content; }
 .dev-dot { width:6px; height:6px; border-radius:50%; background:#10b981; animation:tdB 1.1s ease-in-out infinite; }
-.dev-dot:nth-child(2){animation-delay:.18s;} .dev-dot:nth-child(3){animation-delay:.36s;}.
+.dev-dot:nth-child(2){animation-delay:.18s;} .dev-dot:nth-child(3){animation-delay:.36s;}
 /* Homework Helper */
 .hw-subj { padding:5px 12px; border-radius:20px; border:1.5px solid var(--border); background:none; font-family:var(--font-body); font-size:.72rem; font-weight:700; color:var(--text-mid); cursor:pointer; white-space:nowrap; transition:all .2s; }
 .hw-subj.active { background:linear-gradient(135deg,#f59e0b,#ef4444); border-color:transparent; color:white; }
@@ -644,7 +643,7 @@ body.dark .dm-slider { background:#3d3557; }
 .hw-av-user { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#8b5cf6,#6366f1); display:flex; align-items:center; justify-content:center; font-size:.7rem; font-weight:700; color:white; flex-shrink:0; }
 .hw-typing { display:flex; gap:4px; padding:10px 14px; background:white; border:1.5px solid var(--border); border-radius:16px; border-bottom-left-radius:4px; width:fit-content; }
 .hw-dot { width:6px; height:6px; border-radius:50%; background:#f59e0b; animation:tdB 1.1s ease-in-out infinite; }
-.hw-dot:nth-child(2){animation-delay:.18s;} .hw-dot:nth-child(3){animation-delay:.36s;}.
+.hw-dot:nth-child(2){animation-delay:.18s;} .hw-dot:nth-child(3){animation-delay:.36s;}
 /* ── ADMIN POPUP ── */
 #admin-popup-overlay{position:fixed;inset:0;z-index:100;background:rgba(30,16,48,.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease both}
 #admin-popup-overlay.hidden{display:none}
@@ -1777,7 +1776,6 @@ function clearChatWindow() {
 }
 
 function renderMsgFromHistory(role, text) {
-  const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const d = document.createElement('div');
   d.className = `msg ${role}`;
   const session = getSession();
@@ -2119,7 +2117,7 @@ function renderWeatherCard(w, locationName) {
         <span style="font-size:4rem;font-weight:800;line-height:1;letter-spacing:-2px;">${w.tempF}°</span>
         <span style="font-size:1.5rem;opacity:.6;font-weight:300;">F</span>
       </div>
-      <div style="font-size:.85rem;opacity:.75;margin-bottom:4px;font-weight:500;">${w.desc}</div>
+      <div style="font-size:.88rem;opacity:.75;margin-bottom:4px;font-weight:500;">${w.desc}</div>
       <div style="font-size:.78rem;opacity:.5;margin-bottom:20px;">Feels like ${w.feelsF}°F</div>
 
       <!-- Stats row -->
@@ -2601,4 +2599,1312 @@ function hwClear() {
   hwHistory = [];
   hwClearImage();
   document.getElementById('hw-chat').innerHTML = `
-    
+    <div class="hw-msg hw-ai">
+      <div class="hw-av">📚</div>
+      <div class="hw-bubble-ai">Hi! I'm your Homework Helper 👋 I can solve math problems step-by-step, help with essays and grammar, explain science, history, and more.<br><br>Type your question or <strong>upload a photo</strong> of your homework!</div>
+    </div>`;
+}
+function selectHumOpt(btn) {
+  document.querySelectorAll('.hum-opt').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  humStyle = btn.textContent.trim();
+}
+async function runHumanizer() {
+  const text = document.getElementById('hum-input').value.trim();
+  if (!text) return;
+  const btn = document.getElementById('btn-humanize');
+  btn.disabled = true; btn.textContent = '⏳ Humanizing…';
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: `You are an expert text humanizer. Rewrite the given AI-generated text to sound completely natural, human-written, and authentic in a ${humStyle} style. Remove robotic patterns, vary sentence structure, add natural flow, contractions, and personality. Output ONLY the rewritten text with no commentary or preamble.`,
+        messages: [{ role: 'user', content: text }],
+        email: getSession()?.email || null
+      })
+    });
+    const data = await res.json();
+    const result = data.content?.[0]?.text || data.error || 'Something went wrong.';
+    document.getElementById('hum-result').textContent = result;
+    document.getElementById('hum-result-wrap').classList.add('show');
+  } catch(e) {
+    document.getElementById('hum-result').textContent = 'Error: ' + e.message;
+    document.getElementById('hum-result-wrap').classList.add('show');
+  }
+  btn.disabled = false; btn.textContent = '✨ Humanize';
+}
+function copyHumanized() {
+  const text = document.getElementById('hum-result').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.hum-copy');
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy to clipboard', 2000);
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAiModal(); });
+
+// ── Deep Search ──
+let deepSearchMode = false;
+
+function toggleDeepSearch() {
+  deepSearchMode = !deepSearchMode;
+  document.getElementById('btn-deep').classList.toggle('active', deepSearchMode);
+  document.getElementById('user-input').placeholder = deepSearchMode
+    ? 'Deep search: What topic do you want researched?'
+    : 'Ask Viora anything…';
+}
+
+// ── Image Upload ──
+let attachedImage = null; // base64 data URL
+
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    attachedImage = reader.result; // data:image/...;base64,...
+    document.getElementById('img-preview-thumb').src = attachedImage;
+    document.getElementById('img-preview-wrap').classList.add('show');
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function removeImage() {
+  attachedImage = null;
+  document.getElementById('img-preview-wrap').classList.remove('show');
+  document.getElementById('img-preview-thumb').src = '';
+}
+
+function addDeepSearchMsg(query, text) {
+  const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const d = document.createElement('div');
+  d.className = 'msg ai';
+  // Convert markdown-style to HTML
+  const html = text
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, s => `<ul>${s}</ul>`)
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+  d.innerHTML = `
+    <div class="av" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
+    <div class="bubble-wrap" style="max-width:85%">
+      <div class="deep-bubble">
+        <div class="deep-badge">🔍 Deep Search</div>
+        <div>${html}</div>
+      </div>
+      <div class="msg-time">${now}</div>
+    </div>`;
+  chatEl.insertBefore(d, typingEl);
+  scrollBot();
+}
+
+// ── Weather Code to Emoji ──
+function weatherEmoji(code) {
+  if (code === 113) return '☀️';
+  if (code === 116) return '⛅';
+  if ([119,122].includes(code)) return '☁️';
+  if ([143,248,260].includes(code)) return '🌫️';
+  if ([176,263,266,293,296].includes(code)) return '🌦️';
+  if ([299,302,305,308].includes(code)) return '🌧️';
+  if ([311,314,317,320].includes(code)) return '🌨️';
+  if ([323,326,329,332,335,338,368,371,374,377].includes(code)) return '❄️';
+  if ([386,389,392,395].includes(code)) return '⛈️';
+  if ([200,386].includes(code)) return '🌩️';
+  return '🌤️';
+}
+
+function addWeatherCard(place, weather) {
+  const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const location = place ? `${place.city || ''}${place.city && place.country ? ', ' : ''}${place.country || ''}` : 'Your Location';
+  const forecastHTML = (weather.daily || []).map((d,i) => `
+    <div class="wc-day">
+      <div class="wc-day-name">${i===0?'Now':d.day}</div>
+      <div class="wc-day-icon">${weatherEmoji(d.code)}</div>
+      <div class="wc-day-high">${d.high}°</div>
+      <div class="wc-day-low">${d.low}°</div>
+    </div>`).join('');
+
+  const el = document.createElement('div');
+  el.className = 'msg ai';
+  el.innerHTML = `
+    <div class="av" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
+    <div class="bubble-wrap">
+      <div class="weather-card">
+        <div class="wc-badge">Viora Weather</div>
+        <div class="wc-location">
+          <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 7 5 7s5-3.25 5-7c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg>
+          ${escHtml(location)} &bull; Now
+        </div>
+        <div class="wc-main">
+          <div class="wc-temp">${weather.tempF}<span class="wc-temp-unit">°F</span></div>
+          <div class="wc-desc-wrap">
+            <div class="wc-icon">${weatherEmoji(weather.code)}</div>
+            <div class="wc-desc">${escHtml(weather.desc)}</div>
+            <div class="wc-feels">Feels like ${weather.feelsF}°F</div>
+          </div>
+        </div>
+        <div class="wc-stats">
+          <div class="wc-stat"><span class="wc-stat-icon">💧</span><div><div class="wc-stat-label">Humidity</div><div class="wc-stat-val">${weather.humidity}%</div></div></div>
+          <div class="wc-stat"><span class="wc-stat-icon">💨</span><div><div class="wc-stat-label">Wind</div><div class="wc-stat-val">${weather.windMph} mph</div></div></div>
+          <div class="wc-stat"><span class="wc-stat-icon">👁️</span><div><div class="wc-stat-label">Visibility</div><div class="wc-stat-val">${weather.visibility} mi</div></div></div>
+          <div class="wc-stat"><span class="wc-stat-icon">☀️</span><div><div class="wc-stat-label">UV Index</div><div class="wc-stat-val">${weather.uvIndex}</div></div></div>
+        </div>
+        <div class="wc-divider"></div>
+        <div class="wc-forecast">${forecastHTML}</div>
+      </div>
+      <div class="msg-time">${now}</div>
+    </div>`;
+  chatEl.insertBefore(el, typingEl);
+  scrollBot();
+}
+
+function isWeatherQuery(text) {
+  return /weather|temperature|forecast|rain|sunny|cloudy|snow|wind|humidity|hot outside|cold outside|degrees/i.test(text);
+}
+
+function isLocationQuery(text) {
+  return /nearest|closest|near me|nearby|around me|close to me|my location|where am i|current location|find a .*(store|shop|restaurant|pharmacy|hospital|bank|gas|hotel|gym|clinic|school|park|cafe|coffee|supermarket|mall|market)/i.test(text)
+    || /what('s| is) my (location|address|city|country|position|coordinates)/i.test(text)
+    || /where (am i|do i live|are we)/i.test(text)
+    || /(store|shop|restaurant|pharmacy|hospital|bank|gas station|hotel|gym|clinic|cafe|supermarket|mall).*(near|nearby|closest|around)/i.test(text);
+}
+
+function getBrowserLocation() {
+  // Return cached coords instantly if already have them
+  if (currentCoords) return Promise.resolve(currentCoords);
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject(new Error('no-geolocation')); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        currentCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        resolve(currentCoords);
+      },
+      err => {
+        // err.code: 1=denied, 2=unavailable, 3=timeout
+        if (err.code === 1) reject(new Error('permission-denied'));
+        else reject(new Error('location-unavailable'));
+      },
+      { timeout: 10000, enableHighAccuracy: false, maximumAge: 60000 }
+    );
+  });
+}
+
+// Pre-warm: grab GPS silently as soon as app opens
+function prewarmLocation() {
+  if (!navigator.geolocation) return;
+  if (currentCoords) { prefetchWeather(); return; }
+  // Request with short timeout so it doesn't hang
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      currentCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      prefetchWeather(); // immediately warm the weather cache
+    },
+    () => {},
+    { timeout: 10000, enableHighAccuracy: false, maximumAge: 300000 }
+  );
+}
+
+async function prefetchWeather() {
+  if (!currentCoords) return;
+  if (cachedWeatherData && Date.now() - cachedWeatherData.ts < WEATHER_TTL_MS) return;
+  try {
+    const r = await fetch(`/api/weather?lat=${currentCoords.lat}&lon=${currentCoords.lon}`);
+    const d = await r.json();
+    if (d.weather) cachedWeatherData = { ...d, ts: Date.now() };
+  } catch {}
+}
+
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text || busy) return;
+  if (trialSeconds <= 0 && getSession()?.isTrial) return;
+
+  welcomeEl.style.display = 'none';
+  inputEl.value = ''; inputEl.style.height = 'auto'; charEl.textContent = '0 / 4000';
+
+  // Show user message — with image thumbnail if attached
+  if (attachedImage) {
+    const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const session = getSession();
+    const initials = session?.name ? session.name[0].toUpperCase() : 'U';
+    const d = document.createElement('div');
+    d.className = 'msg user';
+    d.innerHTML = `<div class="av">${initials}</div><div class="bubble-wrap"><div class="bubble" style="padding:8px"><img src="${attachedImage}" style="max-width:200px;border-radius:12px;display:block;margin-bottom:6px"/>${escHtml(text)}</div><div class="msg-time">${now}</div></div>`;
+    chatEl.insertBefore(d, typingEl);
+    scrollBot();
+  } else {
+    addMsg('user', text);
+  }
+
+  const imgToSend = attachedImage;
+  removeImage();
+  history.push({ role: 'user', content: text });
+
+  busy = true;
+  typingEl.classList.add('show');
+  scrollBot();
+
+  // ── Deep Search ──
+  if (deepSearchMode || /^deep search:\s*/i.test(text)) {
+    const query = text.replace(/^deep search:\s*/i, '').trim();
+    try {
+      const res = await fetch('/api/deepsearch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, email: getSession()?.email || null })
+      });
+      const data = await res.json();
+      typingEl.classList.remove('show');
+      if (data.error) {
+        addMsg('ai', '⚠️ ' + data.error);
+      } else {
+        const reply = data.content?.[0]?.text || '';
+        addDeepSearchMsg(query, reply);
+        history.push({ role: 'assistant', content: reply });
+        await saveChatIfNeeded();
+        const session = getSession();
+        if (session?.email) renderHistory(session.email);
+      }
+    } catch (err) {
+      typingEl.classList.remove('show');
+      addMsg('ai', '⚠️ Deep search error: ' + err.message);
+    }
+    busy = false;
+    inputEl.focus();
+    return;
+  }
+
+  // ── Image generation (code-rendered SVG) ──
+  if (isImageRequest(text)) {
+    try {
+      const cleanPrompt = text.replace(/^(draw|generate|create|make|paint|show|imagine|design|render|sketch|illustrate|produce|can you|please|could you)\s+(me\s+)?(a|an|the|some)?\s*/i, '').trim();
+
+      const res = await fetch('/api/imagegen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: `You are a world-class SVG illustrator. Your SVGs are stunning, detailed, and photorealistic in style despite being vector art.
+
+STRICT RULES:
+1. Output ONLY raw SVG. No explanation, no markdown, no backticks, no comments outside SVG.
+2. Always start with exactly: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+3. End with exactly: </svg>
+4. Use ALL of these techniques to maximize quality:
+   - Multiple layered <defs> with linearGradient, radialGradient, filter (blur, shadow, glow, noise)
+   - Complex paths with bezier curves for organic shapes
+   - Realistic lighting: highlights (white overlay, low opacity), shadows (dark overlay)
+   - Depth through overlapping layers, atmospheric perspective
+   - Rich color palettes — no flat colors, always use gradients
+   - Fine details: texture, patterns, subtle noise via feTurbulence
+   - Smooth animations with <animate> or <animateTransform> where fitting (stars twinkling, water rippling, etc.)
+5. Fill the entire 800x800 canvas — background to foreground
+6. Think like a painter: sky/bg first, mid-ground, foreground, details, highlights last
+7. Make it BEAUTIFUL. This is art.`,
+          messages: [{ role: 'user', content: `Create a stunning, highly detailed SVG illustration of: ${cleanPrompt}
+
+Think carefully about:
+- What colors, lighting, and mood best suit this subject
+- How to create depth and realism with SVG gradients and filters
+- What foreground, mid-ground, and background elements to include
+- Any subtle animations that would bring it to life` }],
+          email: getSession()?.email || null
+        })
+      });
+
+      const data = await res.json();
+      typingEl.classList.remove('show');
+
+      if (data.error) {
+        addMsg('ai', '⚠️ Image error: ' + data.error);
+      } else {
+        let svgCode = data.content?.[0]?.text || '';
+        // Strip any markdown fences or preamble
+        svgCode = svgCode.replace(/^[\s\S]*?(<svg)/i, '$1').replace(/<\/svg>[\s\S]*$/, '</svg>').trim();
+        if (svgCode.startsWith('<svg')) {
+          addCodeImageMsg(text, svgCode);
+          history.push({ role: 'assistant', content: '[Generated image for: "' + text + '"]' });
+          await saveChatIfNeeded();
+          const session = getSession();
+          if (session?.email) renderHistory(session.email);
+        } else {
+          addMsg('ai', '⚠️ Could not generate image. Try rephrasing your prompt.');
+        }
+      }
+    } catch (err) {
+      typingEl.classList.remove('show');
+      addMsg('ai', '⚠️ Image error: ' + err.message);
+    }
+    busy = false;
+    inputEl.focus();
+    return;
+  }
+
+  // ── Weather — fetch Open-Meteo directly from browser (CORS enabled, no server needed) ──
+  if (isWeatherQuery(text)) {
+    typingEl.classList.remove('show');
+    const fetchPill = document.createElement('div');
+    fetchPill.id = 'weather-fetch-pill';
+    fetchPill.className = 'msg ai';
+    fetchPill.innerHTML = `
+      <div class="av" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9);color:white;font-size:.75rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
+      <div class="weather-fetch-pill">
+        <span class="weather-fetch-dot"></span>
+        <span class="weather-fetch-dot"></span>
+        <span class="weather-fetch-dot"></span>
+        Fetching weather…
+      </div>`;
+    chatEl.insertBefore(fetchPill, typingEl);
+    scrollBot();
+
+    try {
+      const coords = await getBrowserLocation();
+
+      // Use client cache if fresh
+      if (cachedWeatherData && Date.now() - cachedWeatherData.ts < WEATHER_TTL_MS) {
+        fetchPill.remove();
+        addWeatherCard(cachedWeatherData.place, cachedWeatherData.weather);
+        const w = cachedWeatherData.weather;
+        const sum = `${cachedWeatherData.place?.city||'Your location'}: ${w.tempF}°F, feels ${w.feelsF}°F, ${w.desc}, humidity ${w.humidity}%, wind ${w.windMph}mph.`;
+        history.push({ role: 'assistant', content: sum });
+        await saveChatIfNeeded(); const session = getSession();
+        if (session?.email) renderHistory(session.email);
+        busy = false; inputEl.focus(); return;
+      }
+
+      // Hit Open-Meteo directly from browser — free, CORS open, no server proxy needed
+      const omUrl = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}` +
+        `&current=temperature_2m,apparent_temperature,weather_code,windspeed_10m,relativehumidity_2m,uv_index` +
+        `&daily=weather_code,temperature_2m_max,temperature_2m_min` +
+        `&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=7&timezone=auto`;
+
+      const [omRes] = await Promise.all([
+        Promise.race([fetch(omUrl), new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),9000))])
+      ]);
+      const omData = await omRes.json();
+      const cur = omData.current;
+      if (!cur) throw new Error('no-data');
+
+      const wc = cur.weather_code ?? cur.weathercode ?? 0;
+      const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      const daily = (omData.daily?.time||[]).map((ds,i) => {
+        const dc = (omData.daily.weather_code ?? omData.daily.weathercode)?.[i] ?? 0;
+        return { day: i===0?'Today':DAY_NAMES[new Date(ds+'T12:00:00').getDay()], high: Math.round(omData.daily.temperature_2m_max[i]), low: Math.round(omData.daily.temperature_2m_min[i]), code: dc };
+      });
+
+      // Reverse-geocode via Nominatim (browser-side, free)
+      let place = { city: 'Your location', country: '' };
+      try {
+        const geo = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${coords.lat}&lon=${coords.lon}&format=json`);
+        const gd = await geo.json();
+        place = { city: gd.address?.city||gd.address?.town||gd.address?.village||gd.address?.county||place.city, country: gd.address?.country_code?.toUpperCase()||'' };
+      } catch {}
+
+      const WMO_DESC = {0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Rime fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Moderate rain',65:'Heavy rain',71:'Light snow',73:'Moderate snow',75:'Heavy snow',80:'Rain showers',81:'Moderate showers',82:'Heavy showers',95:'Thunderstorm',96:'Thunderstorm w/ hail',99:'Severe thunderstorm'};
+      const weather = { tempF: Math.round(cur.temperature_2m), feelsF: Math.round(cur.apparent_temperature), desc: WMO_DESC[wc]||'Clear', humidity: Math.round(cur.relativehumidity_2m), windMph: Math.round(cur.windspeed_10m), uvIndex: Math.round(cur.uv_index||0), code: wc, daily };
+
+      cachedWeatherData = { place, weather, ts: Date.now() };
+      fetchPill.remove();
+      addWeatherCard(place, weather);
+      const sum2 = `${place.city}: ${weather.tempF}°F, feels ${weather.feelsF}°F, ${weather.desc}, humidity ${weather.humidity}%, wind ${weather.windMph}mph.`;
+      history.push({ role: 'assistant', content: sum2 });
+      await saveChatIfNeeded(); const session2 = getSession();
+      if (session2?.email) renderHistory(session2.email);
+      busy = false; inputEl.focus(); return;
+
+    } catch(e) {
+      document.getElementById('weather-fetch-pill')?.remove();
+      if (e.message === 'permission-denied') {
+        addMsg('ai', '📍 Please allow location access in your browser, then try again.');
+        history.push({ role: 'assistant', content: 'Location permission denied.' });
+        busy = false; inputEl.focus(); return;
+      }
+      if (e.message === 'no-geolocation') {
+        addMsg('ai', '📍 Your browser does not support location. Try asking "weather in New York" instead.');
+        history.push({ role: 'assistant', content: 'Geolocation not supported.' });
+        busy = false; inputEl.focus(); return;
+      }
+      // Network / data error — fall through to AI chat
+      console.warn('Browser weather fetch failed:', e.message, '— falling through to AI');
+    }
+  }
+
+  let coords = null;
+  if (isLocationQuery(text)) coords = await getBrowserLocation();
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: 'You are Viora, a friendly, warm and helpful AI assistant. Be clear, concise and encouraging. Avoid excessive markdown unless the user asks for it.',
+        messages: history,
+        coords,
+        email: getSession()?.email || null,
+        image: imgToSend || null
+      })
+    });
+
+    const data = await res.json();
+    typingEl.classList.remove('show');
+
+    if (data.error) {
+      addMsg('ai', '⚠️ ' + data.error);
+    } else {
+      const reply = data.content?.[0]?.text || 'Hmm, no response. Try again!';
+      addMsg('ai', reply);
+      history.push({ role: 'assistant', content: reply });
+      await saveChatIfNeeded();
+      const session = getSession();
+      if (session?.email) renderHistory(session.email);
+    }
+  } catch (err) {
+    typingEl.classList.remove('show');
+    addMsg('ai', '⚠️ Connection error: ' + err.message);
+  }
+
+  busy = false;
+  inputEl.focus();
+}
+
+
+// ── Admin popup polling ──
+let lastPopupId = null;
+const POPUP_ICONS = { info:'ℹ️', success:'✅', warning:'⚠️', error:'🚨' };
+const POPUP_TITLES = { info:'Notice', success:'Update', warning:'Warning', error:'Alert' };
+
+async function pollPopup() {
+  try {
+    const res = await fetch('/api/popup');
+    const popup = await res.json();
+    if (popup && popup.id !== lastPopupId) {
+      lastPopupId = popup.id;
+      showAdminPopup(popup);
+    } else if (!popup && lastPopupId) {
+      lastPopupId = null;
+      dismissPopup();
+    }
+  } catch {}
+}
+
+function showAdminPopup(popup) {
+  const el = document.getElementById('admin-popup');
+  el.className = `show pop-${popup.type || 'info'}`;
+  document.getElementById('popup-icon').textContent = POPUP_ICONS[popup.type] || 'ℹ️';
+  document.getElementById('popup-title').textContent = POPUP_TITLES[popup.type] || 'Notice';
+  document.getElementById('popup-text').textContent = popup.message;
+}
+
+function dismissPopup() {
+  const el = document.getElementById('admin-popup');
+  el.classList.remove('show');
+}
+
+// Poll every 8 seconds when user is logged in
+setInterval(() => {
+  if (getSession() && !getSession().isTrial) pollPopup();
+}, 8000);
+
+// ── Memory Panel ──
+let memoryOpen = false;
+
+function toggleMemoryPanel() {
+  memoryOpen = !memoryOpen;
+  document.getElementById('memory-panel').classList.toggle('open', memoryOpen);
+  document.getElementById('memory-overlay').classList.toggle('show', memoryOpen);
+  if (memoryOpen) loadMemories();
+}
+
+async function loadMemories() {
+  const session = getSession();
+  if (!session?.email) return;
+  try {
+    const res = await fetch(`/api/memory?email=${encodeURIComponent(session.email)}`);
+    const memories = await res.json();
+    renderMemories(memories);
+  } catch {}
+}
+
+function renderMemories(memories) {
+  const list = document.getElementById('memory-list');
+  const empty = document.getElementById('memory-empty');
+  list.querySelectorAll('.memory-item').forEach(el => el.remove());
+  if (!memories || memories.length === 0) { empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  memories.slice().reverse().forEach(m => {
+    const d = document.createElement('div');
+    d.className = 'memory-item';
+    const date = m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+    d.innerHTML = `
+      <div style="flex:1">
+        <div class="memory-item-text">${escHtml(m.text)}</div>
+        <div class="memory-item-date">${date}</div>
+      </div>
+      <button class="btn-del-mem" onclick="deleteMemory('${m.id}')" title="Delete">✕</button>`;
+    list.appendChild(d);
+  });
+}
+
+async function addMemory() {
+  const session = getSession();
+  if (!session?.email) return;
+  const input = document.getElementById('memory-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  try {
+    await fetch('/api/memory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: session.email, text })
+    });
+    loadMemories();
+  } catch {}
+}
+
+async function deleteMemory(id) {
+  const session = getSession();
+  if (!session?.email) return;
+  try {
+    await fetch(`/api/memory/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: session.email })
+    });
+    loadMemories();
+  } catch {}
+}
+
+async function clearAllMemories() {
+  const session = getSession();
+  if (!session?.email) return;
+  if (!confirm('Clear all memories? Viora will forget everything about you.')) return;
+  try {
+    await fetch('/api/memory', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: session.email })
+    });
+    loadMemories();
+  } catch {}
+}
+
+window.addEventListener('load', async () => {
+  const s = getSession();
+  if (!s) {
+    // Show landing by default — auth-screen stays hidden
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('landing-screen').classList.remove('hidden');
+  }
+  if (s) {
+    openChat(s.name, s.isTrial, s.email || null);
+    checkAdminPopup();
+    if (!s.isTrial) requestNotificationPermission();
+    prewarmLocation(); // grab GPS + pre-fetch weather silently
+    // Restore last active chat on refresh
+    if (s.email && !s.isTrial) {
+      // handled in openChat now via localStorage
+    }
+  }
+});
+
+// ── Admin popup check ──
+const POPUP_SEEN_KEY = 'viora_popup_seen';
+
+// ── Request notification permission after login ──
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') return;
+  if (Notification.permission === 'denied') return;
+  // Small delay so it feels natural after login
+  setTimeout(async () => {
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') registerPeriodicSync();
+  }, 3000);
+}
+
+// ── Register periodic background sync (Chrome PWA) ──
+async function registerPeriodicSync() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    if ('periodicSync' in reg) {
+      const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
+      if (status.state === 'granted') {
+        await reg.periodicSync.register('check-viora-popup', { minInterval: 5 * 60 * 1000 }); // every 5 min
+      }
+    }
+  } catch {}
+}
+
+// ── Send notification via service worker ──
+async function sendSwNotification(popup) {
+  if (!('serviceWorker' in navigator) || Notification.permission !== 'granted') return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    reg.active?.postMessage({
+      type: 'SHOW_NOTIFICATION',
+      title: '📢 Viora — ' + (popup.title || 'New Message'),
+      body: popup.message,
+      popupId: String(popup.id)
+    });
+  } catch {}
+}
+
+async function checkAdminPopup() {
+  try {
+    const res   = await fetch('/api/popup');
+    const popup = await res.json();
+    if (!popup || !popup.message) return;
+
+    // Send native device notification regardless of whether in-app popup was seen
+    const seenNotif = localStorage.getItem('viora_notif_' + popup.id);
+    if (!seenNotif) {
+      localStorage.setItem('viora_notif_' + popup.id, '1');
+      sendSwNotification(popup);
+    }
+
+    // Only show in-app popup if not already dismissed this session
+    const seen = sessionStorage.getItem(POPUP_SEEN_KEY);
+    if (seen === String(popup.id)) return;
+
+    const icons = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '🚨' };
+    document.getElementById('admin-popup-icon').textContent  = icons[popup.type] || '📣';
+    document.getElementById('admin-popup-title').textContent = popup.title || 'Notice';
+    document.getElementById('admin-popup-msg').textContent   = popup.message;
+    document.getElementById('admin-popup-card').className    = 'admin-popup-card ' + (popup.type || 'info');
+    document.getElementById('admin-popup-overlay').classList.remove('hidden');
+    sessionStorage.setItem(POPUP_SEEN_KEY, String(popup.id));
+  } catch {}
+}
+
+function closeAdminPopup() {
+  document.getElementById('admin-popup-overlay').classList.add('hidden');
+}
+
+</script>
+
+<!-- ADMIN POPUP -->
+<div id="admin-popup-overlay" class="hidden">
+  <div class="admin-popup-card" id="admin-popup-card">
+    <div class="admin-popup-icon" id="admin-popup-icon">📣</div>
+    <div class="admin-popup-title" id="admin-popup-title">Notice</div>
+    <div class="admin-popup-msg" id="admin-popup-msg"></div>
+    <button class="btn-close-popup" onclick="closeAdminPopup()">Got it</button>
+  </div>
+</div>
+
+
+<!-- ADMIN POPUP -->
+<div id="admin-popup">
+  <span class="popup-icon" id="popup-icon">ℹ️</span>
+  <div class="popup-body">
+    <div class="popup-title" id="popup-title">Notice</div>
+    <div class="popup-text" id="popup-text"></div>
+  </div>
+  <button class="popup-close" onclick="dismissPopup()">✕</button>
+</div>
+<!-- MEMORY PANEL -->
+<div id="memory-overlay" onclick="toggleMemoryPanel()"></div>
+<div id="memory-panel">
+  <div class="memory-header">
+    <span class="memory-title">🧠 Viora's Memory</span>
+    <button class="memory-close" onclick="toggleMemoryPanel()">✕</button>
+  </div>
+  <div class="memory-add">
+    <div class="memory-input-row">
+      <input class="memory-input" id="memory-input" type="text" placeholder="e.g. I like spicy food" maxlength="200" onkeydown="if(event.key==='Enter')addMemory()" />
+      <button class="btn-add-mem" onclick="addMemory()">+ Add</button>
+    </div>
+    <div class="memory-hint">💡 You can also type <strong>remember: I love sushi</strong> in chat and Viora will save it automatically.</div>
+  </div>
+  <div class="memory-list" id="memory-list">
+    <div class="memory-empty" id="memory-empty">No memories yet.<br>Add things you want Viora to always know about you!</div>
+  </div>
+  <div class="memory-footer">
+    <button class="btn-clear-mem" onclick="clearAllMemories()">🗑 Clear All Memories</button>
+  </div>
+</div>
+
+<!-- IMAGE LIGHTBOX -->
+<div class="img-lightbox" id="img-lightbox" onclick="closeLightbox()">
+  <button class="img-lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="Generated image" onclick="event.stopPropagation()" />
+</div>
+
+<!-- ── AI TOOLS MODAL ── -->
+<div id="ai-modal">
+  <div class="aim-card">
+    <div class="aim-head">
+      <div class="aim-title">🤖 Our AI Tools</div>
+      <button class="aim-close" onclick="closeAiModal()">✕</button>
+    </div>
+    <div class="aim-body">
+
+      <!-- TOOLS GRID -->
+      <div id="aim-panel-tools" class="aim-panel show">
+        <p style="font-size:.78rem;color:var(--text-mid);margin:0 0 14px;">Viora-powered tools — more coming soon.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="other-ai-card" onclick="openSubChat('humanizer')" style="cursor:pointer;">
+            <div class="oac-logo" style="background:rgba(124,58,237,.12)">✍️</div>
+            <div class="oac-name">AI Humanizer</div>
+            <div class="oac-desc">Make AI-written text sound natural and human.</div>
+            <span class="oac-tag" style="background:rgba(124,58,237,.1);color:var(--violet-light);">Free · Viora</span>
+          </div>
+          <div class="other-ai-card" onclick="openSubChat('weather')" style="cursor:pointer;">
+            <div class="oac-logo" style="background:rgba(56,189,248,.12)">🌦️</div>
+            <div class="oac-name">AI Weather</div>
+            <div class="oac-desc">Get a detailed weather forecast for any city.</div>
+            <span class="oac-tag" style="background:rgba(56,189,248,.1);color:#38bdf8;">Free · Viora</span>
+          </div>
+          <div class="other-ai-card" onclick="openSubChat('devagent')" style="cursor:pointer;grid-column:1/-1;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="oac-logo" style="background:rgba(16,185,129,.12);width:48px;height:48px;border-radius:14px;font-size:1.6rem;">💻</div>
+              <div style="flex:1;">
+                <div class="oac-name" style="font-size:.95rem;">AI Developer Agent</div>
+                <div class="oac-desc" style="margin-top:2px;">Expert coder. Reads zip files, debugs code, writes full apps, explains anything.</div>
+              </div>
+              <span class="oac-tag" style="background:rgba(16,185,129,.1);color:#10b981;white-space:nowrap;">Free · Viora</span>
+            </div>
+          </div>
+          <div class="other-ai-card" onclick="openSubChat('homework')" style="cursor:pointer;grid-column:1/-1;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="oac-logo" style="background:rgba(245,158,11,.12);width:48px;height:48px;border-radius:14px;font-size:1.6rem;">📚</div>
+              <div style="flex:1;">
+                <div class="oac-name" style="font-size:.95rem;">Homework Helper</div>
+                <div class="oac-desc" style="margin-top:2px;">Math, ELA, Science & more. Upload a photo of your homework and get step-by-step help.</div>
+              </div>
+              <span class="oac-tag" style="background:rgba(245,158,11,.1);color:#f59e0b;white-space:nowrap;">Free · Viora</span>
+            </div>
+          </div>
+          <div class="other-ai-card" onclick="openSubChat('slideshow')" style="cursor:pointer;grid-column:1/-1;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="oac-logo" style="background:rgba(234,88,12,.12);width:48px;height:48px;border-radius:14px;font-size:1.6rem;">🎨</div>
+              <div style="flex:1;">
+                <div class="oac-name" style="font-size:.95rem;">AI Slideshow Maker</div>
+                <div class="oac-desc" style="margin-top:2px;">Type a topic, get a beautiful slideshow with real images. Download as PDF instantly.</div>
+              </div>
+              <span class="oac-tag" style="background:rgba(234,88,12,.1);color:#ea580c;white-space:nowrap;">Free · Viora</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="aim-panel" id="aim-panel-humanizer">
+        <div class="hum-wrap">
+          <div>
+            <div class="hum-label">Paste AI-generated text to humanize</div>
+            <textarea class="hum-ta" id="hum-input" placeholder="Paste your AI-written text here…"></textarea>
+          </div>
+          <div>
+            <div class="hum-label">Style</div>
+            <div class="hum-opts">
+              <button class="hum-opt sel" onclick="selectHumOpt(this)">Casual</button>
+              <button class="hum-opt" onclick="selectHumOpt(this)">Professional</button>
+              <button class="hum-opt" onclick="selectHumOpt(this)">Academic</button>
+              <button class="hum-opt" onclick="selectHumOpt(this)">Creative</button>
+              <button class="hum-opt" onclick="selectHumOpt(this)">Conversational</button>
+            </div>
+          </div>
+          <button class="btn-humanize" id="btn-humanize" onclick="runHumanizer()">✨ Humanize</button>
+          <div class="hum-result-wrap" id="hum-result-wrap">
+            <div class="hum-label">Humanized Result</div>
+            <div class="hum-result" id="hum-result"></div>
+            <button class="hum-copy" onclick="copyHumanized()">📋 Copy to clipboard</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WEATHER PANEL -->
+      <div class="aim-panel" id="aim-panel-weather">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <button id="btn-gps-weather" onclick="fetchWeatherGPS()"
+            style="width:100%;padding:13px;border:none;border-radius:14px;background:linear-gradient(135deg,#6366f1,#8b5cf6,#ec4899);color:#fff;font-family:var(--font-head);font-size:.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 18px rgba(99,102,241,.4);transition:all .2s;">
+            📍 Use My Location
+          </button>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;height:1px;background:var(--border);"></div>
+            <span style="font-size:.72rem;color:var(--text-light);font-weight:600;">or search a city</span>
+            <div style="flex:1;height:1px;background:var(--border);"></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <input id="weather-city-input" type="text" placeholder="New York, Tokyo, London…"
+              style="flex:1;padding:10px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:.85rem;outline:none;transition:border-color .2s;"
+              onkeydown="if(event.key==='Enter')fetchWeatherForCity()"
+              onfocus="this.style.borderColor='var(--violet-light)'" onblur="this.style.borderColor='var(--border)'" />
+            <button onclick="fetchWeatherForCity()" id="btn-weather-search"
+              style="padding:10px 16px;border-radius:12px;border:none;background:linear-gradient(135deg,#38bdf8,#0ea5e9);color:#fff;font-weight:700;cursor:pointer;font-size:.85rem;transition:all .2s;">
+              🔍
+            </button>
+          </div>
+          <div id="weather-tool-result"></div>
+        </div>
+      </div>
+
+      <!-- DEV AGENT PANEL -->
+      <div class="aim-panel" id="aim-panel-devagent">
+        <div style="display:flex;flex-direction:column;height:100%;">
+
+          <!-- Header bar -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;font-size:1rem;">💻</div>
+              <div>
+                <div style="font-family:var(--font-head);font-size:.9rem;font-weight:800;color:var(--text);">Dev Agent</div>
+                <div style="font-size:.65rem;color:#10b981;font-weight:600;">● Online · Expert Coder</div>
+              </div>
+            </div>
+            <button onclick="devAgentClear()" title="Clear chat"
+              style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:none;font-size:.72rem;color:var(--text-mid);cursor:pointer;font-family:var(--font-body);">
+              🗑 Clear
+            </button>
+          </div>
+
+          <!-- Capabilities chips -->
+          <div id="dev-caps" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+            <span style="font-size:.68rem;padding:4px 9px;border-radius:20px;background:rgba(16,185,129,.1);color:#10b981;font-weight:600;border:1px solid rgba(16,185,129,.2);">📦 Reads ZIP files</span>
+            <span style="font-size:.68rem;padding:4px 9px;border-radius:20px;background:rgba(99,102,241,.1);color:#6366f1;font-weight:600;border:1px solid rgba(99,102,241,.2);">🐛 Debugs code</span>
+            <span style="font-size:.68rem;padding:4px 9px;border-radius:20px;background:rgba(245,158,11,.1);color:#f59e0b;font-weight:600;border:1px solid rgba(245,158,11,.2);">🏗 Builds full apps</span>
+            <span style="font-size:.68rem;padding:4px 9px;border-radius:20px;background:rgba(236,72,153,.1);color:#ec4899;font-weight:600;border:1px solid rgba(236,72,153,.2);">🔍 Reviews & explains</span>
+          </div>
+
+          <!-- Chat window -->
+          <div id="dev-chat" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;min-height:220px;max-height:320px;padding:4px 2px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;margin-bottom:10px;">
+            <div class="dev-msg dev-ai">
+              <div class="dev-bubble-ai">Hey! I'm your AI Developer Agent. I know JavaScript, Python, TypeScript, React, Node.js, SQL, Rust, Go — basically everything. Drop a ZIP file, paste code, or ask me anything.</div>
+            </div>
+          </div>
+
+          <!-- File preview bar -->
+          <div id="dev-file-bar" style="display:none;background:rgba(16,185,129,.07);border:1.5px solid rgba(16,185,129,.2);border-radius:10px;padding:8px 12px;margin-bottom:8px;display:none;align-items:center;gap:8px;">
+            <span id="dev-file-name" style="font-size:.78rem;font-weight:600;color:#10b981;flex:1;"></span>
+            <button onclick="devClearFile()" style="border:none;background:none;cursor:pointer;color:var(--text-light);font-size:.8rem;">✕</button>
+          </div>
+
+          <!-- Input row -->
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <label for="dev-file-input" title="Upload file / ZIP"
+              style="width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:1rem;transition:all .2s;"
+              onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='var(--border)'">
+              📎
+              <input type="file" id="dev-file-input" style="display:none" onchange="devHandleFile(event)" accept=".zip,.js,.ts,.py,.html,.css,.json,.txt,.md,.jsx,.tsx,.java,.cpp,.c,.go,.rs,.php,.rb,.swift,.kt,.sh,.yaml,.yml,.env,.sql" />
+            </label>
+            <textarea id="dev-input" rows="1" placeholder="Ask anything about code… or drop a ZIP 📦"
+              style="flex:1;padding:9px 13px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:.85rem;outline:none;resize:none;max-height:100px;line-height:1.5;transition:border-color .2s;"
+              onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='var(--border)'"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();devSend();}this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+            <button onclick="devSend()" id="dev-send-btn"
+              style="width:36px;height:36px;border-radius:10px;border:none;background:linear-gradient(135deg,#10b981,#059669);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;box-shadow:0 3px 10px rgba(16,185,129,.4);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+          <div style="font-size:.6rem;color:var(--text-light);margin-top:5px;text-align:center;">Shift+Enter for new line · Supports ZIP, JS, Python, HTML and 20+ more</div>
+        </div>
+      </div>
+
+      <!-- HOMEWORK HELPER PANEL -->
+      <div class="aim-panel" id="aim-panel-homework">
+        <div style="display:flex;flex-direction:column;height:100%;">
+
+          <!-- Header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;font-size:1rem;">📚</div>
+              <div>
+                <div style="font-family:var(--font-head);font-size:.9rem;font-weight:800;color:var(--text);">Homework Helper</div>
+                <div style="font-size:.65rem;color:#f59e0b;font-weight:600;">● Ready · Step-by-step answers</div>
+              </div>
+            </div>
+            <button onclick="hwClear()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:none;font-size:.72rem;color:var(--text-mid);cursor:pointer;font-family:var(--font-body);">🗑 Clear</button>
+          </div>
+
+          <!-- Subject pills -->
+          <div id="hw-subjects" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px;">
+            <button class="hw-subj active" onclick="hwSetSubject(this,'math')">🔢 Math</button>
+            <button class="hw-subj" onclick="hwSetSubject(this,'ela')">📝 ELA</button>
+            <button class="hw-subj" onclick="hwSetSubject(this,'science')">🔬 Science</button>
+            <button class="hw-subj" onclick="hwSetSubject(this,'history')">🏛 History</button>
+            <button class="hw-subj" onclick="hwSetSubject(this,'any')">✨ Any Subject</button>
+          </div>
+
+          <!-- Chat window -->
+          <div id="hw-chat" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;min-height:200px;max-height:300px;padding:4px 2px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;margin-bottom:10px;">
+            <div class="hw-msg hw-ai">
+              <div class="hw-av">📚</div>
+              <div class="hw-bubble-ai">Hi! I'm your Homework Helper 👋 I can solve math problems step-by-step, help with essays and grammar, explain science, history, and more.<br><br>Type your question or <strong>upload a photo</strong> of your homework!</div>
+            </div>
+          </div>
+
+          <!-- Image preview -->
+          <div id="hw-img-bar" style="display:none;background:rgba(245,158,11,.07);border:1.5px solid rgba(245,158,11,.25);border-radius:10px;padding:8px 12px;margin-bottom:8px;align-items:center;gap:10px;">
+            <img id="hw-img-preview" src="" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1.5px solid rgba(245,158,11,.3);" />
+            <span id="hw-img-name" style="font-size:.78rem;font-weight:600;color:#f59e0b;flex:1;"></span>
+            <button onclick="hwClearImage()" style="border:none;background:none;cursor:pointer;color:var(--text-light);font-size:.9rem;">✕</button>
+          </div>
+
+          <!-- Input row -->
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <label for="hw-img-input" title="Upload homework photo"
+              style="width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:1rem;transition:all .2s;"
+              onmouseover="this.style.borderColor='#f59e0b'" onmouseout="this.style.borderColor='var(--border)'">
+              📷
+              <input type="file" id="hw-img-input" style="display:none" onchange="hwHandleImage(event)" accept="image/*" />
+            </label>
+            <textarea id="hw-input" rows="1" placeholder="Ask a question or describe what you need help with…"
+              style="flex:1;padding:9px 13px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:.85rem;outline:none;resize:none;max-height:100px;line-height:1.5;transition:border-color .2s;"
+              onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border)'"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();hwSend();}this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+            <button onclick="hwSend()" id="hw-send-btn"
+              style="width:36px;height:36px;border-radius:10px;border:none;background:linear-gradient(135deg,#f59e0b,#ef4444);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 10px rgba(245,158,11,.4);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+          <div style="font-size:.6rem;color:var(--text-light);margin-top:5px;text-align:center;">📷 Upload a photo of your homework · Shift+Enter for new line</div>
+        </div>
+      </div>
+
+<script>
+(function(){
+  const c = document.getElementById('landing-canvas');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  let stars = [];
+  function resize() { c.width = window.innerWidth; c.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+  for (let i = 0; i < 120; i++) {
+    stars.push({ x: Math.random(), y: Math.random(), r: Math.random() * 1.5 + .3, a: Math.random(), speed: Math.random() * .004 + .001, twinkle: Math.random() * Math.PI * 2 });
+  }
+  function draw() {
+    ctx.clearRect(0, 0, c.width, c.height);
+    stars.forEach(s => {
+      s.twinkle += s.speed;
+      const alpha = s.a * (.5 + .5 * Math.sin(s.twinkle));
+      ctx.beginPath();
+      ctx.arc(s.x * c.width, s.y * c.height, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(180,140,255,${alpha})`;
+      ctx.fill();
+    });
+    if (document.getElementById('landing-screen') && !document.getElementById('landing-screen').classList.contains('hidden')) {
+      requestAnimationFrame(draw);
+    }
+  }
+  draw();
+})();
+</script>
+
+<!-- ── PWA Download App Button ── -->
+<div id="pwa-btn" style="display:flex;position:fixed;bottom:24px;right:20px;z-index:50;align-items:flex-end;flex-direction:column;gap:8px;">
+
+  <!-- Mini + dot (shown after dismiss) -->
+  <button id="pwa-dot" onclick="pwaBtnExpand()" title="Download App"
+    style="display:none;width:30px;height:30px;border-radius:50%;border:none;background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;font-size:1.1rem;line-height:1;cursor:pointer;box-shadow:0 3px 14px rgba(124,58,237,.5);align-items:center;justify-content:center;">+</button>
+
+  <!-- Full pill button -->
+  <div id="pwa-full" style="display:flex;align-items:stretch;border-radius:50px;overflow:hidden;box-shadow:0 4px 20px rgba(124,58,237,.45);">
+    <button onclick="pwaTriggerInstall()"
+      style="display:flex;align-items:center;gap:8px;padding:11px 16px 11px 18px;border:none;background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;font-family:var(--font-body);font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download App
+    </button>
+    <button onclick="pwaBtnDismiss()" title="Hide"
+      style="padding:11px 13px;border:none;border-left:1px solid rgba(255,255,255,.25);background:linear-gradient(135deg,#7c3aed,#a855f7);color:rgba(255,255,255,.75);font-size:.8rem;cursor:pointer;line-height:1;"
+      onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,.75)'">✕</button>
+  </div>
+</div>
+
+<!-- iOS install instructions popup -->
+<div id="pwa-ios-popup" style="display:none;position:fixed;bottom:80px;right:16px;z-index:51;background:white;border:1.5px solid var(--border);border-radius:18px;padding:18px 20px;max-width:270px;box-shadow:0 8px 40px rgba(0,0,0,.15);animation:fadeUp .3s ease both;">
+  <div style="font-family:var(--font-head);font-weight:800;font-size:.92rem;color:var(--text);margin-bottom:6px;">Install Viora AI 📲</div>
+  <div style="font-size:.78rem;color:var(--text-mid);line-height:1.6;">
+    Tap <strong>Share</strong> <span style="font-size:1rem;">⎙</span> at the bottom of Safari, then tap <strong>"Add to Home Screen"</strong>
+  </div>
+  <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+    <button onclick="document.getElementById('pwa-ios-popup').style.display='none'"
+      style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:none;font-size:.75rem;font-weight:600;color:var(--text-mid);cursor:pointer;">Got it</button>
+  </div>
+  <!-- Arrow pointing down to button -->
+  <div style="position:absolute;bottom:-9px;right:32px;width:16px;height:16px;background:white;border-right:1.5px solid var(--border);border-bottom:1.5px solid var(--border);transform:rotate(45deg);"></div>
+</div>
+
+
+<!-- sub-chat injected by JS -->
+
+
+<script>
+// ── PWA Service Worker Registration ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+// ── PWA Install Prompt (Android / Desktop Chrome) ──
+let pwaInstallPrompt = null;
+const pwaBtnWrap = document.getElementById('pwa-btn');
+
+// Hide if already installed as standalone app
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+  pwaBtnWrap.style.display = 'none';
+}
+
+function pwaBtnDismiss() {
+  document.getElementById('pwa-full').style.display = 'none';
+  const dot = document.getElementById('pwa-dot');
+  dot.style.display = 'flex';
+}
+
+function pwaBtnExpand() {
+  document.getElementById('pwa-full').style.display = 'flex';
+  document.getElementById('pwa-dot').style.display = 'none';
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  pwaInstallPrompt = e;
+});
+
+window.addEventListener('appinstalled', () => {
+  pwaBtnWrap.style.display = 'none';
+  pwaInstallPrompt = null;
+});
+
+function pwaTriggerInstall() {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  if (isIOS || isSafari) {
+    // iOS Safari: show manual instructions popup
+    const popup = document.getElementById('pwa-ios-popup');
+    popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+    return;
+  }
+
+  if (pwaInstallPrompt) {
+    pwaInstallPrompt.prompt();
+    pwaInstallPrompt.userChoice.then(result => {
+      if (result.outcome === 'accepted') pwaBtnWrap.style.display = 'none';
+      pwaInstallPrompt = null;
+    });
+  }
+}
+
+// ══════════════════════════════════════════
+// SUB-AI CHAT ENGINE
+// ══════════════════════════════════════════
+const SUB_AIS = {
+  devagent: {
+    name: 'Dev Agent', sub: 'Expert programmer & code debugger', logo: '💻',
+    bg: 'rgba(16,185,129,.15)', color: '#10b981', sendBg: 'linear-gradient(135deg,#10b981,#059669)',
+    placeholder: 'Ask anything about code…',
+    welcome: 'Dev Agent', desc: 'Expert coder. I can debug, build apps, explain code, and more.',
+    chips: ['Debug this code', 'Build a Python script', 'Explain this function', 'Review my code'],
+    system: `You are an expert AI Developer Agent built into Viora. Write clean production-ready code. Use code blocks for all code. Be concise but thorough.`
+  },
+  homework: {
+    name: 'Homework Helper', sub: 'Your personal tutor for every subject', logo: '📚',
+    bg: 'rgba(245,158,11,.15)', color: '#f59e0b', sendBg: 'linear-gradient(135deg,#f59e0b,#d97706)',
+    placeholder: 'Ask any homework question…',
+    welcome: 'Homework Helper', desc: 'Math, science, history and more. Step-by-step explanations.',
+    chips: ['Solve this math problem', 'Explain photosynthesis', 'Help with an essay', 'Quiz me'],
+    system: `You are a friendly homework helper for students. Give clear step-by-step explanations. Encourage learning, don't just give answers.`
+  },
+  humanizer: {
+    name: 'AI Humanizer', sub: 'Make AI text sound natural', logo: '✍️',
+    bg: 'rgba(124,58,237,.15)', color: '#7c3aed', sendBg: 'linear-gradient(135deg,#7c3aed,#6d28d9)',
+    placeholder: 'Paste AI-written text to humanize…',
+    welcome: 'AI Humanizer', desc: 'Paste any AI-generated text and I will rewrite it to sound natural and human.',
+    chips: ['Humanize this paragraph', 'Make it less robotic', 'Rewrite casually', 'Fix AI tone'],
+    system: `You are an AI text humanizer. Rewrite AI-generated text to sound natural, warm and human. Keep the meaning intact but vary sentence structure, add personality, and remove robotic patterns.`
+  },
+  weather: {
+    name: 'Weather AI', sub: 'Detailed forecasts & weather chat', logo: '🌦️',
+    bg: 'rgba(56,189,248,.15)', color: '#38bdf8', sendBg: 'linear-gradient(135deg,#38bdf8,#0ea5e9)',
+    placeholder: 'Ask about weather anywhere…',
+    welcome: 'Weather AI', desc: 'Ask me about weather anywhere in the world.',
+    chips: ['Weather today', 'Will it rain this week?', 'Best time to visit Tokyo', 'Compare climates'],
+    system: `You are a knowledgeable weather assistant. Answer weather questions helpfully. For real-time data you may receive current conditions in the message context. Otherwise use your knowledge to give accurate general forecasts and climate info.`
+  }
+};
+
+let subCurrentAI = null;
+let subHistory = [];
+let subBusy = false;
+let _subEl = null;
+
+function subFormatResponse(text, aiId) {
+  const colors = { devagent: '#10b981', homework: '#f59e0b', humanizer: '#7c3aed', weather: '#38bdf8' };
+  const c = colors[aiId] || '#7c3aed';
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```(\w*)\n?([\s\S]*?)```/g, (_,lang,code) =>
+      `<pre style="background:#1e1e2e;border-radius:10px;padding:12px;margin:8px 0;overflow-x:auto;"><code style="font-family:monospace;font-size:.82rem;color:#e2e8f0;white-space:pre;">${code.trim()}</code></pre>`)
+    .replace(/`([^`]+)`/g, `<code style="background:rgba(0,0,0,.08);border-radius:4px;padding:1px 5px;font-size:.83rem;">$1</code>`)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^#{1,3} (.+)$/gm, `<strong style="font-size:.92rem;display:block;margin:8px 0 3px;color:${c};">$1</strong>`)
+    .replace(/^[-•] /gm, '• ')
+    .replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+}
+
+function openSubChat(aiId) {
+  // Close modal
+  const modal = document.getElementById('ai-modal');
+  if (modal) modal.classList.remove('show');
+
+  // Navigate to the AI chat page in the same tab
+  window.location.href = '/ai-chat.html?ai=' + encodeURIComponent(aiId);
+}
+
+
+function closeSubChat() {
+  if (_subEl) { _subEl.remove(); _subEl = null; }
+  const old = document.getElementById('sub-chat-screen');
+  if (old) old.remove();
+  subCurrentAI = null; subHistory = []; subBusy = false;
+}
+
+function subSendText(text) {
+  const inp = document.getElementById('sub-input');
+  if (inp) { inp.value = text; subSend(); }
+}
+
+function subAddMsg(role, html) {
+  const win = document.getElementById('sub-win');
+  if (!win) return;
+  const wb = document.getElementById('sub-welcome-block');
+  if (wb) wb.remove();
+  const ai = SUB_AIS[subCurrentAI] || {};
+  const isUser = role === 'user';
+  const d = document.createElement('div');
+  d.style.cssText = `display:flex;gap:10px;align-items:flex-end;${isUser ? 'flex-direction:row-reverse;' : ''}`;
+  d.innerHTML = isUser
+    ? `<div style="max-width:78%;padding:10px 14px;border-radius:18px 18px 4px 18px;background:${ai.sendBg || 'var(--violet)'};color:white;font-size:.9rem;line-height:1.55;">${html}</div>`
+    : `<div style="width:32px;height:32px;border-radius:50%;background:${ai.bg || 'var(--violet-light)'};display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">${ai.logo || '🤖'}</div>
+       <div style="max-width:78%;padding:10px 14px;border-radius:18px 18px 18px 4px;background:var(--card);border:1px solid var(--border);font-size:.9rem;line-height:1.55;color:var(--text);">${html}</div>`;
+  win.appendChild(d);
+  win.scrollTop = win.scrollHeight;
+}
+
+async function subSend() {
+  if (subBusy) return;
+  const inp = document.getElementById('sub-input');
+  if (!inp) return;
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  inp.style.height = 'auto';
+
+  const ai = SUB_AIS[subCurrentAI];
+  if (!ai) return;
+
+  subAddMsg('user', text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
+  subHistory.push({ role: 'user', content: text });
+  subBusy = true;
+
+  // Typing indicator
+  const win = document.getElementById('sub-win');
+  const typing = document.createElement('div');
+  typing.id = 'sub-typing';
+  typing.style.cssText = 'display:flex;gap:10px;align-items:flex-end;';
+  typing.innerHTML = `<div style="width:32px;height:32px;border-radius:50%;background:${ai.bg};display:flex;align-items:center;justify-content:center;font-size:1rem;">${ai.logo}</div>
+    <div style="padding:10px 14px;border-radius:18px 18px 18px 4px;background:var(--card);border:1px solid var(--border);">
+      <span style="display:inline-flex;gap:4px;">${[0,150,300].map(d=>`<span style="width:7px;height:7px;border-radius:50%;background:${ai.color};animation:pdot 1.2s ${d}ms ease-in-out infinite;display:inline-block;"></span>`).join('')}</span>
+    </div>`;
+  if (win) { win.appendChild(typing); win.scrollTop = win.scrollHeight; }
+
+  try {
+    const body = { system: ai.system, messages: subHistory };
+    if (currentUser?.email) body.email = currentUser.email;
+    if (currentCoords) body.coords = currentCoords;
+
+    const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json();
+    typing.remove();
+
+    const reply = data.content?.[0]?.text || data.reply || '';
+    if (reply) {
+      subHistory.push({ role: 'assistant', content: reply });
+      subAddMsg('ai', subFormatResponse(reply, subCurrentAI));
+    } else {
+      subAddMsg('ai', '⚠️ ' + (data.error || 'No response received.'));
+    }
+  } catch (e) {
+    typing.remove();
+    subAddMsg('ai', '⚠️ Network error. Please try again.');
+  }
+  subBusy = false;
+}
+
+// ── Dark Mode ──
+const DARK_KEY = 'viora_dark_mode';
+const SYS_KEY  = 'viora_system_theme';
+
+function applyDark(dark) {
+  document.body.classList.toggle('dark', dark);
+  // Also update ai-chat pages (write to localStorage so they pick it up)
+  localStorage.setItem(DARK_KEY, dark ? '1' : '0');
+  // Update meta theme-color
+  document.querySelector('meta[name="theme-color"]').content = dark ? '#0f0d16' : '#7c3aed';
+}
+
+function setDarkMode(on) {
+  // Disable system follow when manually setting
+  localStorage.setItem(SYS_KEY, '0');
+  const sysToggle = document.getElementById('system-theme-toggle');
+  if (sysToggle) sysToggle.checked = false;
+  applyDark(on);
+}
+
+function setSystemTheme(on) {
+  localStorage.setItem(SYS_KEY, on ? '1' : '0');
+  if (on) {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyDark(prefersDark);
+    const dmToggle = document.getElementById('dark-mode-toggle');
+    if (dmToggle) dmToggle.checked = prefersDark;
+  }
+}
+
+function initDarkMode() {
+  const sysOn  = localStorage.getItem(SYS_KEY) === '1';
+  const darkOn = localStorage.getItem(DARK_KEY) === '1';
+
+  if (sysOn) {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyDark(prefersDark);
+    const sysToggle = document.getElementById('system-theme-toggle');
+    const dmToggle  = document.getElementById('dark-mode-toggle');
+    if (sysToggle) sysToggle.checked = true;
+    if (dmToggle)  dmToggle.checked  = prefersDark;
+    // Live update if system pref changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      if (localStorage.getItem(SYS_KEY) === '1') applyDark(e.matches);
+    });
+  } else {
+    applyDark(darkOn);
+    const dmToggle = document.getElementById('dark-mode-toggle');
+    if (dmToggle) dmToggle.checked = darkOn;
+  }
+}
+
+// Run immediately so there's no flash
+(function(){ 
+  const sysOn  = localStorage.getItem(SYS_KEY) === '1';
+  const darkOn = localStorage.getItem(DARK_KEY) === '1';
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (sysOn ? prefersDark : darkOn) document.body.classList.add('dark');
+})();
+
+// Also init toggles once DOM ready (openSettings will call this)
+document.addEventListener('DOMContentLoaded', initDarkMode);
+
+</script>
+
+</body>
+</html>
