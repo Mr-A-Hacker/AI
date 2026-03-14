@@ -5414,7 +5414,7 @@
       });
 
       // ── AI Tools Modal ──
-      let aimCurrentTab = "ais";
+      let aimCurrentTab = "tools";
       let humStyle = "Casual";
 
       function openAiModal(tab) {
@@ -6903,7 +6903,13 @@ Think carefully about:
           <div class="aim-title">🤖 Our AI Tools</div>
           <button class="aim-close" onclick="closeAiModal()">✕</button>
         </div>
-        <div class="aim-body">
+        <div class="aim-tabs">
+          <button class="aim-tab active" id="aim-tab-tools"     onclick="switchAimTab('tools')">🛠 Tools</button>
+          <button class="aim-tab"        id="aim-tab-humanizer" onclick="switchAimTab('humanizer')">✍️ Humanizer</button>
+          <button class="aim-tab"        id="aim-tab-weather"   onclick="switchAimTab('weather')">🌦️ Weather</button>
+          <button class="aim-tab"        id="aim-tab-devagent"  onclick="switchAimTab('devagent')">💻 Dev Agent</button>
+          <button class="aim-tab"        id="aim-tab-homework"  onclick="switchAimTab('homework')">📚 Homework</button>
+        </div>
           <!-- TOOLS GRID -->
           <div id="aim-panel-tools" class="aim-panel show">
             <p style="font-size: 0.78rem; color: var(--text-mid); margin: 0 0 14px">
@@ -7108,7 +7114,7 @@ Think carefully about:
             </div>
           </div>
 
-          <!-- DEV AGENT PANEL -->
+         <!-- DEV AGENT PANEL -->
           <div class="aim-panel" id="aim-panel-devagent">
             <div style="display: flex; flex-direction: column; height: 100%">
               <!-- Header bar -->
@@ -7235,6 +7241,7 @@ Think carefully about:
               </div>
 
               <!-- File preview bar -->
+              <!-- FIX: removed duplicate display:none -->
               <div
                 id="dev-file-bar"
                 style="
@@ -7244,7 +7251,6 @@ Think carefully about:
                   border-radius: 10px;
                   padding: 8px 12px;
                   margin-bottom: 8px;
-                  display: none;
                   align-items: center;
                   gap: 8px;
                 "
@@ -7565,539 +7571,530 @@ Think carefully about:
             </div>
           </div>
 
-          <script>
-            (function () {
-              const c = document.getElementById("landing-canvas");
-              if (!c) return;
-              const ctx = c.getContext("2d");
-              let stars = [];
-              function resize() {
-                c.width = window.innerWidth;
-                c.height = window.innerHeight;
-              }
-              resize();
-              window.addEventListener("resize", resize);
-              for (let i = 0; i < 120; i++) {
-                stars.push({
-                  x: Math.random(),
-                  y: Math.random(),
-                  r: Math.random() * 1.5 + 0.3,
-                  a: Math.random(),
-                  speed: Math.random() * 0.004 + 0.001,
-                  twinkle: Math.random() * Math.PI * 2,
-                });
-              }
-              function draw() {
-                ctx.clearRect(0, 0, c.width, c.height);
-                stars.forEach((s) => {
-                  s.twinkle += s.speed;
-                  const alpha = s.a * (0.5 + 0.5 * Math.sin(s.twinkle));
-                  ctx.beginPath();
-                  ctx.arc(s.x * c.width, s.y * c.height, s.r, 0, Math.PI * 2);
-                  ctx.fillStyle = `rgba(180,140,255,${alpha})`;
-                  ctx.fill();
-                });
-                if (
-                  document.getElementById("landing-screen") &&
-                  !document.getElementById("landing-screen").classList.contains("hidden")
-                ) {
-                  requestAnimationFrame(draw);
-                }
-              }
-              draw();
-            })();
-          </script>
-
-          <!-- ── PWA Download App Button ── -->
-          <div
-            id="pwa-btn"
-            style="
-              display: flex;
-              position: fixed;
-              bottom: 24px;
-              right: 20px;
-              z-index: 50;
-              align-items: flex-end;
-              flex-direction: column;
-              gap: 8px;
-            "
-          >
-            <!-- Mini + dot (shown after dismiss) -->
-            <button
-              id="pwa-dot"
-              onclick="pwaBtnExpand()"
-              title="Download App"
-              style="
-                display: none;
-                width: 30px;
-                height: 30px;
-                border-radius: 50%;
-                border: none;
-                background: linear-gradient(135deg, #7c3aed, #a855f7);
-                color: white;
-                font-size: 1.1rem;
-                line-height: 1;
-                cursor: pointer;
-                box-shadow: 0 3px 14px rgba(124, 58, 237, 0.5);
-                align-items: center;
-                justify-content: center;
-              "
-            >
-              +
-            </button>
-
-            <!-- Full pill button -->
-            <div
-              id="pwa-full"
-              style="
-                display: flex;
-                align-items: stretch;
-                border-radius: 50px;
-                overflow: hidden;
-                box-shadow: 0 4px 20px rgba(124, 58, 237, 0.45);
-              "
-            >
-              <button
-                onclick="pwaTriggerInstall()"
-                style="
-                  display: flex;
-                  align-items: center;
-                  gap: 8px;
-                  padding: 11px 16px 11px 18px;
-                  border: none;
-                  background: linear-gradient(135deg, #7c3aed, #a855f7);
-                  color: white;
-                  font-family: var(--font-body);
-                  font-size: 0.8rem;
-                  font-weight: 700;
-                  cursor: pointer;
-                  white-space: nowrap;
-                "
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                Download App
-              </button>
-              <button
-                onclick="pwaBtnDismiss()"
-                title="Hide"
-                style="
-                  padding: 11px 13px;
-                  border: none;
-                  border-left: 1px solid rgba(255, 255, 255, 0.25);
-                  background: linear-gradient(135deg, #7c3aed, #a855f7);
-                  color: rgba(255, 255, 255, 0.75);
-                  font-size: 0.8rem;
-                  cursor: pointer;
-                  line-height: 1;
-                "
-                onmouseover="this.style.color = 'white'"
-                onmouseout="this.style.color = 'rgba(255,255,255,.75)'"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-
-          <!-- iOS install instructions popup -->
-          <div
-            id="pwa-ios-popup"
-            style="
-              display: none;
-              position: fixed;
-              bottom: 80px;
-              right: 16px;
-              z-index: 51;
-              background: white;
-              border: 1.5px solid var(--border);
-              border-radius: 18px;
-              padding: 18px 20px;
-              max-width: 270px;
-              box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
-              animation: fadeUp 0.3s ease both;
-            "
-          >
-            <div
-              style="
-                font-family: var(--font-head);
-                font-weight: 800;
-                font-size: 0.92rem;
-                color: var(--text);
-                margin-bottom: 6px;
-              "
-            >
-              Install Viora AI 📲
-            </div>
-            <div style="font-size: 0.78rem; color: var(--text-mid); line-height: 1.6">
-              Tap
-              <strong>Share</strong>
-              <span style="font-size: 1rem">⎙</span>
-              at the bottom of Safari, then tap
-              <strong>"Add to Home Screen"</strong>
-            </div>
-            <div style="margin-top: 10px; display: flex; justify-content: flex-end">
-              <button
-                onclick="document.getElementById('pwa-ios-popup').style.display = 'none'"
-                style="
-                  padding: 6px 14px;
-                  border-radius: 20px;
-                  border: 1.5px solid var(--border);
-                  background: none;
-                  font-size: 0.75rem;
-                  font-weight: 600;
-                  color: var(--text-mid);
-                  cursor: pointer;
-                "
-              >
-                Got it
-              </button>
-            </div>
-            <!-- Arrow pointing down to button -->
-            <div
-              style="
-                position: absolute;
-                bottom: -9px;
-                right: 32px;
-                width: 16px;
-                height: 16px;
-                background: white;
-                border-right: 1.5px solid var(--border);
-                border-bottom: 1.5px solid var(--border);
-                transform: rotate(45deg);
-              "
-            ></div>
-          </div>
-
           <!-- sub-chat injected by JS -->
 
-          <script>
-            // ── PWA Service Worker Registration ──
-            if ("serviceWorker" in navigator) {
-              window.addEventListener("load", () => {
-                navigator.serviceWorker.register("/sw.js").catch(() => {});
-              });
-            }
+        </div><!-- /.aim-body -->
+      </div><!-- /.aim-card -->
+    </div><!-- /#ai-modal -->
 
-            // ── PWA Install Prompt (Android / Desktop Chrome) ──
-            let pwaInstallPrompt = null;
-            const pwaBtnWrap = document.getElementById("pwa-btn");
+  <!-- ── PWA Download App Button ── (moved outside modal) -->
+  <div
+    id="pwa-btn"
+    style="
+      display: flex;
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      z-index: 50;
+      align-items: flex-end;
+      flex-direction: column;
+      gap: 8px;
+    "
+  >
+    <!-- Mini + dot (shown after dismiss) -->
+    <button
+      id="pwa-dot"
+      onclick="pwaBtnExpand()"
+      title="Download App"
+      style="
+        display: none;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: white;
+        font-size: 1.1rem;
+        line-height: 1;
+        cursor: pointer;
+        box-shadow: 0 3px 14px rgba(124, 58, 237, 0.5);
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      +
+    </button>
 
-            // Hide if already installed as standalone app
-            if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone) {
-              pwaBtnWrap.style.display = "none";
-            }
-
-            function pwaBtnDismiss() {
-              document.getElementById("pwa-full").style.display = "none";
-              const dot = document.getElementById("pwa-dot");
-              dot.style.display = "flex";
-            }
-
-            function pwaBtnExpand() {
-              document.getElementById("pwa-full").style.display = "flex";
-              document.getElementById("pwa-dot").style.display = "none";
-            }
-
-            window.addEventListener("beforeinstallprompt", (e) => {
-              e.preventDefault();
-              pwaInstallPrompt = e;
-            });
-
-            window.addEventListener("appinstalled", () => {
-              pwaBtnWrap.style.display = "none";
-              pwaInstallPrompt = null;
-            });
-
-            function pwaTriggerInstall() {
-              const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-              const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-              if (isIOS || isSafari) {
-                // iOS Safari: show manual instructions popup
-                const popup = document.getElementById("pwa-ios-popup");
-                popup.style.display = popup.style.display === "none" ? "block" : "none";
-                return;
-              }
-
-              if (pwaInstallPrompt) {
-                pwaInstallPrompt.prompt();
-                pwaInstallPrompt.userChoice.then((result) => {
-                  if (result.outcome === "accepted") pwaBtnWrap.style.display = "none";
-                  pwaInstallPrompt = null;
-                });
-              }
-            }
-
-            // ══════════════════════════════════════════
-            // SUB-AI CHAT ENGINE
-            // ══════════════════════════════════════════
-            const SUB_AIS = {
-              devagent: {
-                name: "Dev Agent",
-                sub: "Expert programmer & code debugger",
-                logo: "💻",
-                bg: "rgba(16,185,129,.15)",
-                color: "#10b981",
-                sendBg: "linear-gradient(135deg,#10b981,#059669)",
-                placeholder: "Ask anything about code…",
-                welcome: "Dev Agent",
-                desc: "Expert coder. I can debug, build apps, explain code, and more.",
-                chips: ["Debug this code", "Build a Python script", "Explain this function", "Review my code"],
-                system: `You are an expert AI Developer Agent built into Viora. Write clean production-ready code. Use code blocks for all code. Be concise but thorough.`,
-              },
-              homework: {
-                name: "Homework Helper",
-                sub: "Your personal tutor for every subject",
-                logo: "📚",
-                bg: "rgba(245,158,11,.15)",
-                color: "#f59e0b",
-                sendBg: "linear-gradient(135deg,#f59e0b,#d97706)",
-                placeholder: "Ask any homework question…",
-                welcome: "Homework Helper",
-                desc: "Math, science, history and more. Step-by-step explanations.",
-                chips: ["Solve this math problem", "Explain photosynthesis", "Help with an essay", "Quiz me"],
-                system: `You are a friendly homework helper for students. Give clear step-by-step explanations. Encourage learning, don't just give answers.`,
-              },
-              humanizer: {
-                name: "AI Humanizer",
-                sub: "Make AI text sound natural",
-                logo: "✍️",
-                bg: "rgba(124,58,237,.15)",
-                color: "#7c3aed",
-                sendBg: "linear-gradient(135deg,#7c3aed,#6d28d9)",
-                placeholder: "Paste AI-written text to humanize…",
-                welcome: "AI Humanizer",
-                desc: "Paste any AI-generated text and I will rewrite it to sound natural and human.",
-                chips: ["Humanize this paragraph", "Make it less robotic", "Rewrite casually", "Fix AI tone"],
-                system: `You are an AI text humanizer. Rewrite AI-generated text to sound natural, warm and human. Keep the meaning intact but vary sentence structure, add personality, and remove robotic patterns.`,
-              },
-              weather: {
-                name: "Weather AI",
-                sub: "Detailed forecasts & weather chat",
-                logo: "🌦️",
-                bg: "rgba(56,189,248,.15)",
-                color: "#38bdf8",
-                sendBg: "linear-gradient(135deg,#38bdf8,#0ea5e9)",
-                placeholder: "Ask about weather anywhere…",
-                welcome: "Weather AI",
-                desc: "Ask me about weather anywhere in the world.",
-                chips: ["Weather today", "Will it rain this week?", "Best time to visit Tokyo", "Compare climates"],
-                system: `You are a knowledgeable weather assistant. Answer weather questions helpfully. For real-time data you may receive current conditions in the message context. Otherwise use your knowledge to give accurate general forecasts and climate info.`,
-              },
-            };
-
-            let subCurrentAI = null;
-            let subHistory = [];
-            let subBusy = false;
-            let _subEl = null;
-
-            function subFormatResponse(text, aiId) {
-              const colors = { devagent: "#10b981", homework: "#f59e0b", humanizer: "#7c3aed", weather: "#38bdf8" };
-              const c = colors[aiId] || "#7c3aed";
-              return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(
-                  /```(\w*)\n?([\s\S]*?)```/g,
-                  (_, lang, code) =>
-                    `<pre style="background:#1e1e2e;border-radius:10px;padding:12px;margin:8px 0;overflow-x:auto;"><code style="font-family:monospace;font-size:.82rem;color:#e2e8f0;white-space:pre;">${code.trim()}</code></pre>`,
-                )
-                .replace(
-                  /`([^`]+)`/g,
-                  `<code style="background:rgba(0,0,0,.08);border-radius:4px;padding:1px 5px;font-size:.83rem;">$1</code>`,
-                )
-                .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-                .replace(
-                  /^#{1,3} (.+)$/gm,
-                  `<strong style="font-size:.92rem;display:block;margin:8px 0 3px;color:${c};">$1</strong>`,
-                )
-                .replace(/^[-•] /gm, "• ")
-                .replace(/\n\n/g, "<br><br>")
-                .replace(/\n/g, "<br>");
-            }
-
-            function openSubChat(aiId) {
-              // Close modal
-              const modal = document.getElementById("ai-modal");
-              if (modal) modal.classList.remove("show");
-
-              // Navigate to the AI chat page in the same tab
-              window.location.href = "/ai-chat.html?ai=" + encodeURIComponent(aiId);
-            }
-
-            function closeSubChat() {
-              if (_subEl) {
-                _subEl.remove();
-                _subEl = null;
-              }
-              const old = document.getElementById("sub-chat-screen");
-              if (old) old.remove();
-              subCurrentAI = null;
-              subHistory = [];
-              subBusy = false;
-            }
-
-            function subSendText(text) {
-              const inp = document.getElementById("sub-input");
-              if (inp) {
-                inp.value = text;
-                subSend();
-              }
-            }
-
-            function subAddMsg(role, html) {
-              const win = document.getElementById("sub-win");
-              if (!win) return;
-              const wb = document.getElementById("sub-welcome-block");
-              if (wb) wb.remove();
-              const ai = SUB_AIS[subCurrentAI] || {};
-              const isUser = role === "user";
-              const d = document.createElement("div");
-              d.style.cssText = `display:flex;gap:10px;align-items:flex-end;${isUser ? "flex-direction:row-reverse;" : ""}`;
-              d.innerHTML = isUser
-                ? `<div style="max-width:78%;padding:10px 14px;border-radius:18px 18px 4px 18px;background:${ai.sendBg || "var(--violet)"};color:white;font-size:.9rem;line-height:1.55;">${html}</div>`
-                : `<div style="width:32px;height:32px;border-radius:50%;background:${ai.bg || "var(--violet-light)"};display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">${ai.logo || "🤖"}</div>
-       <div style="max-width:78%;padding:10px 14px;border-radius:18px 18px 18px 4px;background:var(--card);border:1px solid var(--border);font-size:.9rem;line-height:1.55;color:var(--text);">${html}</div>`;
-              win.appendChild(d);
-              win.scrollTop = win.scrollHeight;
-            }
-
-            async function subSend() {
-              if (subBusy) return;
-              const inp = document.getElementById("sub-input");
-              if (!inp) return;
-              const text = inp.value.trim();
-              if (!text) return;
-              inp.value = "";
-              inp.style.height = "auto";
-
-              const ai = SUB_AIS[subCurrentAI];
-              if (!ai) return;
-
-              subAddMsg("user", text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
-              subHistory.push({ role: "user", content: text });
-              subBusy = true;
-
-              // Typing indicator
-              const win = document.getElementById("sub-win");
-              const typing = document.createElement("div");
-              typing.id = "sub-typing";
-              typing.style.cssText = "display:flex;gap:10px;align-items:flex-end;";
-              typing.innerHTML = `<div style="width:32px;height:32px;border-radius:50%;background:${ai.bg};display:flex;align-items:center;justify-content:center;font-size:1rem;">${ai.logo}</div>
-    <div style="padding:10px 14px;border-radius:18px 18px 18px 4px;background:var(--card);border:1px solid var(--border);">
-      <span style="display:inline-flex;gap:4px;">${[0, 150, 300].map((d) => `<span style="width:7px;height:7px;border-radius:50%;background:${ai.color};animation:pdot 1.2s ${d}ms ease-in-out infinite;display:inline-block;"></span>`).join("")}</span>
-    </div>`;
-              if (win) {
-                win.appendChild(typing);
-                win.scrollTop = win.scrollHeight;
-              }
-
-              try {
-                const session = getSession();
-                const body = { system: ai.system, messages: subHistory };
-                if (session?.email) body.email = session.email;
-                if (currentCoords) body.coords = currentCoords;
-
-                const res = await fetch("/api/chat", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(body),
-                });
-                const data = await res.json();
-                typing.remove();
-
-                const reply = data.content?.[0]?.text || data.reply || "";
-                if (reply) {
-                  subHistory.push({ role: "assistant", content: reply });
-                  subAddMsg("ai", subFormatResponse(reply, subCurrentAI));
-                } else {
-                  subAddMsg("ai", "⚠️ " + (data.error || "No response received."));
-                }
-              } catch (e) {
-                typing.remove();
-                subAddMsg("ai", "⚠️ Network error. Please try again.");
-              }
-              subBusy = false;
-            }
-
-            // ── Dark Mode ──
-            const DARK_KEY = "viora_dark_mode";
-            const SYS_KEY = "viora_system_theme";
-
-            function applyDark(dark) {
-              document.body.classList.toggle("dark", dark);
-              // Also update ai-chat pages (write to localStorage so they pick it up)
-              localStorage.setItem(DARK_KEY, dark ? "1" : "0");
-              // Update meta theme-color
-              document.querySelector('meta[name="theme-color"]').content = dark ? "#0f0d16" : "#7c3aed";
-            }
-
-            function setDarkMode(on) {
-              // Disable system follow when manually setting
-              localStorage.setItem(SYS_KEY, "0");
-              const sysToggle = document.getElementById("system-theme-toggle");
-              if (sysToggle) sysToggle.checked = false;
-              applyDark(on);
-            }
-
-            function setSystemTheme(on) {
-              localStorage.setItem(SYS_KEY, on ? "1" : "0");
-              if (on) {
-                const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-                applyDark(prefersDark);
-                const dmToggle = document.getElementById("dark-mode-toggle");
-                if (dmToggle) dmToggle.checked = prefersDark;
-              }
-            }
-
-            function initDarkMode() {
-              const sysOn = localStorage.getItem(SYS_KEY) === "1";
-              const darkOn = localStorage.getItem(DARK_KEY) === "1";
-
-              if (sysOn) {
-                const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-                applyDark(prefersDark);
-                const sysToggle = document.getElementById("system-theme-toggle");
-                const dmToggle = document.getElementById("dark-mode-toggle");
-                if (sysToggle) sysToggle.checked = true;
-                if (dmToggle) dmToggle.checked = prefersDark;
-                // Live update if system pref changes
-                window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
-                  if (localStorage.getItem(SYS_KEY) === "1") applyDark(e.matches);
-                });
-              } else {
-                applyDark(darkOn);
-                const dmToggle = document.getElementById("dark-mode-toggle");
-                if (dmToggle) dmToggle.checked = darkOn;
-              }
-            }
-
-            // Run immediately so there's no flash
-            (function () {
-              const sysOn = localStorage.getItem(SYS_KEY) === "1";
-              const darkOn = localStorage.getItem(DARK_KEY) === "1";
-              const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-              if (sysOn ? prefersDark : darkOn) document.body.classList.add("dark");
-            })();
-
-            // Also init toggles once DOM ready (openSettings will call this)
-            document.addEventListener("DOMContentLoaded", initDarkMode);
-          </script>
-        </div>
-      </div>
+    <!-- Full pill button -->
+    <div
+      id="pwa-full"
+      style="
+        display: flex;
+        align-items: stretch;
+        border-radius: 50px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(124, 58, 237, 0.45);
+      "
+    >
+      <button
+        onclick="pwaTriggerInstall()"
+        style="
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 11px 16px 11px 18px;
+          border: none;
+          background: linear-gradient(135deg, #7c3aed, #a855f7);
+          color: white;
+          font-family: var(--font-body);
+          font-size: 0.8rem;
+          font-weight: 700;
+          cursor: pointer;
+          white-space: nowrap;
+        "
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download App
+      </button>
+      <button
+        onclick="pwaBtnDismiss()"
+        title="Hide"
+        style="
+          padding: 11px 13px;
+          border: none;
+          border-left: 1px solid rgba(255, 255, 255, 0.25);
+          background: linear-gradient(135deg, #7c3aed, #a855f7);
+          color: rgba(255, 255, 255, 0.75);
+          font-size: 0.8rem;
+          cursor: pointer;
+          line-height: 1;
+        "
+        onmouseover="this.style.color = 'white'"
+        onmouseout="this.style.color = 'rgba(255,255,255,.75)'"
+      >
+        ✕
+      </button>
     </div>
-  </body>
+  </div>
+
+  <!-- iOS install instructions popup (moved outside modal) -->
+  <div
+    id="pwa-ios-popup"
+    style="
+      display: none;
+      position: fixed;
+      bottom: 80px;
+      right: 16px;
+      z-index: 51;
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      padding: 18px 20px;
+      max-width: 270px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+      animation: fadeUp 0.3s ease both;
+    "
+  >
+    <div
+      style="
+        font-family: var(--font-head);
+        font-weight: 800;
+        font-size: 0.92rem;
+        color: var(--text);
+        margin-bottom: 6px;
+      "
+    >
+      Install Viora AI 📲
+    </div>
+    <div style="font-size: 0.78rem; color: var(--text-mid); line-height: 1.6">
+      Tap
+      <strong>Share</strong>
+      <span style="font-size: 1rem">⎙</span>
+      at the bottom of Safari, then tap
+      <strong>"Add to Home Screen"</strong>
+    </div>
+    <div style="margin-top: 10px; display: flex; justify-content: flex-end">
+      <button
+        onclick="document.getElementById('pwa-ios-popup').style.display = 'none'"
+        style="
+          padding: 6px 14px;
+          border-radius: 20px;
+          border: 1.5px solid var(--border);
+          background: none;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--text-mid);
+          cursor: pointer;
+        "
+      >
+        Got it
+      </button>
+    </div>
+    <!-- Arrow pointing down to button -->
+    <div
+      style="
+        position: absolute;
+        bottom: -9px;
+        right: 32px;
+        width: 16px;
+        height: 16px;
+        background: white;
+        border-right: 1.5px solid var(--border);
+        border-bottom: 1.5px solid var(--border);
+        transform: rotate(45deg);
+      "
+    ></div>
+  </div>
+
+  <!-- ── All scripts consolidated into one block, just before </body> ── -->
+  <script>
+    // ── Stars / Landing Canvas Animation ──
+    (function () {
+      const c = document.getElementById("landing-canvas");
+      if (!c) return;
+      const ctx = c.getContext("2d");
+      let stars = [];
+      function resize() {
+        c.width = window.innerWidth;
+        c.height = window.innerHeight;
+      }
+      resize();
+      window.addEventListener("resize", resize);
+      for (let i = 0; i < 120; i++) {
+        stars.push({
+          x: Math.random(),
+          y: Math.random(),
+          r: Math.random() * 1.5 + 0.3,
+          a: Math.random(),
+          speed: Math.random() * 0.004 + 0.001,
+          twinkle: Math.random() * Math.PI * 2,
+        });
+      }
+      function draw() {
+        ctx.clearRect(0, 0, c.width, c.height);
+        stars.forEach((s) => {
+          s.twinkle += s.speed;
+          const alpha = s.a * (0.5 + 0.5 * Math.sin(s.twinkle));
+          ctx.beginPath();
+          ctx.arc(s.x * c.width, s.y * c.height, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(180,140,255,${alpha})`;
+          ctx.fill();
+        });
+        if (
+          document.getElementById("landing-screen") &&
+          !document.getElementById("landing-screen").classList.contains("hidden")
+        ) {
+          requestAnimationFrame(draw);
+        }
+      }
+      draw();
+    })();
+
+    // ── PWA Service Worker Registration ──
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
+      });
+    }
+
+    // ── PWA Install Prompt (Android / Desktop Chrome) ──
+    let pwaInstallPrompt = null;
+    const pwaBtnWrap = document.getElementById("pwa-btn");
+
+    // Hide if already installed as standalone app
+    if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone) {
+      pwaBtnWrap.style.display = "none";
+    }
+
+    function pwaBtnDismiss() {
+      document.getElementById("pwa-full").style.display = "none";
+      const dot = document.getElementById("pwa-dot");
+      dot.style.display = "flex";
+    }
+
+    function pwaBtnExpand() {
+      document.getElementById("pwa-full").style.display = "flex";
+      document.getElementById("pwa-dot").style.display = "none";
+    }
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      pwaInstallPrompt = e;
+    });
+
+    window.addEventListener("appinstalled", () => {
+      pwaBtnWrap.style.display = "none";
+      pwaInstallPrompt = null;
+    });
+
+    function pwaTriggerInstall() {
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+      if (isIOS || isSafari) {
+        const popup = document.getElementById("pwa-ios-popup");
+        popup.style.display = popup.style.display === "none" ? "block" : "none";
+        return;
+      }
+
+      if (pwaInstallPrompt) {
+        pwaInstallPrompt.prompt();
+        pwaInstallPrompt.userChoice.then((result) => {
+          if (result.outcome === "accepted") pwaBtnWrap.style.display = "none";
+          pwaInstallPrompt = null;
+        });
+      }
+    }
+
+    // ══════════════════════════════════════════
+    // SUB-AI CHAT ENGINE
+    // ══════════════════════════════════════════
+    const SUB_AIS = {
+      devagent: {
+        name: "Dev Agent",
+        sub: "Expert programmer & code debugger",
+        logo: "💻",
+        bg: "rgba(16,185,129,.15)",
+        color: "#10b981",
+        sendBg: "linear-gradient(135deg,#10b981,#059669)",
+        placeholder: "Ask anything about code…",
+        welcome: "Dev Agent",
+        desc: "Expert coder. I can debug, build apps, explain code, and more.",
+        chips: ["Debug this code", "Build a Python script", "Explain this function", "Review my code"],
+        system: `You are an expert AI Developer Agent built into Viora. Write clean production-ready code. Use code blocks for all code. Be concise but thorough.`,
+      },
+      homework: {
+        name: "Homework Helper",
+        sub: "Your personal tutor for every subject",
+        logo: "📚",
+        bg: "rgba(245,158,11,.15)",
+        color: "#f59e0b",
+        sendBg: "linear-gradient(135deg,#f59e0b,#d97706)",
+        placeholder: "Ask any homework question…",
+        welcome: "Homework Helper",
+        desc: "Math, science, history and more. Step-by-step explanations.",
+        chips: ["Solve this math problem", "Explain photosynthesis", "Help with an essay", "Quiz me"],
+        system: `You are a friendly homework helper for students. Give clear step-by-step explanations. Encourage learning, don't just give answers.`,
+      },
+      humanizer: {
+        name: "AI Humanizer",
+        sub: "Make AI text sound natural",
+        logo: "✍️",
+        bg: "rgba(124,58,237,.15)",
+        color: "#7c3aed",
+        sendBg: "linear-gradient(135deg,#7c3aed,#6d28d9)",
+        placeholder: "Paste AI-written text to humanize…",
+        welcome: "AI Humanizer",
+        desc: "Paste any AI-generated text and I will rewrite it to sound natural and human.",
+        chips: ["Humanize this paragraph", "Make it less robotic", "Rewrite casually", "Fix AI tone"],
+        system: `You are an AI text humanizer. Rewrite AI-generated text to sound natural, warm and human. Keep the meaning intact but vary sentence structure, add personality, and remove robotic patterns.`,
+      },
+      weather: {
+        name: "Weather AI",
+        sub: "Detailed forecasts & weather chat",
+        logo: "🌦️",
+        bg: "rgba(56,189,248,.15)",
+        color: "#38bdf8",
+        sendBg: "linear-gradient(135deg,#38bdf8,#0ea5e9)",
+        placeholder: "Ask about weather anywhere…",
+        welcome: "Weather AI",
+        desc: "Ask me about weather anywhere in the world.",
+        chips: ["Weather today", "Will it rain this week?", "Best time to visit Tokyo", "Compare climates"],
+        system: `You are a knowledgeable weather assistant. Answer weather questions helpfully. For real-time data you may receive current conditions in the message context. Otherwise use your knowledge to give accurate general forecasts and climate info.`,
+      },
+    };
+
+    let subCurrentAI = null;
+    let subHistory = [];
+    let subBusy = false;
+    let _subEl = null;
+
+    function subFormatResponse(text, aiId) {
+      const colors = { devagent: "#10b981", homework: "#f59e0b", humanizer: "#7c3aed", weather: "#38bdf8" };
+      const c = colors[aiId] || "#7c3aed";
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(
+          /```(\w*)\n?([\s\S]*?)```/g,
+          (_, lang, code) =>
+            `<pre style="background:#1e1e2e;border-radius:10px;padding:12px;margin:8px 0;overflow-x:auto;"><code style="font-family:monospace;font-size:.82rem;color:#e2e8f0;white-space:pre;">${code.trim()}</code></pre>`,
+        )
+        .replace(
+          /`([^`]+)`/g,
+          `<code style="background:rgba(0,0,0,.08);border-radius:4px;padding:1px 5px;font-size:.83rem;">$1</code>`,
+        )
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(
+          /^#{1,3} (.+)$/gm,
+          `<strong style="font-size:.92rem;display:block;margin:8px 0 3px;color:${c};">$1</strong>`,
+        )
+        .replace(/^[-•] /gm, "• ")
+        .replace(/\n\n/g, "<br><br>")
+        .replace(/\n/g, "<br>");
+    }
+
+    function openSubChat(aiId) {
+      const modal = document.getElementById("ai-modal");
+      if (modal) modal.classList.remove("show");
+      window.location.href = "/ai-chat.html?ai=" + encodeURIComponent(aiId);
+    }
+
+    function closeSubChat() {
+      if (_subEl) {
+        _subEl.remove();
+        _subEl = null;
+      }
+      const old = document.getElementById("sub-chat-screen");
+      if (old) old.remove();
+      subCurrentAI = null;
+      subHistory = [];
+      subBusy = false;
+    }
+
+    function subSendText(text) {
+      const inp = document.getElementById("sub-input");
+      if (inp) {
+        inp.value = text;
+        subSend();
+      }
+    }
+
+    function subAddMsg(role, html) {
+      const win = document.getElementById("sub-win");
+      if (!win) return;
+      const wb = document.getElementById("sub-welcome-block");
+      if (wb) wb.remove();
+      const ai = SUB_AIS[subCurrentAI] || {};
+      const isUser = role === "user";
+      const d = document.createElement("div");
+      d.style.cssText = `display:flex;gap:10px;align-items:flex-end;${isUser ? "flex-direction:row-reverse;" : ""}`;
+      d.innerHTML = isUser
+        ? `<div style="max-width:78%;padding:10px 14px;border-radius:18px 18px 4px 18px;background:${ai.sendBg || "var(--violet)"};color:white;font-size:.9rem;line-height:1.55;">${html}</div>`
+        : `<div style="width:32px;height:32px;border-radius:50%;background:${ai.bg || "var(--violet-light)"};display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">${ai.logo || "🤖"}</div>
+   <div style="max-width:78%;padding:10px 14px;border-radius:18px 18px 18px 4px;background:var(--card);border:1px solid var(--border);font-size:.9rem;line-height:1.55;color:var(--text);">${html}</div>`;
+      win.appendChild(d);
+      win.scrollTop = win.scrollHeight;
+    }
+
+    async function subSend() {
+      if (subBusy) return;
+      const inp = document.getElementById("sub-input");
+      if (!inp) return;
+      const text = inp.value.trim();
+      if (!text) return;
+      inp.value = "";
+      inp.style.height = "auto";
+
+      const ai = SUB_AIS[subCurrentAI];
+      if (!ai) return;
+
+      subAddMsg("user", text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
+      subHistory.push({ role: "user", content: text });
+      subBusy = true;
+
+      const win = document.getElementById("sub-win");
+      const typing = document.createElement("div");
+      typing.id = "sub-typing";
+      typing.style.cssText = "display:flex;gap:10px;align-items:flex-end;";
+      typing.innerHTML = `<div style="width:32px;height:32px;border-radius:50%;background:${ai.bg};display:flex;align-items:center;justify-content:center;font-size:1rem;">${ai.logo}</div>
+<div style="padding:10px 14px;border-radius:18px 18px 18px 4px;background:var(--card);border:1px solid var(--border);">
+  <span style="display:inline-flex;gap:4px;">${[0, 150, 300].map((d) => `<span style="width:7px;height:7px;border-radius:50%;background:${ai.color};animation:pdot 1.2s ${d}ms ease-in-out infinite;display:inline-block;"></span>`).join("")}</span>
+</div>`;
+      if (win) {
+        win.appendChild(typing);
+        win.scrollTop = win.scrollHeight;
+      }
+
+      try {
+        const session = getSession();
+        const body = { system: ai.system, messages: subHistory };
+        if (session?.email) body.email = session.email;
+        if (currentCoords) body.coords = currentCoords;
+
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        typing.remove();
+
+        const reply = data.content?.[0]?.text || data.reply || "";
+        if (reply) {
+          subHistory.push({ role: "assistant", content: reply });
+          subAddMsg("ai", subFormatResponse(reply, subCurrentAI));
+        } else {
+          subAddMsg("ai", "⚠️ " + (data.error || "No response received."));
+        }
+      } catch (e) {
+        typing.remove();
+        subAddMsg("ai", "⚠️ Network error. Please try again.");
+      }
+      subBusy = false;
+    }
+
+    // ── Dark Mode ──
+    const DARK_KEY = "viora_dark_mode";
+    const SYS_KEY = "viora_system_theme";
+
+    function applyDark(dark) {
+      document.body.classList.toggle("dark", dark);
+      localStorage.setItem(DARK_KEY, dark ? "1" : "0");
+      document.querySelector('meta[name="theme-color"]').content = dark ? "#0f0d16" : "#7c3aed";
+    }
+
+    function setDarkMode(on) {
+      localStorage.setItem(SYS_KEY, "0");
+      const sysToggle = document.getElementById("system-theme-toggle");
+      if (sysToggle) sysToggle.checked = false;
+      applyDark(on);
+    }
+
+    function setSystemTheme(on) {
+      localStorage.setItem(SYS_KEY, on ? "1" : "0");
+      if (on) {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        applyDark(prefersDark);
+        const dmToggle = document.getElementById("dark-mode-toggle");
+        if (dmToggle) dmToggle.checked = prefersDark;
+      }
+    }
+
+    function initDarkMode() {
+      const sysOn = localStorage.getItem(SYS_KEY) === "1";
+      const darkOn = localStorage.getItem(DARK_KEY) === "1";
+
+      if (sysOn) {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        applyDark(prefersDark);
+        const sysToggle = document.getElementById("system-theme-toggle");
+        const dmToggle = document.getElementById("dark-mode-toggle");
+        if (sysToggle) sysToggle.checked = true;
+        if (dmToggle) dmToggle.checked = prefersDark;
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+          if (localStorage.getItem(SYS_KEY) === "1") applyDark(e.matches);
+        });
+      } else {
+        applyDark(darkOn);
+        const dmToggle = document.getElementById("dark-mode-toggle");
+        if (dmToggle) dmToggle.checked = darkOn;
+      }
+    }
+
+    // Run immediately to prevent flash
+    (function () {
+      const sysOn = localStorage.getItem(SYS_KEY) === "1";
+      const darkOn = localStorage.getItem(DARK_KEY) === "1";
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (sysOn ? prefersDark : darkOn) document.body.classList.add("dark");
+    })();
+
+    document.addEventListener("DOMContentLoaded", initDarkMode);
+  </script>
+</body>
 </html>
