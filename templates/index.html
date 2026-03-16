@@ -46,102 +46,142 @@
         --sidebar-w: 272px;
       }
       /* ── Dark mode ── */
-      body.dark {
-        --bg: #0f0d16;
-        --surface: #1a1625;
-        --border: #2d2640;
-        --text: #f0ecff;
-        --text-mid: #a89cc8;
-        --text-light: #6b5b8e;
-      }
-      body.dark .sidebar {
-        background: #13101f;
-        border-color: #2d2640;
-      }
-      body.dark #chat-header {
-        background: rgba(19, 16, 31, 0.96);
-        border-color: #2d2640;
-      }
-      body.dark .chat-bubble.ai {
-        background: #1a1625;
-        border-color: #2d2640;
-        color: #f0ecff;
-      }
-      body.dark .chat-bubble.user {
-        background: linear-gradient(135deg, #7c3aed, #6d28d9);
-      }
-      body.dark .input-wrap {
-        background: #13101f;
-        border-color: #2d2640;
-      }
-      body.dark .chat-input {
-        background: #1a1625;
-        border-color: #2d2640;
-        color: #f0ecff;
-      }
-      body.dark .chat-input::placeholder {
-        color: #6b5b8e;
-      }
-      body.dark .message-input-area {
-        background: #0f0d16;
-        border-color: #2d2640;
-      }
-      body.dark #settings-overlay .settings-card {
-        background: #1a1625;
-        border-color: #2d2640;
-      }
-      body.dark .settings-input {
-        background: #13101f;
-        border-color: #2d2640;
-        color: #f0ecff;
-      }
-      body.dark .settings-input::placeholder {
-        color: #6b5b8e;
-      }
-      body.dark .settings-tabs {
-        border-color: #2d2640;
-      }
-      body.dark .aim-card {
-        background: #1a1625;
-        border-color: #2d2640;
-      }
-      body.dark .other-ai-card {
-        background: #1a1625;
-        border-color: #2d2640;
-      }
-      body.dark .other-ai-card:hover {
-        background: #221d35;
-      }
-      body.dark #memory-panel {
-        background: #1a1625;
-        border-color: #2d2640;
-      }
-      body.dark .chip {
-        background: #1a1625;
-        border-color: #2d2640;
-        color: #a89cc8;
-      }
-      body.dark .sidebar-chat-item {
-        color: #a89cc8;
-      }
-      body.dark .sidebar-chat-item:hover,
-      body.dark .sidebar-chat-item.active {
-        background: #221d35;
-      }
-      body.dark .btn-new-chat {
-        background: #221d35;
-        border-color: #2d2640;
-        color: #f0ecff;
-      }
-      body.dark .btn-new-chat:hover {
-        background: #2d2640;
-      }
-      body.dark .mesh {
-        opacity: 0.4;
-      }
-      html,
-      body {
-        height: 100%;
+body.dark {
+  --bg: #0f0d16;
+  --surface: #1a1625;
+  --border: #2d2640;
+  --text: #f0ecff;
+  --text-mid: #a89cc8;
+  --text-light: #6b5b8e;
+}
+body.dark .sidebar {
+  background: #13101f;
+  border-color: #2d2640;
+}
+/* was #chat-header — actual element is <header> */
+body.dark header {
+  background: rgba(19, 16, 31, 0.96);
+  border-color: #2d2640;
+}
+/* was .chat-bubble.ai — actual classes are .msg.ai .bubble */
+body.dark .msg.ai .bubble {
+  background: #1a1625;
+  border-color: #2d2640;
+  color: #f0ecff;
+}
+/* user bubble already uses a gradient so no change needed, but kept for safety */
+body.dark .msg.user .bubble {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+}
+/* was .input-wrap — actual class is .input-card */
+body.dark .input-card {
+  background: #13101f;
+  border-color: #2d2640;
+}
+/* was .chat-input — actual element is #user-input */
+body.dark #user-input {
+  background: #1a1625;
+  color: #f0ecff;
+}
+body.dark #user-input::placeholder {
+  color: #6b5b8e;
+}
+body.dark #input-area {
+  background: #0f0d16;
+  border-color: #2d2640;
+}
+body.dark #settings-overlay .settings-card {
+  background: #1a1625;
+  border-color: #2d2640;
+}
+body.dark .settings-input {
+  background: #13101f;
+  border-color: #2d2640;
+  color: #f0ecff;
+}
+body.dark .settings-input::placeholder {
+  color: #6b5b8e;
+}
+body.dark .settings-tabs {
+  border-color: #2d2640;
+}
+body.dark .aim-card {
+  background: #1a1625;
+  border-color: #2d2640;
+}
+body.dark .other-ai-card {
+  background: #1a1625;
+  border-color: #2d2640;
+}
+body.dark .other-ai-card:hover {
+  background: #221d35;
+}
+body.dark #memory-panel {
+  background: #1a1625;
+  border-color: #2d2640;
+}
+body.dark .chip {
+  background: #1a1625;
+  border-color: #2d2640;
+  color: #a89cc8;
+}
+body.dark .history-item {
+  color: #a89cc8;
+}
+body.dark .history-item:hover,
+body.dark .history-item.active {
+  background: #221d35;
+}
+body.dark .btn-new-chat {
+  background: #221d35;
+  border-color: #2d2640;
+  color: #f0ecff;
+}
+body.dark .btn-new-chat:hover {
+  background: #2d2640;
+}
+body.dark .mesh {
+  opacity: 0.4;
+}
+/* typing bubble */
+body.dark .typing-bubble {
+  background: #1a1625;
+  border-color: #2d2640;
+}
+/* sub-chat & dev/hw panels */
+body.dark .dev-bubble-ai,
+body.dark .hw-bubble-ai {
+  background: #1a1625;
+  border-color: #2d2640;
+  color: #f0ecff;
+}
+body.dark .dev-typing,
+body.dark .hw-typing {
+  background: #1a1625;
+  border-color: #2d2640;
+}
+body.dark .btn-upload,
+body.dark .btn-deep {
+  background: #1a1625;
+  border-color: #2d2640;
+  color: #a89cc8;
+}
+body.dark .btn-deep.active {
+  border-color: #7c3aed;
+  color: #a78bfa;
+  background: rgba(124, 58, 237, 0.15);
+}
+body.dark .sidebar-user {
+  background: #13101f;
+  border-color: #2d2640;
+}
+body.dark .auth-card {
+  background: #1a1625;
+  border-color: #2d2640;
+}
+body.dark .auth-tab.active {
+  background: #221d35;
+}
         background: var(--bg);
         font-family: var(--font-body);
         color: var(--text);
