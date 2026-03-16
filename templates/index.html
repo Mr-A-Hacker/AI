@@ -45,150 +45,63 @@
         --red: #ef4444;
         --sidebar-w: 272px;
       }
-      /* ── Dark mode ── */
-body.dark {
-  --bg: #0f0d16;
-  --surface: #1a1625;
-  --border: #2d2640;
-  --text: #f0ecff;
-  --text-mid: #a89cc8;
-  --text-light: #6b5b8e;
-}
-body.dark .sidebar {
-  background: #13101f;
-  border-color: #2d2640;
-}
-/* was #chat-header — actual element is <header> */
-body.dark header {
-  background: rgba(19, 16, 31, 0.96);
-  border-color: #2d2640;
-}
-/* was .chat-bubble.ai — actual classes are .msg.ai .bubble */
-body.dark .msg.ai .bubble {
-  background: #1a1625;
-  border-color: #2d2640;
-  color: #f0ecff;
-}
-/* user bubble already uses a gradient so no change needed, but kept for safety */
-body.dark .msg.user .bubble {
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
-}
-/* was .input-wrap — actual class is .input-card */
-body.dark .input-card {
-  background: #13101f;
-  border-color: #2d2640;
-}
-/* was .chat-input — actual element is #user-input */
-body.dark #user-input {
-  background: #1a1625;
-  color: #f0ecff;
-}
-body.dark #user-input::placeholder {
-  color: #6b5b8e;
-}
-body.dark #input-area {
-  background: #0f0d16;
-  border-color: #2d2640;
-}
-body.dark #settings-overlay .settings-card {
-  background: #1a1625;
-  border-color: #2d2640;
-}
-body.dark .settings-input {
-  background: #13101f;
-  border-color: #2d2640;
-  color: #f0ecff;
-}
-body.dark .settings-input::placeholder {
-  color: #6b5b8e;
-}
-body.dark .settings-tabs {
-  border-color: #2d2640;
-}
-body.dark .aim-card {
-  background: #1a1625;
-  border-color: #2d2640;
-}
-body.dark .other-ai-card {
-  background: #1a1625;
-  border-color: #2d2640;
-}
-body.dark .other-ai-card:hover {
-  background: #221d35;
-}
-body.dark #memory-panel {
-  background: #1a1625;
-  border-color: #2d2640;
-}
-body.dark .chip {
-  background: #1a1625;
-  border-color: #2d2640;
-  color: #a89cc8;
-}
-body.dark .history-item {
-  color: #a89cc8;
-}
-body.dark .history-item:hover,
-body.dark .history-item.active {
-  background: #221d35;
-}
-body.dark .btn-new-chat {
-  background: #221d35;
-  border-color: #2d2640;
-  color: #f0ecff;
-}
-body.dark .btn-new-chat:hover {
-  background: #2d2640;
-}
-body.dark .mesh {
-  opacity: 0.4;
-}
-/* typing bubble */
-body.dark .typing-bubble {
-  background: #1a1625;
-  border-color: #2d2640;
-}
-/* sub-chat & dev/hw panels */
-body.dark .dev-bubble-ai,
-body.dark .hw-bubble-ai {
-  background: #1a1625;
-  border-color: #2d2640;
-  color: #f0ecff;
-}
-body.dark .dev-typing,
-body.dark .hw-typing {
-  background: #1a1625;
-  border-color: #2d2640;
-}
-body.dark .btn-upload,
-body.dark .btn-deep {
-  background: #1a1625;
-  border-color: #2d2640;
-  color: #a89cc8;
-}
-body.dark .btn-deep.active {
-  border-color: #7c3aed;
-  color: #a78bfa;
-  background: rgba(124, 58, 237, 0.15);
-}
-body.dark .sidebar-user {
-  background: #13101f;
-  border-color: #2d2640;
-}
-body.dark .auth-card {
-  background: #1a1625;
-  border-color: #2d2640;
-}
-body.dark .auth-tab.active {
-  background: #221d35;
-}
-      html,
-      body {
-        background: var(--bg);
-        font-family: var(--font-body);
-        color: var(--text);
-        overflow: hidden;
+     // ── Dark Mode ──
+    const DARK_KEY = "viora_dark_mode";
+    const SYS_KEY = "viora_system_theme";
+
+    function applyDark(dark) {
+      document.body.classList.toggle("dark", dark);
+      localStorage.setItem(DARK_KEY, dark ? "1" : "0");
+      document.querySelector('meta[name="theme-color"]').content = dark ? "#0f0d16" : "#7c3aed";
+    }
+
+    function setDarkMode(on) {
+      localStorage.setItem(SYS_KEY, "0");
+      const sysToggle = document.getElementById("system-theme-toggle");
+      if (sysToggle) sysToggle.checked = false;
+      applyDark(on);
+    }
+
+    function setSystemTheme(on) {
+      localStorage.setItem(SYS_KEY, on ? "1" : "0");
+      if (on) {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        applyDark(prefersDark);
+        const dmToggle = document.getElementById("dark-mode-toggle");
+        if (dmToggle) dmToggle.checked = prefersDark;
       }
+    }
+
+    function initDarkMode() {
+      const sysOn = localStorage.getItem(SYS_KEY) === "1";
+      const darkOn = localStorage.getItem(DARK_KEY) === "1";
+
+      if (sysOn) {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        applyDark(prefersDark);
+        const sysToggle = document.getElementById("system-theme-toggle");
+        const dmToggle = document.getElementById("dark-mode-toggle");
+        if (sysToggle) sysToggle.checked = true;
+        if (dmToggle) dmToggle.checked = prefersDark;
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+          if (localStorage.getItem(SYS_KEY) === "1") applyDark(e.matches);
+        });
+      } else {
+        applyDark(darkOn);
+        const dmToggle = document.getElementById("dark-mode-toggle");
+        if (dmToggle) dmToggle.checked = darkOn;
+      }
+    }
+
+    // Run immediately to prevent flash
+    (function () {
+      const sysOn = localStorage.getItem(SYS_KEY) === "1";
+      const darkOn = localStorage.getItem(DARK_KEY) === "1";
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (sysOn ? prefersDark : darkOn) document.body.classList.add("dark");
+    })();
+
+    document.addEventListener("DOMContentLoaded", initDarkMode);
       /* Use dynamic viewport height on phones — collapses with browser chrome */
       @supports (height: 100dvh) {
         html,
