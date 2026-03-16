@@ -22,259 +22,33 @@
   --font-head: 'Syne', sans-serif; --font-body: 'Plus Jakarta Sans', sans-serif;
   --red: #ef4444; --sidebar-w: 272px;
 }
-
 /* ── Dark mode ── */
 body.dark {
-  --bg: #12101c;
-  --surface: #1a1730;
-  --border: #2e2748;
-  --text: #e0d8f7;
-  --text-mid: #9d91c4;
-  --text-light: #6b5f8a;
+  --bg: #0f0d16; --surface: #1a1625; --border: #2d2640;
+  --text: #f0ecff; --text-mid: #a89cc8; --text-light: #6b5b8e;
 }
-
-/* Sidebar */
-body.dark .sidebar,
-body.dark #sidebar {
-  background: #0d0b17;
-  border-color: #2a2445;
-}
-body.dark .sidebar-header { border-bottom-color: #2a2445; }
-body.dark .sidebar-footer { border-top-color: #2a2445; }
-body.dark .sidebar-user { background: #12101c; border-color: #2e2748; }
-body.dark .sidebar-user-name { color: #c4b8e8; }
-body.dark .sidebar-section-label { color: #6b5f8a; }
-
-/* History items */
-body.dark .history-item:hover { background: #1a1730; }
-body.dark .history-item.active { background: rgba(139,92,246,.12); }
-body.dark .history-item-title { color: #c4b8e8; }
-body.dark .history-item.active .history-item-title { color: #c4b5fd; }
-body.dark .history-item-date { color: #6b5f8a; }
-body.dark .sidebar-chat-item { color: #9d91c4; }
-body.dark .sidebar-chat-item:hover,
-body.dark .sidebar-chat-item.active { background: #1a1730; }
-
-/* New chat button */
-body.dark .btn-new-chat {
-  background: #1a1730;
-  border-color: #2e2748;
-  color: #e0d8f7;
-  box-shadow: none;
-}
-body.dark .btn-new-chat:hover { background: #211d3a; }
-
-/* Header */
-body.dark header,
-body.dark #chat-header {
-  background: rgba(13,11,23,.94);
-  border-color: #2a2445;
-}
-body.dark .btn-toggle-sidebar {
-  background: #1a1730;
-  border-color: #2e2748;
-}
-body.dark .btn-toggle-sidebar span { background: #9d91c4; }
-body.dark .btn-toggle-sidebar:hover {
-  border-color: #8b5cf6;
-  box-shadow: 0 2px 12px rgba(139,92,246,.2);
-}
-body.dark .status-badge {
-  background: rgba(139,92,246,.1);
-  border-color: rgba(139,92,246,.22);
-  color: #c4b5fd;
-}
-body.dark .btn-logout {
-  background: #1a1730;
-  border-color: #2e2748;
-  color: #9d91c4;
-}
-body.dark .btn-logout:hover { border-color: #8b5cf6; color: #c4b5fd; }
-
-/* Chat bubbles */
-body.dark .msg.ai .bubble,
-body.dark .chat-bubble.ai {
-  background: #1a1730;
-  border-color: #2e2748;
-  color: #e0d8f7;
-}
+body.dark .sidebar { background: #13101f; border-color: #2d2640; }
+body.dark #chat-header { background: rgba(19,16,31,.96); border-color: #2d2640; }
+body.dark .chat-bubble.ai { background: #1a1625; border-color: #2d2640; color: #f0ecff; }
 body.dark .chat-bubble.user { background: linear-gradient(135deg,#7c3aed,#6d28d9); }
-body.dark .typing-bubble {
-  background: #1a1730;
-  border-color: #2e2748;
-}
-
-/* Input area */
-body.dark .input-wrap { background: #0d0b17; border-color: #2a2445; }
-body.dark .input-card {
-  background: #1a1730;
-  border-color: #2e2748;
-  box-shadow: none;
-}
-body.dark .input-card:focus-within {
-  border-color: #8b5cf6;
-  box-shadow: 0 4px 32px rgba(139,92,246,.14);
-}
-body.dark #user-input { color: #e0d8f7; }
-body.dark #user-input::placeholder { color: #4d4370; }
-body.dark .chat-input { background: #1a1730; border-color: #2e2748; color: #e0d8f7; }
-body.dark .chat-input::placeholder { color: #4d4370; }
-body.dark .message-input-area { background: #0d0b17; border-color: #2a2445; }
-body.dark #input-area { background: #12101c; }
-
-/* Chips / suggestion cards */
-body.dark .chip {
-  background: #1a1730;
-  border-color: #2e2748;
-  color: #9d91c4;
-  box-shadow: none;
-}
-body.dark .chip:hover {
-  border-color: #8b5cf6;
-  color: #c4b5fd;
-  box-shadow: 0 4px 18px rgba(139,92,246,.13);
-}
-
-/* Auth card */
-body.dark .auth-card {
-  background: #1a1730;
-  border-color: #2e2748;
-  box-shadow: 0 8px 48px rgba(0,0,0,.5);
-}
-body.dark .auth-tabs { background: #12101c; }
-body.dark .auth-tab.active {
-  background: #2a2248;
-  color: #c4b5fd;
-  box-shadow: 0 2px 8px rgba(0,0,0,.4);
-}
-body.dark .field-input {
-  background: #12101c;
-  border-color: #2e2748;
-  color: #e0d8f7;
-}
-body.dark .field-input::placeholder { color: #4d4370; }
-body.dark .field-input:focus {
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139,92,246,.2);
-}
-body.dark .btn-try {
-  background: #1a1730;
-  border-color: #2e2748;
-  color: #9d91c4;
-}
-body.dark .btn-try:hover {
-  border-color: #8b5cf6;
-  color: #c4b5fd;
-  background: #211d3a;
-  box-shadow: 0 4px 18px rgba(139,92,246,.18);
-}
-body.dark .divider { color: #4d4370; }
-body.dark .divider::before,
-body.dark .divider::after { background: #2e2748; }
-
-/* Settings modal */
-body.dark #settings-overlay .settings-card,
-body.dark .settings-card {
-  background: #1a1730;
-  border-color: #2e2748;
-  box-shadow: 0 20px 70px rgba(0,0,0,.4);
-}
-body.dark .settings-tabs { border-color: #2a2445; }
-body.dark .settings-tab { color: #9d91c4; }
-body.dark .settings-tab.active { color: #c4b5fd; border-bottom-color: #8b5cf6; }
-body.dark .settings-close {
-  background: #1a1730;
-  border-color: #2e2748;
-  color: #9d91c4;
-}
-body.dark .settings-close:hover { background: #211d3a; color: #e0d8f7; }
-body.dark .settings-input {
-  background: #12101c;
-  border-color: #2e2748;
-  color: #e0d8f7;
-}
-body.dark .settings-input::placeholder { color: #4d4370; }
-body.dark .settings-input:focus {
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139,92,246,.2);
-}
-body.dark .settings-field label { color: #9d91c4; }
-body.dark .settings-section-label { color: #6b5f8a; }
-body.dark .btn-avatar-upload {
-  background: #12101c;
-  border-color: #2e2748;
-  color: #9d91c4;
-}
-body.dark .btn-avatar-upload:hover {
-  border-color: #8b5cf6;
-  color: #c4b5fd;
-}
-body.dark .danger-zone {
-  background: rgba(239,68,68,.05);
-  border-color: rgba(239,68,68,.2);
-}
-body.dark .btn-danger { background: #1a1730; }
-body.dark .dm-slider { background: #3d3557; }
-
-/* AI modal / other AIs */
-body.dark .aim-card { background: #1a1730; border-color: #2e2748; }
-body.dark .aim-tabs { border-color: #2a2445; }
-body.dark .aim-tab { color: #9d91c4; }
-body.dark .aim-tab.active { color: #c4b5fd; border-bottom-color: #8b5cf6; }
-body.dark .other-ai-card { background: #1a1730; border-color: #2e2748; }
-body.dark .other-ai-card:hover { background: #211d3a; }
-
-/* Memory panel */
-body.dark #memory-panel { background: #1a1730; border-color: #2e2748; }
-
-/* Dev agent */
-body.dark .dev-bubble-ai {
-  background: #1a1730;
-  border-color: #2e2748;
-  color: #e0d8f7;
-}
-body.dark .dev-bubble-ai pre { background: rgba(255,255,255,.04); }
-body.dark .dev-bubble-ai code { background: rgba(255,255,255,.06); }
-body.dark .dev-typing { background: #1a1730; border-color: #2e2748; }
-
-/* Homework helper */
-body.dark .hw-bubble-ai {
-  background: #1a1730;
-  border-color: #2e2748;
-  color: #e0d8f7;
-}
-body.dark .hw-typing { background: #1a1730; border-color: #2e2748; }
-body.dark .hw-subj { border-color: #2e2748; color: #9d91c4; }
-
-/* Admin popup */
-body.dark .admin-popup-card {
-  background: #1a1730;
-  border-color: #2e2748;
-  box-shadow: 0 16px 60px rgba(0,0,0,.4);
-}
-
-/* Expired overlay */
-body.dark #expired-overlay { background: rgba(13,11,23,.92); }
-body.dark .expired-card {
-  background: #1a1730;
-  border-color: #2e2748;
-  box-shadow: 0 12px 56px rgba(0,0,0,.4);
-}
-
-/* Logo glow */
-body.dark .logo-mark,
-body.dark .auth-logo-mark,
-body.dark .sidebar-logo-mark,
-body.dark .welcome-orb {
-  box-shadow: 0 0 28px rgba(139,92,246,.38);
-}
-
-/* Background blobs — visible but not overwhelming */
-body.dark .mesh { opacity: 0.45; }
-body.dark .blob-1 { opacity: 0.22; }
-body.dark .blob-2 { opacity: 0.18; }
-body.dark .blob-3 { opacity: 0.16; }
-
+body.dark .input-wrap { background: #13101f; border-color: #2d2640; }
+body.dark .chat-input { background: #1a1625; border-color: #2d2640; color: #f0ecff; }
+body.dark .chat-input::placeholder { color: #6b5b8e; }
+body.dark .message-input-area { background: #0f0d16; border-color: #2d2640; }
+body.dark #settings-overlay .settings-card { background: #1a1625; border-color: #2d2640; }
+body.dark .settings-input { background: #13101f; border-color: #2d2640; color: #f0ecff; }
+body.dark .settings-input::placeholder { color: #6b5b8e; }
+body.dark .settings-tabs { border-color: #2d2640; }
+body.dark .aim-card { background: #1a1625; border-color: #2d2640; }
+body.dark .other-ai-card { background: #1a1625; border-color: #2d2640; }
+body.dark .other-ai-card:hover { background: #221d35; }
+body.dark #memory-panel { background: #1a1625; border-color: #2d2640; }
+body.dark .chip { background: #1a1625; border-color: #2d2640; color: #a89cc8; }
+body.dark .sidebar-chat-item { color: #a89cc8; }
+body.dark .sidebar-chat-item:hover, body.dark .sidebar-chat-item.active { background: #221d35; }
+body.dark .btn-new-chat { background: #221d35; border-color: #2d2640; color: #f0ecff; }
+body.dark .btn-new-chat:hover { background: #2d2640; }
+body.dark .mesh { opacity: 0.4; }
 html, body { height: 100%; background: var(--bg); font-family: var(--font-body); color: var(--text); overflow: hidden; }
 /* Use dynamic viewport height on phones — collapses with browser chrome */
 @supports (height: 100dvh) {
@@ -553,6 +327,9 @@ header {
 .expired-card p { font-size: .88rem; color: var(--text-mid); line-height: 1.7; margin-bottom: 24px; }
 .hidden { display: none !important; }
 
+/* ══════════════════════════════════════════════
+   MOBILE / PHONE MODE  (≤ 640px)
+══════════════════════════════════════════════ */
 /* ══════════════════════════════════════════════
    MOBILE / PHONE MODE  (≤ 640px)
 ══════════════════════════════════════════════ */
@@ -881,12 +658,6 @@ body.dark .dm-slider { background:#3d3557; }
 .admin-popup-card.error .admin-popup-title{background:linear-gradient(135deg,#ef4444,#dc2626);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .btn-close-popup{padding:11px 32px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--grad-a),var(--grad-b));color:white;font-family:var(--font-head);font-size:.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(124,58,237,.35);transition:all .2s}
 .btn-close-popup:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(124,58,237,.5)}
-</style>
-</head>
-<body>
-<!-- YOUR EXISTING HTML BODY GOES HERE -->
-</body>
-</html>
 
 /* ── ADMIN POPUP ── */
 #admin-popup {
