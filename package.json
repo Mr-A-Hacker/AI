@@ -5,7 +5,9 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "build:index": "node scripts/build-index.js",
+    "check:index": "node scripts/build-index.js --check"
   },
   "dependencies": {
     "express": "^4.18.2"

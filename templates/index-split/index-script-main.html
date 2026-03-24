@@ -1,0 +1,2300 @@
+<script>
+      // ── Session (kept in localStorage for persistence across refreshes) ──
+      const SESSION_KEY = "viora_session";
+      const CHAT_STATE_KEY = "viora_chat_state";
+      const getSession = () => {
+        try {
+          return JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
+        } catch {
+          return null;
+        }
+      };
+      const saveSession = (s) => localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+      const getChatState = () => {
+        try {
+          return JSON.parse(localStorage.getItem(CHAT_STATE_KEY) || "null");
+        } catch {
+          return null;
+        }
+      };
+      const saveChatState = (s) => localStorage.setItem(CHAT_STATE_KEY, JSON.stringify(s));
+      const clearChatState = () => localStorage.removeItem(CHAT_STATE_KEY);
+
+      // ── State ──
+      let currentChatId = null;
+      let history = [];
+      let busy = false;
+      let trialSeconds = 300;
+      let timerInterval = null;
+      let sidebarOpen = false;
+      let currentCoords = null; // cached GPS — grabbed once
+      let cachedWeatherData = null; // { place, weather, ts }
+      const WEATHER_TTL_MS = 10 * 60 * 1000;
+
+      // ── Auth ──
+      function showAuth(tab) {
+        document.getElementById("landing-screen").classList.add("hidden");
+        document.getElementById("auth-screen").style.display = "";
+        switchTab(tab || "login");
+      }
+
+      function switchTab(tab) {
+        document
+          .querySelectorAll(".auth-tab")
+          .forEach((t, i) =>
+            t.classList.toggle("active", (tab === "login" && i === 0) || (tab === "signup" && i === 1)),
+          );
+        document.getElementById("login-form").classList.toggle("hidden", tab !== "login");
+        document.getElementById("signup-form").classList.toggle("hidden", tab !== "signup");
+      }
+
+      async function doLogin() {
+        const email = document.getElementById("login-email").value.trim().toLowerCase();
+        const pw = document.getElementById("login-password").value;
+        const err = document.getElementById("login-error");
+        err.textContent = "";
+        if (!email || !pw) {
+          err.textContent = "Please fill in all fields.";
+          return;
+        }
+        err.textContent = "Logging in…";
+        try {
+          const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password: pw }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            err.textContent = data.error || "Login failed.";
+            return;
+          }
+          err.textContent = "";
+          saveSession({ email, name: data.name, isTrial: false });
+          openChat(data.name, false, email);
+          requestNotificationPermission();
+        } catch {
+          err.textContent = "Network error. Try again.";
+        }
+      }
+
+      async function doSignup() {
+        const name = document.getElementById("signup-name").value.trim();
+        const email = document.getElementById("signup-email").value.trim().toLowerCase();
+        const pw = document.getElementById("signup-password").value;
+        const err = document.getElementById("signup-error");
+        err.textContent = "";
+        if (!name || !email || !pw) {
+          err.textContent = "Please fill in all fields.";
+          return;
+        }
+        if (pw.length < 6) {
+          err.textContent = "Password must be at least 6 characters.";
+          return;
+        }
+        if (!email.includes("@")) {
+          err.textContent = "Please enter a valid email.";
+          return;
+        }
+        err.textContent = "Creating account…";
+        try {
+          const res = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email, password: pw }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            err.textContent = data.error || "Signup failed.";
+            return;
+          }
+          err.textContent = "";
+          saveSession({ email, name: data.name, isTrial: false });
+          openChat(data.name, false, email);
+          requestNotificationPermission();
+        } catch {
+          err.textContent = "Network error. Try again.";
+        }
+      }
+
+      async function startTrial() {
+        const btns = document.querySelectorAll(".btn-try");
+        btns.forEach((b) => {
+          b.textContent = "Checking…";
+          b.disabled = true;
+        });
+        try {
+          const res = await fetch("/api/trial-start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+          const data = await res.json();
+          if (!data.allowed) {
+            const activeForm = document.querySelector(".auth-form:not(.hidden)");
+            const errEl = activeForm ? activeForm.querySelector(".auth-error") : document.getElementById("login-error");
+            errEl.textContent = "⚠️ Sorry, you have already used your free trial.";
+            btns.forEach((b) => {
+              b.innerHTML = '⚡ Try for free <span class="try-badge">5 min</span>';
+              b.disabled = false;
+            });
+            return;
+          }
+        } catch (e) {}
+        btns.forEach((b) => {
+          b.innerHTML = '⚡ Try for free <span class="try-badge">5 min</span>';
+          b.disabled = false;
+        });
+        saveSession({ name: "Guest", isTrial: true });
+        openChat("Guest", true, null);
+      }
+
+      // ══════════════════════════════════════════
+      // SETTINGS
+      // ══════════════════════════════════════════
+      let pendingAvatarDataUrl = null;
+
+      function openSettings() {
+        const session = getSession();
+        if (!session) return;
+        // Pre-fill name
+        document.getElementById("settings-name").value = session.name || "";
+        // Load avatar
+        loadSettingsAvatar(session.email, session.name);
+        // Clear all messages & inputs
+        [
+          "settings-profile-pass",
+          "settings-new-email",
+          "settings-new-pass",
+          "settings-confirm-pass",
+          "settings-security-pass",
+          "settings-delete-pass",
+        ].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.value = "";
+        });
+        ["settings-profile-msg", "settings-security-msg", "settings-danger-msg"].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.className = "settings-msg";
+            el.textContent = "";
+          }
+        });
+        pendingAvatarDataUrl = null;
+        switchSettingsTab("profile");
+        document.getElementById("settings-overlay").classList.remove("hidden");
+      }
+
+      function closeSettings() {
+        document.getElementById("settings-overlay").classList.add("hidden");
+      }
+
+      function switchSettingsTab(tab) {
+        document.querySelectorAll(".settings-tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".settings-panel").forEach((p) => p.classList.remove("show"));
+        document.getElementById("stab-" + tab).classList.add("active");
+        document.getElementById("spanel-" + tab).classList.add("show");
+      }
+
+      async function loadSettingsAvatar(email, name) {
+        const prev = document.getElementById("settings-avatar-preview");
+        try {
+          const r = await fetch("/api/user/avatar?email=" + encodeURIComponent(email));
+          const d = await r.json();
+          if (d.avatar) {
+            prev.innerHTML = '<img src="' + d.avatar + '" />';
+            setSidebarAvatar(d.avatar);
+          } else {
+            prev.textContent = (name || "U")[0].toUpperCase();
+          }
+        } catch {
+          prev.textContent = (name || "U")[0].toUpperCase();
+        }
+      }
+
+      function setSidebarAvatar(src) {
+        const av = document.getElementById("sidebar-av");
+        if (av)
+          av.innerHTML = src
+            ? '<img src="' + src + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />'
+            : "";
+      }
+
+      function handleAvatarUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+          alert("Image must be under 2MB");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          pendingAvatarDataUrl = e.target.result;
+          const prev = document.getElementById("settings-avatar-preview");
+          prev.innerHTML = '<img src="' + pendingAvatarDataUrl + '" />';
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function setSettingsMsg(id, type, text) {
+        const el = document.getElementById(id);
+        el.className = "settings-msg " + type;
+        el.textContent = text;
+      }
+
+      async function saveProfile() {
+        const session = getSession();
+        if (!session) return;
+        const name = document.getElementById("settings-name").value.trim();
+        const pass = document.getElementById("settings-profile-pass").value;
+        if (!pass) {
+          setSettingsMsg("settings-profile-msg", "err", "Please enter your current password.");
+          return;
+        }
+        if (!name) {
+          setSettingsMsg("settings-profile-msg", "err", "Name cannot be empty.");
+          return;
+        }
+        const btn = document.querySelector("#spanel-profile .btn-settings-save");
+        btn.disabled = true;
+        btn.textContent = "Saving…";
+        try {
+          // Save avatar first if changed
+          if (pendingAvatarDataUrl) {
+            const ar = await fetch("/api/user/avatar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: session.email, avatar: pendingAvatarDataUrl }),
+            });
+            if (ar.ok) setSidebarAvatar(pendingAvatarDataUrl);
+          }
+          const res = await fetch("/api/user/update", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: session.email, currentPassword: pass, newName: name }),
+          });
+          const d = await res.json();
+          if (!res.ok) {
+            setSettingsMsg("settings-profile-msg", "err", d.error);
+            return;
+          }
+          // Update session
+          const s = getSession();
+          s.name = d.name;
+          localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+          document.getElementById("sidebar-username").textContent = d.name;
+          document.getElementById("sidebar-av").textContent = d.name[0].toUpperCase();
+          if (pendingAvatarDataUrl) setSidebarAvatar(pendingAvatarDataUrl);
+          pendingAvatarDataUrl = null;
+          setSettingsMsg("settings-profile-msg", "ok", "Profile updated successfully!");
+        } catch (e) {
+          setSettingsMsg("settings-profile-msg", "err", "Error: " + e.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Save Changes";
+        }
+      }
+
+      async function saveSecurity() {
+        const session = getSession();
+        if (!session) return;
+        const pass = document.getElementById("settings-security-pass").value;
+        const newEmail = document.getElementById("settings-new-email").value.trim();
+        const newPass = document.getElementById("settings-new-pass").value;
+        const confirmPass = document.getElementById("settings-confirm-pass").value;
+        if (!pass) {
+          setSettingsMsg("settings-security-msg", "err", "Enter your current password.");
+          return;
+        }
+        if (!newEmail && !newPass) {
+          setSettingsMsg("settings-security-msg", "err", "Enter a new email or new password.");
+          return;
+        }
+        if (newPass && newPass !== confirmPass) {
+          setSettingsMsg("settings-security-msg", "err", "New passwords do not match.");
+          return;
+        }
+        if (newPass && newPass.length < 6) {
+          setSettingsMsg("settings-security-msg", "err", "Password must be at least 6 characters.");
+          return;
+        }
+        const btn = document.querySelector("#spanel-security .btn-settings-save");
+        btn.disabled = true;
+        btn.textContent = "Saving…";
+        try {
+          const body = { email: session.email, currentPassword: pass };
+          if (newEmail) body.newEmail = newEmail;
+          if (newPass) body.newPassword = newPass;
+          const res = await fetch("/api/user/update", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const d = await res.json();
+          if (!res.ok) {
+            setSettingsMsg("settings-security-msg", "err", d.error);
+            return;
+          }
+          // Update session email if changed
+          if (newEmail && d.email) {
+            const s = getSession();
+            s.email = d.email;
+            localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+          }
+          setSettingsMsg(
+            "settings-security-msg",
+            "ok",
+            "Security settings updated! Please log in again if you changed your email.",
+          );
+          document.getElementById("settings-new-email").value = "";
+          document.getElementById("settings-new-pass").value = "";
+          document.getElementById("settings-confirm-pass").value = "";
+          document.getElementById("settings-security-pass").value = "";
+        } catch (e) {
+          setSettingsMsg("settings-security-msg", "err", "Error: " + e.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Update Security";
+        }
+      }
+
+      async function confirmDeleteAccount() {
+        const session = getSession();
+        if (!session) return;
+        const pass = document.getElementById("settings-delete-pass").value;
+        if (!pass) {
+          setSettingsMsg("settings-danger-msg", "err", "Enter your password to confirm.");
+          return;
+        }
+        if (!confirm("Are you absolutely sure? This will permanently delete your account and all your data.")) return;
+        const btn = document.querySelector(".btn-danger");
+        btn.disabled = true;
+        btn.textContent = "Deleting…";
+        try {
+          const res = await fetch("/api/user/delete", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: session.email, password: pass }),
+          });
+          const d = await res.json();
+          if (!res.ok) {
+            setSettingsMsg("settings-danger-msg", "err", d.error);
+            return;
+          }
+          closeSettings();
+          doLogout();
+        } catch (e) {
+          setSettingsMsg("settings-danger-msg", "err", "Error: " + e.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Delete My Account Forever";
+        }
+      }
+
+      // Load avatar on login
+      async function loadSidebarAvatarOnLogin(email, name) {
+        try {
+          const r = await fetch("/api/user/avatar?email=" + encodeURIComponent(email));
+          const d = await r.json();
+          if (d.avatar) setSidebarAvatar(d.avatar);
+          else document.getElementById("sidebar-av").textContent = (name || "U")[0].toUpperCase();
+        } catch {
+          document.getElementById("sidebar-av").textContent = (name || "U")[0].toUpperCase();
+        }
+      }
+
+      function doLogout() {
+        localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem(CHAT_STATE_KEY);
+        clearTimer();
+        history = [];
+        currentChatId = null;
+        clearChatWindow();
+        document.getElementById("welcome").style.display = "";
+        document.getElementById("expired-overlay").classList.remove("show");
+        document.getElementById("chat-screen").classList.add("hidden");
+
+        document.getElementById("sidebar-memory-btn").style.display = "none";
+        if (memoryOpen) toggleMemoryPanel();
+        document.getElementById("auth-screen").style.display = "none";
+        document.getElementById("landing-screen").classList.remove("hidden");
+        document.getElementById("input-card").classList.remove("disabled");
+        document.getElementById("input-hint-text").textContent = "Enter to send · Shift+Enter for new line";
+        if (sidebarOpen) toggleSidebar();
+      }
+
+      function goToSignup() {
+        doLogout();
+        switchTab("signup");
+      }
+
+      function openChat(name, isTrial, email) {
+        document.getElementById("landing-screen").classList.add("hidden");
+        document.getElementById("auth-screen").classList.add("hidden");
+        document.getElementById("chat-screen").classList.remove("hidden");
+        document.getElementById("user-label").textContent = name;
+        document.getElementById("sidebar-av").textContent = name[0].toUpperCase();
+        document.getElementById("sidebar-username").textContent = name;
+        if (email && !isTrial) loadSidebarAvatarOnLogin(email, name);
+
+        if (isTrial) {
+          document.getElementById("welcome-sub").textContent =
+            "You have 5 minutes to explore. Sign up to unlock unlimited access!";
+          document.getElementById("header-logout-btn").style.display = "";
+          document.querySelector(".btn-toggle-sidebar").style.visibility = "hidden";
+          startTimer();
+        } else {
+          document.getElementById("welcome-sub").textContent =
+            "Your AI assistant — ask me anything. Writing, coding, ideas, and more.";
+
+          document.getElementById("sidebar-memory-btn").style.display = "";
+          document.getElementById("header-logout-btn").style.display = "none"; // sidebar has logout
+          document.querySelector(".btn-toggle-sidebar").style.visibility = "";
+          renderHistory(email);
+          // Restore last chat on refresh
+          const savedChatId = localStorage.getItem(CHAT_STATE_KEY)
+            ? JSON.parse(localStorage.getItem(CHAT_STATE_KEY))?.chatId
+            : null;
+          if (savedChatId) {
+            loadChat(savedChatId);
+          } else {
+            startNewChat();
+          }
+        }
+      }
+
+      // ── Sidebar ──
+      function toggleSidebar() {
+        sidebarOpen = !sidebarOpen;
+        document.getElementById("sidebar").classList.toggle("collapsed", !sidebarOpen);
+        document.getElementById("sidebar-overlay").classList.toggle("show", sidebarOpen && window.innerWidth < 900);
+      }
+
+      // ── Chat history (B2-backed) ──
+      async function renderHistory(email) {
+        if (!email) return;
+        const list = document.getElementById("chat-history-list");
+        const empty = document.getElementById("history-empty");
+        list.querySelectorAll(".history-item").forEach((el) => el.remove());
+        try {
+          const res = await fetch(`/api/chats?email=${encodeURIComponent(email)}`);
+          const chats = await res.json();
+          if (!Array.isArray(chats) || chats.length === 0) {
+            empty.style.display = "";
+            return;
+          }
+          empty.style.display = "none";
+          chats.forEach((chat) => {
+            const item = document.createElement("div");
+            item.className = "history-item" + (chat.id === currentChatId ? " active" : "");
+            item.dataset.id = chat.id;
+            item.innerHTML = `
+        <span class="history-item-icon">💬</span>
+        <div class="history-item-text">
+          <div class="history-item-title">${escHtml(chat.title || "Untitled")}</div>
+          <div class="history-item-date">${chat.date || ""}</div>
+        </div>
+        <button class="history-item-del" onclick="deleteChat(event,'${chat.id}')" title="Delete">✕</button>`;
+            item.addEventListener("click", () => loadChat(chat.id));
+            list.appendChild(item);
+          });
+        } catch {
+          empty.style.display = "";
+        }
+      }
+
+      function newChat() {
+        const session = getSession();
+        if (!session || session.isTrial) return;
+        saveChatIfNeeded();
+        startNewChat();
+        if (window.innerWidth < 900) toggleSidebar();
+      }
+
+      function startNewChat() {
+        currentChatId = "chat_" + Date.now();
+        localStorage.removeItem(CHAT_STATE_KEY);
+        history = [];
+        clearChatWindow();
+        document.getElementById("welcome").style.display = "";
+        const session = getSession();
+        if (session?.email) renderHistory(session.email);
+      }
+
+      async function saveChatIfNeeded() {
+        const session = getSession();
+        if (!session?.email || history.length === 0) return;
+        const firstUserMsg = history.find((m) => m.role === "user");
+        if (!firstUserMsg) return;
+        const title = firstUserMsg.content.slice(0, 42) + (firstUserMsg.content.length > 42 ? "…" : "");
+        try {
+          await fetch("/api/chats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: session.email, chatId: currentChatId, title, messages: history }),
+          });
+          // Persist current chat id so refresh restores it
+          saveChatState({ chatId: currentChatId });
+        } catch (e) {
+          console.warn("Save chat failed:", e);
+        }
+      }
+
+      async function loadChat(id) {
+        const session = getSession();
+        if (!session?.email) return;
+        await saveChatIfNeeded();
+        try {
+          const res = await fetch(`/api/chats/${id}?email=${encodeURIComponent(session.email)}`);
+          if (!res.ok) return;
+          const chat = await res.json();
+          currentChatId = id;
+          localStorage.setItem(CHAT_STATE_KEY, JSON.stringify({ chatId: id }));
+          history = [...chat.messages];
+          clearChatWindow();
+          document.getElementById("welcome").style.display = "none";
+          history.forEach((m) => {
+            if (m.role !== "system") renderMsgFromHistory(m.role === "user" ? "user" : "ai", m.content);
+          });
+          renderHistory(session.email);
+          if (window.innerWidth < 900) toggleSidebar();
+        } catch (e) {
+          console.warn("Load chat failed:", e);
+        }
+      }
+
+      async function deleteChat(e, id) {
+        e.stopPropagation();
+        const session = getSession();
+        if (!session?.email) return;
+        try {
+          await fetch(`/api/chats/${id}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: session.email }),
+          });
+        } catch {}
+        if (id === currentChatId) startNewChat();
+        else renderHistory(session.email);
+      }
+
+      function clearChatWindow() {
+        document
+          .getElementById("chat-window")
+          .querySelectorAll(".msg")
+          .forEach((m) => m.remove());
+      }
+
+      function renderMsgFromHistory(role, text) {
+        const d = document.createElement("div");
+        d.className = `msg ${role}`;
+        const session = getSession();
+        const initials = session?.name ? session.name[0].toUpperCase() : "U";
+        d.innerHTML = `
+    <div class="av">${role === "ai" ? "V" : initials}</div>
+    <div class="bubble-wrap"><div class="bubble">${escHtml(text)}</div></div>`;
+        document.getElementById("chat-window").insertBefore(d, document.getElementById("typing"));
+        scrollBot();
+      }
+
+      // ── Timer ──
+      function startTimer() {
+        trialSeconds = 300;
+        document.getElementById("timer-pill").classList.add("show");
+        updateTimerDisplay();
+        timerInterval = setInterval(() => {
+          trialSeconds--;
+          updateTimerDisplay();
+          if (trialSeconds <= 0) {
+            clearTimer();
+            expireTrial();
+          }
+        }, 1000);
+      }
+
+      function updateTimerDisplay() {
+        const m = Math.floor(trialSeconds / 60),
+          s = trialSeconds % 60;
+        document.getElementById("timer-display").textContent = `${m}:${s.toString().padStart(2, "0")}`;
+      }
+
+      function clearTimer() {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        document.getElementById("timer-pill").classList.remove("show");
+      }
+
+      function expireTrial() {
+        document.getElementById("input-card").classList.add("disabled");
+        document.getElementById("input-hint-text").textContent = "Trial ended — sign up to continue";
+        document.getElementById("expired-overlay").classList.add("show");
+      }
+
+      // ── Chat ──
+      const chatEl = document.getElementById("chat-window");
+      const welcomeEl = document.getElementById("welcome");
+      const typingEl = document.getElementById("typing");
+      const inputEl = document.getElementById("user-input");
+      const charEl = document.getElementById("char-count");
+
+      inputEl.addEventListener("input", () => {
+        inputEl.style.height = "auto";
+        inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px";
+        charEl.textContent = inputEl.value.length + " / 4000";
+      });
+
+      inputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      // Paste image directly into chat (Ctrl+V / Cmd+V)
+      inputEl.addEventListener("paste", (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (const item of items) {
+          if (item.type.startsWith("image/")) {
+            e.preventDefault();
+            const file = item.getAsFile();
+            if (!file || file.size > 5 * 1024 * 1024) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+              attachedImage = reader.result;
+              document.getElementById("img-preview-thumb").src = attachedImage;
+              document.getElementById("img-preview-wrap").classList.add("show");
+            };
+            reader.readAsDataURL(file);
+            break;
+          }
+        }
+      });
+      // Also allow pasting anywhere on the page when input is focused
+      document.addEventListener("paste", (e) => {
+        if (document.activeElement === inputEl) return; // already handled above
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (const item of items) {
+          if (item.type.startsWith("image/")) {
+            e.preventDefault();
+            const file = item.getAsFile();
+            if (!file || file.size > 5 * 1024 * 1024) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+              attachedImage = reader.result;
+              document.getElementById("img-preview-thumb").src = attachedImage;
+              document.getElementById("img-preview-wrap").classList.add("show");
+              inputEl.focus();
+            };
+            reader.readAsDataURL(file);
+            break;
+          }
+        }
+      });
+
+      function scrollBot() {
+        chatEl.scrollTo({
+          top: chatEl.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+
+      // IMPROVED addMsg function with proper formatting
+      function addMsg(role, text) {
+        const now = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+        const d = document.createElement("div");
+        d.className = `msg ${role}`;
+        const session = getSession();
+        const initials = session?.name ? session.name[0].toUpperCase() : "U";
+
+        // Format the text properly - convert markdown-style to HTML
+        let formattedText = text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+          .replace(/\*(.+?)\*/g, "<em>$1</em>")
+          .replace(/`([^`]+)`/g, "<code>$1</code>")
+          .replace(/^- (.+)$/gm, "<li>$1</li>")
+          .replace(/(<li>.*<\/li>\n?)+/g, "<ul>$&</ul>")
+          .replace(/\n\n/g, "</p><p>")
+          .replace(/\n/g, "<br>");
+
+        // Wrap in paragraph if not starting with HTML tag
+        if (!formattedText.startsWith("<")) {
+          formattedText = "<p>" + formattedText + "</p>";
+        }
+
+        d.innerHTML = `
+    <div class="av">${role === "ai" ? "V" : initials}</div>
+    <div class="bubble-wrap">
+      <div class="bubble">${formattedText}</div>
+      <div class="msg-time">${now}</div>
+    </div>`;
+
+        const chatEl = document.getElementById("chat-window");
+        const typingEl = document.getElementById("typing");
+        chatEl.insertBefore(d, typingEl);
+        scrollBot();
+      }
+
+      function escHtml(t) {
+        return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+      }
+
+      function quickSend(btn) {
+        inputEl.value = btn.textContent.replace(/^\S+\s/, "").trim();
+        sendMessage();
+      }
+
+      function isImageRequest(text) {
+        return (
+          /^(draw|generate|create|make|paint|show|imagine|design|render|sketch|illustrate|produce)\s+(me\s+)?(a|an|the|some)?\s*(image|picture|photo|illustration|artwork|painting|portrait|wallpaper|logo|icon|scene|drawing|sketch|visual|poster|banner|avatar|cartoon|realistic|anime|fantasy|pixel|art)?/i.test(
+            text.trim(),
+          ) ||
+          /^(can you|please|could you).*(draw|generate|create|make|paint|design|render|illustrate)/i.test(
+            text.trim(),
+          ) ||
+          /\b(generate|create|draw|make|paint|render)\s+(an?|the|some|me|us)?\s*(image|picture|photo|illustration|artwork|painting|portrait)/i.test(
+            text,
+          )
+        );
+      }
+
+      function addCodeImageMsg(prompt, svgCode) {
+        const now = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+        const msgId = "img_" + Date.now();
+        const d = document.createElement("div");
+        d.className = "msg ai";
+
+        // Create wrapper
+        const wrap = document.createElement("div");
+        wrap.style.cssText = "display:flex;align-items:flex-start;gap:10px;";
+
+        const av = document.createElement("div");
+        av.className = "av";
+        av.style.cssText =
+          "background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;";
+        av.textContent = "V";
+
+        const bwrap = document.createElement("div");
+        bwrap.className = "bubble-wrap";
+
+        const bubble = document.createElement("div");
+        bubble.className = "img-bubble";
+        bubble.style.cssText = "padding:10px;max-width:360px;";
+
+        // Render SVG into canvas for PNG download
+        const canvas = document.createElement("canvas");
+        canvas.width = 800;
+        canvas.height = 800;
+        canvas.style.cssText =
+          "width:100%;border-radius:14px;display:block;cursor:pointer;image-rendering:high-quality;";
+        canvas.title = "Click to enlarge";
+
+        // Use high-DPI rendering
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = 800 * dpr;
+        canvas.height = 800 * dpr;
+        canvas.style.width = "100%";
+        canvas.style.height = "auto";
+
+        const svgBlob = new Blob([svgCode], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(svgBlob);
+        const img = new Image();
+        img.onload = () => {
+          const ctx = canvas.getContext("2d");
+          ctx.scale(dpr, dpr);
+          ctx.drawImage(img, 0, 0, 800, 800);
+          URL.revokeObjectURL(url);
+        };
+        img.onerror = () => {
+          // Fallback: render SVG directly in an img tag
+          canvas.style.display = "none";
+          const fallback = document.createElement("img");
+          fallback.src = url;
+          fallback.style.cssText = "width:100%;border-radius:14px;display:block;cursor:pointer;";
+          fallback.onclick = () => openLightbox(url);
+          bubble.insertBefore(fallback, canvas);
+        };
+        img.src = url;
+
+        canvas.addEventListener("click", () => {
+          // Wait for image to be fully rendered
+          setTimeout(() => {
+            const lb = document.getElementById("img-lightbox");
+            const lbImg = document.getElementById("lightbox-img");
+            lbImg.src = canvas.toDataURL("image/png");
+            lb.classList.add("show");
+          }, 100);
+        });
+
+        const caption = document.createElement("div");
+        caption.className = "img-caption";
+        caption.textContent = "🎨 " + (prompt.length > 80 ? prompt.slice(0, 80) + "…" : prompt);
+
+        // Download button
+        const dlBtn = document.createElement("button");
+        dlBtn.textContent = "⬇️ Download image";
+        dlBtn.style.cssText =
+          "margin-top:8px;padding:6px 14px;border-radius:10px;border:1.5px solid var(--border);background:none;color:var(--text-mid);font-family:var(--font-body);font-size:.74rem;font-weight:600;cursor:pointer;transition:all .2s;";
+        dlBtn.onmouseenter = () => (dlBtn.style.borderColor = "var(--violet-light)");
+        dlBtn.onmouseleave = () => (dlBtn.style.borderColor = "var(--border)");
+        dlBtn.onclick = () => {
+          const link = document.createElement("a");
+          link.download = "viora-image.png";
+          link.href = canvas.toDataURL("image/png");
+          link.click();
+        };
+
+        const timeEl = document.createElement("div");
+        timeEl.className = "msg-time";
+        timeEl.textContent = now;
+
+        bubble.appendChild(canvas);
+        bubble.appendChild(caption);
+        bubble.appendChild(dlBtn);
+        bwrap.appendChild(bubble);
+        bwrap.appendChild(timeEl);
+        d.appendChild(av);
+        d.appendChild(bwrap);
+
+        chatEl.insertBefore(d, typingEl);
+        scrollBot();
+      }
+
+      function openLightbox(src) {
+        document.getElementById("lightbox-img").src = src;
+        document.getElementById("img-lightbox").classList.add("show");
+      }
+
+      function closeLightbox() {
+        document.getElementById("img-lightbox").classList.remove("show");
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeLightbox();
+      });
+
+      // ── AI Tools Modal ──
+      let aimCurrentTab = "tools";
+      let humStyle = "Casual";
+
+      function openAiModal(tab) {
+        document.getElementById("ai-modal").classList.add("show");
+        switchAimTab(tab || "tools");
+      }
+      function closeAiModal() {
+        document.getElementById("ai-modal").classList.remove("show");
+      }
+
+      // ── Weather Tool helpers ──
+      function weatherCodeToIcon(code) {
+        if (code >= 395) return "⛈️";
+        if (code >= 389) return "🌩️";
+        if (code >= 374) return "🌨️";
+        if (code >= 362) return "🌧️";
+        if (code >= 338) return "❄️";
+        if (code >= 314) return "🌨️";
+        if (code >= 293) return "🌦️";
+        if (code >= 266) return "🌧️";
+        if (code >= 248) return "🌫️";
+        if (code >= 230) return "❄️";
+        if (code >= 200) return "⛈️";
+        if (code >= 176) return "🌦️";
+        if (code >= 143) return "🌫️";
+        if (code >= 122) return "☁️";
+        if (code >= 116) return "⛅";
+        return "☀️";
+      }
+
+      function weatherCodeToBg(code) {
+        if (code >= 389) return "linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)";
+        if (code >= 266) return "linear-gradient(160deg,#1e293b 0%,#1a3a5c 60%,#1e4976 100%)";
+        if (code >= 143) return "linear-gradient(160deg,#2d3748 0%,#4a5568 60%,#718096 100%)";
+        // Day time
+        const h = new Date().getHours();
+        if (h >= 20 || h < 5) return "linear-gradient(160deg,#0f172a 0%,#1e1b4b 50%,#312e81 100%)";
+        if (h < 7) return "linear-gradient(160deg,#1e293b 0%,#7c2d12 50%,#ea580c 100%)";
+        if (h >= 18) return "linear-gradient(160deg,#312e81 0%,#7c3aed 40%,#db2777 100%)";
+        return "linear-gradient(160deg,#0369a1 0%,#0284c7 50%,#38bdf8 100%)";
+      }
+
+      function renderWeatherCard(w, locationName) {
+        const icon = weatherCodeToIcon(w.code || 0);
+        const bg = weatherCodeToBg(w.code || 0);
+
+        const forecastHTML = (w.daily || [])
+          .map(
+            (d) => `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:rgba(255,255,255,.08);border-radius:12px;padding:10px 6px;min-width:46px;flex:1;">
+      <span style="font-size:.65rem;opacity:.65;font-weight:600;">${d.day}</span>
+      <span style="font-size:1.1rem;">${weatherCodeToIcon(d.code)}</span>
+      <span style="font-size:.72rem;font-weight:700;">${d.high}°</span>
+      <span style="font-size:.65rem;opacity:.5;">${d.low}°</span>
+    </div>`,
+          )
+          .join("");
+
+        return `
+    <div style="${bg};border-radius:20px;padding:22px 20px 18px;color:#fff;font-family:var(--font-body);overflow:hidden;position:relative;box-shadow:0 12px 40px rgba(0,0,0,.35);">
+      <!-- Decorative orb -->
+      <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.06);pointer-events:none;"></div>
+      <div style="position:absolute;top:10px;right:10px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.04);pointer-events:none;"></div>
+
+      <!-- Location + badge -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div>
+          <div style="font-size:.7rem;opacity:.55;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:3px;">📍 Your Weather</div>
+          <div style="font-size:1rem;font-weight:700;opacity:.95;">${locationName}</div>
+        </div>
+        <div style="font-size:3.5rem;line-height:1;filter:drop-shadow(0 2px 8px rgba(0,0,0,.3));">${icon}</div>
+      </div>
+
+      <!-- Temp -->
+      <div style="margin-bottom:6px;">
+        <span style="font-size:4rem;font-weight:800;line-height:1;letter-spacing:-2px;">${w.tempF}°</span>
+        <span style="font-size:1.5rem;opacity:.6;font-weight:300;">F</span>
+      </div>
+      <div style="font-size:.88rem;opacity:.75;margin-bottom:4px;font-weight:500;">${w.desc}</div>
+      <div style="font-size:.78rem;opacity:.5;margin-bottom:20px;">Feels like ${w.feelsF}°F</div>
+
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;">
+        <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(4px);border-radius:12px;padding:10px 6px;text-align:center;border:1px solid rgba(255,255,255,.1);">
+          <div style="font-size:1.2rem;margin-bottom:2px;">💧</div>
+          <div style="font-size:.78rem;font-weight:700;">${w.humidity}%</div>
+          <div style="font-size:.6rem;opacity:.5;margin-top:2px;">Humidity</div>
+        </div>
+        <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(4px);border-radius:12px;padding:10px 6px;text-align:center;border:1px solid rgba(255,255,255,.1);">
+          <div style="font-size:1.2rem;margin-bottom:2px;">💨</div>
+          <div style="font-size:.78rem;font-weight:700;">${w.windMph}<span style="font-size:.6rem;opacity:.6;">mph</span></div>
+          <div style="font-size:.6rem;opacity:.5;margin-top:2px;">Wind</div>
+        </div>
+        <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(4px);border-radius:12px;padding:10px 6px;text-align:center;border:1px solid rgba(255,255,255,.1);">
+          <div style="font-size:1.2rem;margin-bottom:2px;">👁️</div>
+          <div style="font-size:.78rem;font-weight:700;">${w.visibility}<span style="font-size:.6rem;opacity:.6;">mi</span></div>
+          <div style="font-size:.6rem;opacity:.5;margin-top:2px;">Visibility</div>
+        </div>
+        <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(4px);border-radius:12px;padding:10px 6px;text-align:center;border:1px solid rgba(255,255,255,.1);">
+          <div style="font-size:1.2rem;margin-bottom:2px;">☀️</div>
+          <div style="font-size:.78rem;font-weight:700;">${w.uvIndex}</div>
+          <div style="font-size:.6rem;opacity:.5;margin-top:2px;">UV Index</div>
+        </div>
+      </div>
+
+      <!-- 7-day forecast -->
+      <div style="border-top:1px solid rgba(255,255,255,.12);padding-top:14px;">
+        <div style="font-size:.65rem;opacity:.5;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;">7-Day Forecast</div>
+        <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;">
+          ${forecastHTML}
+        </div>
+      </div>
+
+      <!-- Viora badge -->
+      <div style="margin-top:14px;text-align:right;">
+        <span style="font-size:.62rem;opacity:.35;font-weight:600;letter-spacing:.04em;">⚡ VIORA WEATHER</span>
+      </div>
+    </div>`;
+      }
+
+      function setWeatherLoading() {
+        const el = document.getElementById("weather-tool-result");
+        el.innerHTML = `
+    <div style="background:rgba(124,58,237,.06);border-radius:16px;padding:24px;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:8px;animation:tdB 1.1s ease-in-out infinite;">🌍</div>
+      <div style="font-size:.85rem;color:var(--text-mid);font-weight:600;">Fetching weather…</div>
+    </div>`;
+      }
+
+      async function fetchWeatherGPS() {
+        const btn = document.getElementById("btn-gps-weather");
+        const resultEl = document.getElementById("weather-tool-result");
+        if (!navigator.geolocation) {
+          resultEl.innerHTML =
+            '<div style="color:#f87171;font-size:.82rem;padding:8px;">GPS not supported on this browser.</div>';
+          return;
+        }
+        btn.disabled = true;
+        btn.innerHTML = "⏳ Getting location…";
+        setWeatherLoading();
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            try {
+              const { latitude: lat, longitude: lon } = pos.coords;
+              const [wRes, geoRes] = await Promise.all([
+                fetch(`/api/weather?lat=${lat}&lon=${lon}`),
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`),
+              ]);
+              const wData = await wRes.json();
+              const geoData = await geoRes.json();
+              if (wData.error) throw new Error(wData.error);
+              const w = wData.weather || wData;
+              const city =
+                geoData.address?.city ||
+                geoData.address?.town ||
+                geoData.address?.village ||
+                geoData.address?.county ||
+                "Your Location";
+              const country = geoData.address?.country_code?.toUpperCase() || "";
+              resultEl.innerHTML = renderWeatherCard(w, `${city}${country ? ", " + country : ""}`);
+            } catch (e) {
+              resultEl.innerHTML = `<div style="color:#f87171;font-size:.82rem;padding:8px;">Error: ${e.message}</div>`;
+            } finally {
+              btn.disabled = false;
+              btn.innerHTML = "📍 Use My Location";
+            }
+          },
+          (err) => {
+            btn.disabled = false;
+            btn.innerHTML = "📍 Use My Location";
+            resultEl.innerHTML = `<div style="color:#f87171;font-size:.82rem;padding:8px;">Location denied. Please search a city instead.</div>`;
+          },
+          { timeout: 10000 },
+        );
+      }
+
+      async function fetchWeatherForCity() {
+        const city = document.getElementById("weather-city-input").value.trim();
+        if (!city) return;
+        const btn = document.getElementById("btn-weather-search");
+        const resultEl = document.getElementById("weather-tool-result");
+        btn.disabled = true;
+        btn.textContent = "⏳";
+        setWeatherLoading();
+        try {
+          const geoRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`,
+          );
+          const geoData = await geoRes.json();
+          if (!geoData.length) {
+            resultEl.innerHTML =
+              '<div style="color:#f87171;font-size:.82rem;padding:8px;">City not found. Try a different name.</div>';
+            return;
+          }
+          const { lat, lon, display_name } = geoData[0];
+          const wRes = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
+          const wData = await wRes.json();
+          if (wData.error) throw new Error(wData.error);
+          const w = wData.weather || wData;
+          const locationName = display_name.split(",").slice(0, 2).join(",").trim();
+          resultEl.innerHTML = renderWeatherCard(w, locationName);
+        } catch (e) {
+          resultEl.innerHTML = `<div style="color:#f87171;font-size:.82rem;padding:8px;">Error: ${e.message}</div>`;
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "🔍";
+        }
+      }
+      function switchAimTab(tab) {
+        aimCurrentTab = tab;
+        document.querySelectorAll(".aim-tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".aim-panel").forEach((p) => p.classList.remove("show"));
+        const tabEl = document.getElementById("aim-tab-" + tab);
+        if (tabEl) tabEl.classList.add("active");
+        document.getElementById("aim-panel-" + tab).classList.add("show");
+        if (tab === "devagent") setTimeout(() => devScrollBottom(), 50);
+        if (tab === "homework") setTimeout(() => hwScrollBottom(), 50);
+      }
+
+      // ══════════════════════════════════════════
+      // AI DEVELOPER AGENT
+      // ══════════════════════════════════════════
+      let devHistory = [];
+      let devFileContent = null;
+      let devFileName = null;
+      let devBusy = false;
+
+      const DEV_SYSTEM = `You are an elite AI Developer Agent — the most knowledgeable, precise, and helpful coding assistant ever built. You have deep mastery of:
+
+**Languages:** JavaScript, TypeScript, Python, Rust, Go, Java, C/C++, C#, Swift, Kotlin, PHP, Ruby, Shell/Bash, SQL, and more.
+**Frameworks:** React, Next.js, Vue, Angular, Node.js, Express, FastAPI, Django, Spring, Flutter, and more.
+**Skills:** Architecture design, debugging, code review, refactoring, testing, security audits, performance optimization, DevOps, databases, APIs.
+
+When given code or files:
+- Analyze them thoroughly and explain what they do
+- Identify bugs, security issues, and improvement opportunities
+- Provide complete, working, production-quality solutions
+- Use code blocks with proper language tags (\`\`\`js, \`\`\`py, etc.)
+- Be specific, practical, and hands-on — no vague advice
+
+If given a ZIP file's contents, analyze all files together as a project.`;
+
+      function devScrollBottom() {
+        const chat = document.getElementById("dev-chat");
+        if (chat) chat.scrollTop = chat.scrollHeight;
+      }
+
+      function devAddMsg(role, html) {
+        const chat = document.getElementById("dev-chat");
+        const session = getSession();
+        const initials = (session?.name || "U")[0].toUpperCase();
+        const isAi = role === "ai";
+        const wrapper = document.createElement("div");
+        wrapper.className = "dev-msg " + (isAi ? "dev-ai" : "dev-user");
+        wrapper.innerHTML = isAi
+          ? `<div class="dev-av-ai">💻</div><div class="dev-bubble-ai">${html}</div>`
+          : `<div class="dev-bubble-user">${html}</div><div class="dev-av-user">${initials}</div>`;
+        chat.appendChild(wrapper);
+        devScrollBottom();
+        return wrapper;
+      }
+
+      function devShowTyping() {
+        const chat = document.getElementById("dev-chat");
+        const el = document.createElement("div");
+        el.className = "dev-msg dev-ai";
+        el.id = "dev-typing-indicator";
+        el.innerHTML = `<div class="dev-av-ai">💻</div><div class="dev-typing"><div class="dev-dot"></div><div class="dev-dot"></div><div class="dev-dot"></div></div>`;
+        chat.appendChild(el);
+        devScrollBottom();
+      }
+
+      function devHideTyping() {
+        const el = document.getElementById("dev-typing-indicator");
+        if (el) el.remove();
+      }
+
+      function devFormatResponse(text) {
+        // Render markdown-like code blocks and bold
+        return text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(
+            /```(\w*)\n?([\s\S]*?)```/g,
+            (_, lang, code) => `<pre><code class="lang-${lang}">${code.trim()}</code></pre>`,
+          )
+          .replace(/`([^`]+)`/g, "<code>$1</code>")
+          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+          .replace(/^#{1,3} (.+)$/gm, '<strong style="font-size:.92rem;display:block;margin:6px 0 2px;">$1</strong>')
+          .replace(/\n\n/g, "<br><br>")
+          .replace(/\n/g, "<br>");
+      }
+
+      async function devReadZip(file) {
+        // Dynamically load JSZip
+        if (!window.JSZip) {
+          await new Promise((res, rej) => {
+            const s = document.createElement("script");
+            s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+            s.onload = res;
+            s.onerror = rej;
+            document.head.appendChild(s);
+          });
+        }
+        const zip = await JSZip.loadAsync(file);
+        const files = [];
+        const textExts =
+          /\.(js|ts|jsx|tsx|py|html|css|json|md|txt|yaml|yml|env|sh|sql|java|cpp|c|h|go|rs|php|rb|swift|kt|config|toml|xml|csv)$/i;
+        for (const [name, entry] of Object.entries(zip.files)) {
+          if (entry.dir || !textExts.test(name)) continue;
+          if (files.reduce((a, f) => a + f.content.length, 0) > 80000) break; // stay under limit
+          try {
+            const content = await entry.async("string");
+            files.push({ name, content: content.slice(0, 8000) }); // cap per file
+          } catch {}
+        }
+        return files;
+      }
+
+      async function devHandleFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        devFileName = file.name;
+        const bar = document.getElementById("dev-file-bar");
+        const nameEl = document.getElementById("dev-file-name");
+        if (file.name.endsWith(".zip")) {
+          nameEl.textContent = "⏳ Reading ZIP…";
+          bar.style.display = "flex";
+          try {
+            const files = await devReadZip(file);
+            if (files.length === 0) {
+              nameEl.textContent = "⚠️ No readable files in ZIP";
+              return;
+            }
+            let summary = `📦 ZIP: ${file.name} (${files.length} files)\n\n`;
+            files.forEach((f) => {
+              summary += `--- ${f.name} ---\n${f.content}\n\n`;
+            });
+            devFileContent = summary;
+            nameEl.textContent = `📦 ${file.name} · ${files.length} files loaded`;
+          } catch (e) {
+            nameEl.textContent = "❌ Failed to read ZIP: " + e.message;
+            devFileContent = null;
+          }
+        } else {
+          // Plain text/code file
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            devFileContent = `--- ${file.name} ---\n${e.target.result.slice(0, 30000)}`;
+            nameEl.textContent = `📄 ${file.name} loaded`;
+            bar.style.display = "flex";
+          };
+          reader.readAsText(file);
+        }
+        event.target.value = "";
+      }
+
+      function devClearFile() {
+        devFileContent = null;
+        devFileName = null;
+        document.getElementById("dev-file-bar").style.display = "none";
+        document.getElementById("dev-file-name").textContent = "";
+      }
+
+      async function devSend() {
+        if (devBusy) return;
+        const input = document.getElementById("dev-input");
+        const userText = input.value.trim();
+        if (!userText && !devFileContent) return;
+        devBusy = true;
+
+        const displayText = devFileContent
+          ? userText
+            ? userText + `<br><span style="font-size:.72rem;opacity:.7;">📎 ${devFileName}</span>`
+            : `Analyze this: ${devFileName}`
+          : userText;
+
+        devAddMsg(
+          "user",
+          displayText
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\n/g, "<br>")
+            .replace(/&lt;span/g, "<span")
+            .replace(/&gt;📎/g, ">📎")
+            .replace(/span&gt;/g, "span>"),
+        );
+
+        // Build actual message content for API
+        let msgContent = userText || `Please analyze the attached file(s): ${devFileName}`;
+        if (devFileContent) msgContent += "\n\nFILE CONTENTS:\n" + devFileContent;
+
+        devHistory.push({ role: "user", content: msgContent });
+        input.value = "";
+        input.style.height = "auto";
+        devClearFile();
+        devShowTyping();
+
+        // Hide capability chips after first message
+        const caps = document.getElementById("dev-caps");
+        if (caps) caps.style.display = "none";
+
+        try {
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              system: DEV_SYSTEM,
+              messages: devHistory,
+              email: getSession()?.email || null,
+            }),
+          });
+          const data = await res.json();
+          devHideTyping();
+          const reply = data.content?.[0]?.text || data.error || "Something went wrong.";
+          devHistory.push({ role: "assistant", content: reply });
+          devAddMsg("ai", devFormatResponse(reply));
+        } catch (e) {
+          devHideTyping();
+          devAddMsg("ai", "❌ Error: " + e.message);
+        }
+        devBusy = false;
+      }
+
+      function devAgentClear() {
+        devHistory = [];
+        devFileContent = null;
+        devFileName = null;
+        document.getElementById("dev-file-bar").style.display = "none";
+        document.getElementById("dev-chat").innerHTML = `
+    <div class="dev-msg dev-ai">
+      <div class="dev-av-ai">💻</div>
+      <div class="dev-bubble-ai">Hey! I'm your AI Developer Agent. I know JavaScript, Python, TypeScript, React, Node.js, SQL, Rust, Go — basically everything. Drop a ZIP file, paste code, or ask me anything.</div>
+    </div>`;
+        const caps = document.getElementById("dev-caps");
+        if (caps) caps.style.display = "flex";
+      }
+
+      // ══════════════════════════════════════════
+      // HOMEWORK HELPER
+      // ══════════════════════════════════════════
+      let hwHistory = [];
+      let hwImageData = null;
+      let hwImageName = null;
+      let hwBusy = false;
+      let hwSubject = "math";
+
+      const HW_SYSTEMS = {
+        math: `You are an expert Math tutor. When solving problems:
+- Always show work step-by-step, numbered clearly
+- Explain WHY each step is done, not just HOW
+- Use simple language a student can understand
+- If the answer is a number, box it clearly at the end like: **Answer: 42**
+- For word problems, identify what's given and what's asked first
+- Check your answer at the end when possible`,
+        ela: `You are a warm, encouraging ELA (English Language Arts) tutor. You help with:
+- Grammar, punctuation, and spelling corrections with clear explanations
+- Essay writing: thesis, structure, evidence, transitions
+- Reading comprehension: finding main ideas, themes, inferences
+- Vocabulary and figurative language
+Always explain WHY something is correct or incorrect. Be encouraging and specific.`,
+        science: `You are a Science tutor who makes concepts click. You help with:
+- Biology, Chemistry, Physics, Earth Science
+- Explain concepts clearly with real-world analogies
+- Show formulas and how to apply them step-by-step
+- Help with lab reports and scientific method
+- Use simple language but don't skip important details`,
+        history: `You are a History tutor who makes the past come alive. You help with:
+- World History, US History, Government, Geography
+- Explain causes and effects clearly
+- Help with essay writing and document analysis
+- Provide context and connections between events
+- Keep explanations clear and memorable`,
+        any: `You are a friendly, expert Homework Helper for all subjects. You help students K-12 with any subject including Math, ELA, Science, History, Foreign Languages, Art, and more.
+- Always give clear, step-by-step explanations
+- Use age-appropriate language
+- Be encouraging and positive
+- Show your work and reasoning`,
+      };
+
+      function hwSetSubject(btn, subj) {
+        document.querySelectorAll(".hw-subj").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        hwSubject = subj;
+      }
+
+      function hwScrollBottom() {
+        const chat = document.getElementById("hw-chat");
+        if (chat) chat.scrollTop = chat.scrollHeight;
+      }
+
+      function hwAddMsg(role, html) {
+        const chat = document.getElementById("hw-chat");
+        const session = getSession();
+        const initials = (session?.name || "U")[0].toUpperCase();
+        const isAi = role === "ai";
+        const wrapper = document.createElement("div");
+        wrapper.className = "hw-msg " + (isAi ? "hw-ai" : "hw-user");
+        wrapper.innerHTML = isAi
+          ? `<div class="hw-av">📚</div><div class="hw-bubble-ai">${html}</div>`
+          : `<div class="hw-bubble-user">${html}</div><div class="hw-av-user">${initials}</div>`;
+        chat.appendChild(wrapper);
+        hwScrollBottom();
+      }
+
+      function hwShowTyping() {
+        const chat = document.getElementById("hw-chat");
+        const el = document.createElement("div");
+        el.className = "hw-msg hw-ai";
+        el.id = "hw-typing-indicator";
+        el.innerHTML = `<div class="hw-av">📚</div><div class="hw-typing"><div class="hw-dot"></div><div class="hw-dot"></div><div class="hw-dot"></div></div>`;
+        chat.appendChild(el);
+        hwScrollBottom();
+      }
+      function hwHideTyping() {
+        const el = document.getElementById("hw-typing-indicator");
+        if (el) el.remove();
+      }
+
+      function hwFormatResponse(text) {
+        return text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+          .replace(/^(\d+)\. /gm, "<br><strong>$1.</strong> ")
+          .replace(/^[-•] /gm, "<br>• ")
+          .replace(
+            /`([^`]+)`/g,
+            '<code style="background:rgba(0,0,0,.06);border-radius:4px;padding:1px 5px;font-size:.83rem;">$1</code>',
+          )
+          .replace(
+            /^#{1,3} (.+)$/gm,
+            '<strong style="font-size:.92rem;display:block;margin:8px 0 3px;color:#f59e0b;">$1</strong>',
+          )
+          .replace(/\n\n/g, "<br><br>")
+          .replace(/\n/g, "<br>");
+      }
+
+      function hwHandleImage(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        hwImageName = file.name;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          hwImageData = e.target.result;
+          document.getElementById("hw-img-preview").src = hwImageData;
+          document.getElementById("hw-img-name").textContent = "📷 " + file.name;
+          document.getElementById("hw-img-bar").style.display = "flex";
+          // Auto-send immediately — read the image on its own
+          hwSend();
+        };
+        reader.readAsDataURL(file);
+        event.target.value = "";
+      }
+
+      function hwClearImage() {
+        hwImageData = null;
+        hwImageName = null;
+        document.getElementById("hw-img-bar").style.display = "none";
+        document.getElementById("hw-img-preview").src = "";
+      }
+
+      async function hwSend() {
+        if (hwBusy) return;
+        const input = document.getElementById("hw-input");
+        const userText = input.value.trim();
+        if (!userText && !hwImageData) return;
+        hwBusy = true;
+
+        // Build display message
+        let displayHtml = "";
+        if (hwImageData)
+          displayHtml += `<img src="${hwImageData}" style="max-width:180px;border-radius:10px;display:block;margin-bottom:6px;"/>`;
+        if (userText) displayHtml += userText.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+        hwAddMsg("user", displayHtml);
+
+        // Build API message — always plain text in the messages array
+        const textContent =
+          userText ||
+          "Look at this homework image carefully. Identify all the questions or problems, then solve each one step-by-step with clear explanations.";
+        hwHistory.push({ role: "user", content: textContent });
+        input.value = "";
+        input.style.height = "auto";
+
+        // Capture image before clearing
+        const imgToSend = hwImageData;
+        hwClearImage();
+        hwShowTyping();
+
+        try {
+          const body = {
+            system: HW_SYSTEMS[hwSubject] || HW_SYSTEMS.any,
+            messages: hwHistory,
+            email: getSession()?.email || null,
+          };
+          if (imgToSend) body.image = imgToSend; // base64 data URL — /api/chat injects it
+
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          hwHideTyping();
+          const reply = data.content?.[0]?.text || data.error?.message || data.error || "Something went wrong.";
+          hwHistory.push({ role: "assistant", content: reply });
+          hwAddMsg("ai", hwFormatResponse(reply));
+        } catch (e) {
+          hwHideTyping();
+          hwAddMsg("ai", "❌ Error: " + e.message);
+        }
+        hwBusy = false;
+      }
+
+      function hwClear() {
+        hwHistory = [];
+        hwClearImage();
+        document.getElementById("hw-chat").innerHTML = `
+    <div class="hw-msg hw-ai">
+      <div class="hw-av">📚</div>
+      <div class="hw-bubble-ai">Hi! I'm your Homework Helper 👋 I can solve math problems step-by-step, help with essays and grammar, explain science, history, and more.<br><br>Type your question or <strong>upload a photo</strong> of your homework!</div>
+    </div>`;
+      }
+      function selectHumOpt(btn) {
+        document.querySelectorAll(".hum-opt").forEach((b) => b.classList.remove("sel"));
+        btn.classList.add("sel");
+        humStyle = btn.textContent.trim();
+      }
+      async function runHumanizer() {
+        const text = document.getElementById("hum-input").value.trim();
+        if (!text) return;
+        const btn = document.getElementById("btn-humanize");
+        btn.disabled = true;
+        btn.textContent = "⏳ Humanizing…";
+        try {
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              system: `You are an expert text humanizer. Rewrite the given AI-generated text to sound completely natural, human-written, and authentic in a ${humStyle} style. Remove robotic patterns, vary sentence structure, add natural flow, contractions, and personality. Output ONLY the rewritten text with no commentary or preamble.`,
+              messages: [{ role: "user", content: text }],
+              email: getSession()?.email || null,
+            }),
+          });
+          const data = await res.json();
+          const result = data.content?.[0]?.text || data.error || "Something went wrong.";
+          document.getElementById("hum-result").textContent = result;
+          document.getElementById("hum-result-wrap").classList.add("show");
+        } catch (e) {
+          document.getElementById("hum-result").textContent = "Error: " + e.message;
+          document.getElementById("hum-result-wrap").classList.add("show");
+        }
+        btn.disabled = false;
+        btn.textContent = "✨ Humanize";
+      }
+      function copyHumanized() {
+        const text = document.getElementById("hum-result").textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.querySelector(".hum-copy");
+          btn.textContent = "✅ Copied!";
+          setTimeout(() => (btn.textContent = "📋 Copy to clipboard"), 2000);
+        });
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeAiModal();
+      });
+
+      // ── Deep Search ──
+      let deepSearchMode = false;
+
+      function toggleDeepSearch() {
+        deepSearchMode = !deepSearchMode;
+        document.getElementById("btn-deep").classList.toggle("active", deepSearchMode);
+        document.getElementById("user-input").placeholder = deepSearchMode
+          ? "Deep search: What topic do you want researched?"
+          : "Ask Viora anything…";
+      }
+
+      // ── Image Upload ──
+      let attachedImage = null; // base64 data URL
+
+      function handleImageUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+          alert("Image must be under 5MB");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          attachedImage = reader.result; // data:image/...;base64,...
+          document.getElementById("img-preview-thumb").src = attachedImage;
+          document.getElementById("img-preview-wrap").classList.add("show");
+        };
+        reader.readAsDataURL(file);
+        e.target.value = "";
+      }
+
+      function removeImage() {
+        attachedImage = null;
+        document.getElementById("img-preview-wrap").classList.remove("show");
+        document.getElementById("img-preview-thumb").src = "";
+      }
+
+      function addDeepSearchMsg(query, text) {
+        const now = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+        const d = document.createElement("div");
+        d.className = "msg ai";
+        // Convert markdown-style to HTML
+        const html = text
+          .replace(/^# (.+)$/gm, "<h1>$1</h1>")
+          .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+          .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+          .replace(/^- (.+)$/gm, "<li>$1</li>")
+          .replace(/(<li>.*<\/li>\n?)+/g, (s) => `<ul>${s}</ul>`)
+          .replace(/\n\n/g, "</p><p>")
+          .replace(/\n/g, "<br>");
+        d.innerHTML = `
+    <div class="av" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
+    <div class="bubble-wrap" style="max-width:85%">
+      <div class="deep-bubble">
+        <div class="deep-badge">🔍 Deep Search</div>
+        <div>${html}</div>
+      </div>
+      <div class="msg-time">${now}</div>
+    </div>`;
+        chatEl.insertBefore(d, typingEl);
+        scrollBot();
+      }
+
+      // ── Weather Code to Emoji ──
+      function weatherEmoji(code) {
+        if (code === 113) return "☀️";
+        if (code === 116) return "⛅";
+        if ([119, 122].includes(code)) return "☁️";
+        if ([143, 248, 260].includes(code)) return "🌫️";
+        if ([176, 263, 266, 293, 296].includes(code)) return "🌦️";
+        if ([299, 302, 305, 308].includes(code)) return "🌧️";
+        if ([311, 314, 317, 320].includes(code)) return "🌨️";
+        if ([323, 326, 329, 332, 335, 338, 368, 371, 374, 377].includes(code)) return "❄️";
+        if ([386, 389, 392, 395].includes(code)) return "⛈️";
+        if ([200, 386].includes(code)) return "🌩️";
+        return "🌤️";
+      }
+
+      function addWeatherCard(place, weather) {
+        const now = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+        const location = place
+          ? `${place.city || ""}${place.city && place.country ? ", " : ""}${place.country || ""}`
+          : "Your Location";
+        const forecastHTML = (weather.daily || [])
+          .map(
+            (d, i) => `
+    <div class="wc-day">
+      <div class="wc-day-name">${i === 0 ? "Now" : d.day}</div>
+      <div class="wc-day-icon">${weatherEmoji(d.code)}</div>
+      <div class="wc-day-high">${d.high}°</div>
+      <div class="wc-day-low">${d.low}°</div>
+    </div>`,
+          )
+          .join("");
+
+        const el = document.createElement("div");
+        el.className = "msg ai";
+        el.innerHTML = `
+    <div class="av" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;font-size:.68rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
+    <div class="bubble-wrap">
+      <div class="weather-card">
+        <div class="wc-badge">Viora Weather</div>
+        <div class="wc-location">
+          <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 7 5 7s5-3.25 5-7c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg>
+          ${escHtml(location)} &bull; Now
+        </div>
+        <div class="wc-main">
+          <div class="wc-temp">${weather.tempF}<span class="wc-temp-unit">°F</span></div>
+          <div class="wc-desc-wrap">
+            <div class="wc-icon">${weatherEmoji(weather.code)}</div>
+            <div class="wc-desc">${escHtml(weather.desc)}</div>
+            <div class="wc-feels">Feels like ${weather.feelsF}°F</div>
+          </div>
+        </div>
+        <div class="wc-stats">
+          <div class="wc-stat"><span class="wc-stat-icon">💧</span><div><div class="wc-stat-label">Humidity</div><div class="wc-stat-val">${weather.humidity}%</div></div></div>
+          <div class="wc-stat"><span class="wc-stat-icon">💨</span><div><div class="wc-stat-label">Wind</div><div class="wc-stat-val">${weather.windMph} mph</div></div></div>
+          <div class="wc-stat"><span class="wc-stat-icon">👁️</span><div><div class="wc-stat-label">Visibility</div><div class="wc-stat-val">${weather.visibility} mi</div></div></div>
+          <div class="wc-stat"><span class="wc-stat-icon">☀️</span><div><div class="wc-stat-label">UV Index</div><div class="wc-stat-val">${weather.uvIndex}</div></div></div>
+        </div>
+        <div class="wc-divider"></div>
+        <div class="wc-forecast">${forecastHTML}</div>
+      </div>
+      <div class="msg-time">${now}</div>
+    </div>`;
+        chatEl.insertBefore(el, typingEl);
+        scrollBot();
+      }
+
+      function isWeatherQuery(text) {
+        return /weather|temperature|forecast|rain|sunny|cloudy|snow|wind|humidity|hot outside|cold outside|degrees/i.test(
+          text,
+        );
+      }
+
+      function isLocationQuery(text) {
+        return (
+          /nearest|closest|near me|nearby|around me|close to me|my location|where am i|current location|find a .*(store|shop|restaurant|pharmacy|hospital|bank|gas|hotel|gym|clinic|school|park|cafe|coffee|supermarket|mall|market)/i.test(
+            text,
+          ) ||
+          /what('s| is) my (location|address|city|country|position|coordinates)/i.test(text) ||
+          /where (am i|do i live|are we)/i.test(text) ||
+          /(store|shop|restaurant|pharmacy|hospital|bank|gas station|hotel|gym|clinic|cafe|supermarket|mall).*(near|nearby|closest|around)/i.test(
+            text,
+          )
+        );
+      }
+
+      function getBrowserLocation() {
+        // Return cached coords instantly if already have them
+        if (currentCoords) return Promise.resolve(currentCoords);
+        return new Promise((resolve, reject) => {
+          if (!navigator.geolocation) {
+            reject(new Error("no-geolocation"));
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              currentCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+              resolve(currentCoords);
+            },
+            (err) => {
+              // err.code: 1=denied, 2=unavailable, 3=timeout
+              if (err.code === 1) reject(new Error("permission-denied"));
+              else reject(new Error("location-unavailable"));
+            },
+            { timeout: 10000, enableHighAccuracy: false, maximumAge: 60000 },
+          );
+        });
+      }
+
+      // Pre-warm: grab GPS silently as soon as app opens
+      function prewarmLocation() {
+        if (!navigator.geolocation) return;
+        if (currentCoords) {
+          prefetchWeather();
+          return;
+        }
+        // Request with short timeout so it doesn't hang
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            currentCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+            prefetchWeather(); // immediately warm the weather cache
+          },
+          () => {},
+          { timeout: 10000, enableHighAccuracy: false, maximumAge: 300000 },
+        );
+      }
+
+      async function prefetchWeather() {
+        if (!currentCoords) return;
+        if (cachedWeatherData && Date.now() - cachedWeatherData.ts < WEATHER_TTL_MS) return;
+        try {
+          const r = await fetch(`/api/weather?lat=${currentCoords.lat}&lon=${currentCoords.lon}`);
+          const d = await r.json();
+          if (d.weather) cachedWeatherData = { ...d, ts: Date.now() };
+        } catch {}
+      }
+
+      async function sendMessage() {
+        const text = inputEl.value.trim();
+        if (!text || busy) return;
+        if (trialSeconds <= 0 && getSession()?.isTrial) return;
+
+        welcomeEl.style.display = "none";
+        inputEl.value = "";
+        inputEl.style.height = "auto";
+        charEl.textContent = "0 / 4000";
+
+        // Show user message — with image thumbnail if attached
+        if (attachedImage) {
+          const now = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+          const session = getSession();
+          const initials = session?.name ? session.name[0].toUpperCase() : "U";
+          const d = document.createElement("div");
+          d.className = "msg user";
+          d.innerHTML = `<div class="av">${initials}</div><div class="bubble-wrap"><div class="bubble" style="padding:8px"><img src="${attachedImage}" style="max-width:200px;border-radius:12px;display:block;margin-bottom:6px"/>${escHtml(text)}</div><div class="msg-time">${now}</div></div>`;
+          chatEl.insertBefore(d, typingEl);
+          scrollBot();
+        } else {
+          addMsg("user", text);
+        }
+
+        const imgToSend = attachedImage;
+        removeImage();
+        history.push({ role: "user", content: text });
+
+        busy = true;
+        typingEl.classList.add("show");
+        scrollBot();
+
+        // ── Deep Search ──
+        if (deepSearchMode || /^deep search:\s*/i.test(text)) {
+          const query = text.replace(/^deep search:\s*/i, "").trim();
+          try {
+            const res = await fetch("/api/deepsearch", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ query, email: getSession()?.email || null }),
+            });
+            const data = await res.json();
+            typingEl.classList.remove("show");
+            if (data.error) {
+              addMsg("ai", "⚠️ " + data.error);
+            } else {
+              const reply = data.content?.[0]?.text || "";
+              addDeepSearchMsg(query, reply);
+              history.push({ role: "assistant", content: reply });
+              await saveChatIfNeeded();
+              const session = getSession();
+              if (session?.email) renderHistory(session.email);
+            }
+          } catch (err) {
+            typingEl.classList.remove("show");
+            addMsg("ai", "⚠️ Deep search error: " + err.message);
+          }
+          busy = false;
+          inputEl.focus();
+          return;
+        }
+
+        // ── Image generation (code-rendered SVG) ──
+        if (isImageRequest(text)) {
+          try {
+            const cleanPrompt = text
+              .replace(
+                /^(draw|generate|create|make|paint|show|imagine|design|render|sketch|illustrate|produce|can you|please|could you)\s+(me\s+)?(a|an|the|some)?\s*/i,
+                "",
+              )
+              .trim();
+
+            const res = await fetch("/api/imagegen", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                system: `You are a world-class SVG illustrator. Your SVGs are stunning, detailed, and photorealistic in style despite being vector art.
+
+STRICT RULES:
+1. Output ONLY raw SVG. No explanation, no markdown, no backticks, no comments outside SVG.
+2. Always start with exactly: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+3. End with exactly: </svg>
+4. Use ALL of these techniques to maximize quality:
+   - Multiple layered <defs> with linearGradient, radialGradient, filter (blur, shadow, glow, noise)
+   - Complex paths with bezier curves for organic shapes
+   - Realistic lighting: highlights (white overlay, low opacity), shadows (dark overlay)
+   - Depth through overlapping layers, atmospheric perspective
+   - Rich color palettes — no flat colors, always use gradients
+   - Fine details: texture, patterns, subtle noise via feTurbulence
+   - Smooth animations with <animate> or <animateTransform> where fitting (stars twinkling, water rippling, etc.)
+5. Fill the entire 800x800 canvas — background to foreground
+6. Think like a painter: sky/bg first, mid-ground, foreground, details, highlights last
+7. Make it BEAUTIFUL. This is art.`,
+                messages: [
+                  {
+                    role: "user",
+                    content: `Create a stunning, highly detailed SVG illustration of: ${cleanPrompt}
+
+Think carefully about:
+- What colors, lighting, and mood best suit this subject
+- How to create depth and realism with SVG gradients and filters
+- What foreground, mid-ground, and background elements to include
+- Any subtle animations that would bring it to life`,
+                  },
+                ],
+                email: getSession()?.email || null,
+              }),
+            });
+
+            const data = await res.json();
+            typingEl.classList.remove("show");
+
+            if (data.error) {
+              addMsg("ai", "⚠️ Image error: " + data.error);
+            } else {
+              let svgCode = data.content?.[0]?.text || "";
+              // Strip any markdown fences or preamble
+              svgCode = svgCode
+                .replace(/^[\s\S]*?(<svg)/i, "$1")
+                .replace(/<\/svg>[\s\S]*$/, "</svg>")
+                .trim();
+              if (svgCode.startsWith("<svg")) {
+                addCodeImageMsg(text, svgCode);
+                history.push({ role: "assistant", content: '[Generated image for: "' + text + '"]' });
+                await saveChatIfNeeded();
+                const session = getSession();
+                if (session?.email) renderHistory(session.email);
+              } else {
+                addMsg("ai", "⚠️ Could not generate image. Try rephrasing your prompt.");
+              }
+            }
+          } catch (err) {
+            typingEl.classList.remove("show");
+            addMsg("ai", "⚠️ Image error: " + err.message);
+          }
+          busy = false;
+          inputEl.focus();
+          return;
+        }
+
+        // ── Weather — fetch Open-Meteo directly from browser (CORS enabled, no server needed) ──
+        if (isWeatherQuery(text)) {
+          typingEl.classList.remove("show");
+          const fetchPill = document.createElement("div");
+          fetchPill.id = "weather-fetch-pill";
+          fetchPill.className = "msg ai";
+          fetchPill.innerHTML = `
+      <div class="av" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9);color:white;font-size:.75rem;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">V</div>
+      <div class="weather-fetch-pill">
+        <span class="weather-fetch-dot"></span>
+        <span class="weather-fetch-dot"></span>
+        <span class="weather-fetch-dot"></span>
+        Fetching weather…
+      </div>`;
+          chatEl.insertBefore(fetchPill, typingEl);
+          scrollBot();
+
+          try {
+            const coords = await getBrowserLocation();
+
+            // Use client cache if fresh
+            if (cachedWeatherData && Date.now() - cachedWeatherData.ts < WEATHER_TTL_MS) {
+              fetchPill.remove();
+              addWeatherCard(cachedWeatherData.place, cachedWeatherData.weather);
+              const w = cachedWeatherData.weather;
+              const sum = `${cachedWeatherData.place?.city || "Your location"}: ${w.tempF}°F, feels ${w.feelsF}°F, ${w.desc}, humidity ${w.humidity}%, wind ${w.windMph}mph.`;
+              history.push({ role: "assistant", content: sum });
+              await saveChatIfNeeded();
+              const session = getSession();
+              if (session?.email) renderHistory(session.email);
+              busy = false;
+              inputEl.focus();
+              return;
+            }
+
+            // Hit Open-Meteo directly from browser — free, CORS open, no server proxy needed
+            const omUrl =
+              `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}` +
+              `&current=temperature_2m,apparent_temperature,weather_code,windspeed_10m,relativehumidity_2m,uv_index` +
+              `&daily=weather_code,temperature_2m_max,temperature_2m_min` +
+              `&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=7&timezone=auto`;
+
+            const [omRes] = await Promise.all([
+              Promise.race([fetch(omUrl), new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 9000))]),
+            ]);
+            const omData = await omRes.json();
+            const cur = omData.current;
+            if (!cur) throw new Error("no-data");
+
+            const wc = cur.weather_code ?? cur.weathercode ?? 0;
+            const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            const daily = (omData.daily?.time || []).map((ds, i) => {
+              const dc = (omData.daily.weather_code ?? omData.daily.weathercode)?.[i] ?? 0;
+              return {
+                day: i === 0 ? "Today" : DAY_NAMES[new Date(ds + "T12:00:00").getDay()],
+                high: Math.round(omData.daily.temperature_2m_max[i]),
+                low: Math.round(omData.daily.temperature_2m_min[i]),
+                code: dc,
+              };
+            });
+
+            // Reverse-geocode via Nominatim (browser-side, free)
+            let place = { city: "Your location", country: "" };
+            try {
+              const geo = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${coords.lat}&lon=${coords.lon}&format=json`,
+              );
+              const gd = await geo.json();
+              place = {
+                city: gd.address?.city || gd.address?.town || gd.address?.village || gd.address?.county || place.city,
+                country: gd.address?.country_code?.toUpperCase() || "",
+              };
+            } catch {}
+
+            const WMO_DESC = {
+              0: "Clear sky",
+              1: "Mainly clear",
+              2: "Partly cloudy",
+              3: "Overcast",
+              45: "Foggy",
+              48: "Rime fog",
+              51: "Light drizzle",
+              53: "Drizzle",
+              55: "Heavy drizzle",
+              61: "Light rain",
+              63: "Moderate rain",
+              65: "Heavy rain",
+              71: "Light snow",
+              73: "Moderate snow",
+              75: "Heavy snow",
+              80: "Rain showers",
+              81: "Moderate showers",
+              82: "Heavy showers",
+              95: "Thunderstorm",
+              96: "Thunderstorm w/ hail",
+              99: "Severe thunderstorm",
+            };
+            const weather = {
+              tempF: Math.round(cur.temperature_2m),
+              feelsF: Math.round(cur.apparent_temperature),
+              desc: WMO_DESC[wc] || "Clear",
+              humidity: Math.round(cur.relativehumidity_2m),
+              windMph: Math.round(cur.windspeed_10m),
+              uvIndex: Math.round(cur.uv_index || 0),
+              code: wc,
+              daily,
+            };
+
+            cachedWeatherData = { place, weather, ts: Date.now() };
+            fetchPill.remove();
+            addWeatherCard(place, weather);
+            const sum2 = `${place.city}: ${weather.tempF}°F, feels ${weather.feelsF}°F, ${weather.desc}, humidity ${weather.humidity}%, wind ${weather.windMph}mph.`;
+            history.push({ role: "assistant", content: sum2 });
+            await saveChatIfNeeded();
+            const session2 = getSession();
+            if (session2?.email) renderHistory(session2.email);
+            busy = false;
+            inputEl.focus();
+            return;
+          } catch (e) {
+            document.getElementById("weather-fetch-pill")?.remove();
+            if (e.message === "permission-denied") {
+              addMsg("ai", "📍 Please allow location access in your browser, then try again.");
+              history.push({ role: "assistant", content: "Location permission denied." });
+              busy = false;
+              inputEl.focus();
+              return;
+            }
+            if (e.message === "no-geolocation") {
+              addMsg("ai", '📍 Your browser does not support location. Try asking "weather in New York" instead.');
+              history.push({ role: "assistant", content: "Geolocation not supported." });
+              busy = false;
+              inputEl.focus();
+              return;
+            }
+            // Network / data error — fall through to AI chat
+            console.warn("Browser weather fetch failed:", e.message, "— falling through to AI");
+          }
+        }
+
+        // --- Location query for POIs (non-weather) ---
+        let coords = null;
+        try {
+          if (isLocationQuery(text)) {
+            coords = await getBrowserLocation();
+          }
+        } catch (locErr) {
+          // If location fails, just continue without coords
+          console.warn("Location query failed, continuing without coords:", locErr.message);
+        }
+
+        try {
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              system:
+                "You are Viora, a friendly, warm and helpful AI assistant. Be clear, concise and encouraging. Avoid excessive markdown unless the user asks for it.",
+              messages: history,
+              coords,
+              email: getSession()?.email || null,
+              image: imgToSend || null,
+            }),
+          });
+
+          const data = await res.json();
+          typingEl.classList.remove("show");
+
+          if (data.error) {
+            addMsg("ai", "⚠️ " + data.error);
+          } else {
+            const reply = data.content?.[0]?.text || "Hmm, no response. Try again!";
+            addMsg("ai", reply);
+            history.push({ role: "assistant", content: reply });
+            await saveChatIfNeeded();
+            const session = getSession();
+            if (session?.email) renderHistory(session.email);
+          }
+        } catch (err) {
+          typingEl.classList.remove("show");
+          addMsg("ai", "⚠️ Connection error: " + err.message);
+        }
+
+        busy = false;
+        inputEl.focus();
+      }
+
+      // ── Admin popup polling ──
+      let lastPopupId = null;
+      const POPUP_ICONS = { info: "ℹ️", success: "✅", warning: "⚠️", error: "🚨" };
+      const POPUP_TITLES = { info: "Notice", success: "Update", warning: "Warning", error: "Alert" };
+
+      async function pollPopup() {
+        try {
+          const res = await fetch("/api/popup");
+          const popup = await res.json();
+          if (popup && popup.id !== lastPopupId) {
+            lastPopupId = popup.id;
+            showAdminPopup(popup);
+          } else if (!popup && lastPopupId) {
+            lastPopupId = null;
+            dismissPopup();
+          }
+        } catch {}
+      }
+
+      function showAdminPopup(popup) {
+        const el = document.getElementById("admin-popup");
+        el.className = `show pop-${popup.type || "info"}`;
+        document.getElementById("popup-icon").textContent = POPUP_ICONS[popup.type] || "ℹ️";
+        document.getElementById("popup-title").textContent = POPUP_TITLES[popup.type] || "Notice";
+        document.getElementById("popup-text").textContent = popup.message;
+      }
+
+      function dismissPopup() {
+        const el = document.getElementById("admin-popup");
+        el.classList.remove("show");
+      }
+
+      // Poll every 8 seconds when user is logged in
+      setInterval(() => {
+        if (getSession() && !getSession().isTrial) pollPopup();
+      }, 8000);
+
+      // ── Memory Panel ──
+      let memoryOpen = false;
+
+      function toggleMemoryPanel() {
+        memoryOpen = !memoryOpen;
+        document.getElementById("memory-panel").classList.toggle("open", memoryOpen);
+        document.getElementById("memory-overlay").classList.toggle("show", memoryOpen);
+        if (memoryOpen) loadMemories();
+      }
+
+      async function loadMemories() {
+        const session = getSession();
+        if (!session?.email) return;
+        try {
+          const res = await fetch(`/api/memory?email=${encodeURIComponent(session.email)}`);
+          const memories = await res.json();
+          renderMemories(memories);
+        } catch {}
+      }
+
+      function renderMemories(memories) {
+        const list = document.getElementById("memory-list");
+        const empty = document.getElementById("memory-empty");
+        list.querySelectorAll(".memory-item").forEach((el) => el.remove());
+        if (!memories || memories.length === 0) {
+          empty.style.display = "";
+          return;
+        }
+        empty.style.display = "none";
+        memories
+          .slice()
+          .reverse()
+          .forEach((m) => {
+            const d = document.createElement("div");
+            d.className = "memory-item";
+            const date = m.createdAt
+              ? new Date(m.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+              : "";
+            d.innerHTML = `
+      <div style="flex:1">
+        <div class="memory-item-text">${escHtml(m.text)}</div>
+        <div class="memory-item-date">${date}</div>
+      </div>
+      <button class="btn-del-mem" onclick="deleteMemory('${m.id}')" title="Delete">✕</button>`;
+            list.appendChild(d);
+          });
+      }
+
+      async function addMemory() {
+        const session = getSession();
+        if (!session?.email) return;
+        const input = document.getElementById("memory-input");
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = "";
+        try {
+          await fetch("/api/memory", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: session.email, text }),
+          });
+          loadMemories();
+        } catch {}
+      }
+
+      async function deleteMemory(id) {
+        const session = getSession();
+        if (!session?.email) return;
+        try {
+          await fetch(`/api/memory/${id}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: session.email }),
+          });
+          loadMemories();
+        } catch {}
+      }
+
+      async function clearAllMemories() {
+        const session = getSession();
+        if (!session?.email) return;
+        if (!confirm("Clear all memories? Viora will forget everything about you.")) return;
+        try {
+          await fetch("/api/memory", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: session.email }),
+          });
+          loadMemories();
+        } catch {}
+      }
+
+      window.addEventListener("load", async () => {
+        const s = getSession();
+        if (!s) {
+          // Show landing by default — auth-screen stays hidden
+          document.getElementById("auth-screen").style.display = "none";
+          document.getElementById("landing-screen").classList.remove("hidden");
+        }
+        if (s) {
+          openChat(s.name, s.isTrial, s.email || null);
+          checkAdminPopup();
+          if (!s.isTrial) requestNotificationPermission();
+          prewarmLocation(); // grab GPS + pre-fetch weather silently
+          // Restore last active chat on refresh
+          if (s.email && !s.isTrial) {
+            // handled in openChat now via localStorage
+          }
+        }
+      });
+
+      // ── Admin popup check ──
+      const POPUP_SEEN_KEY = "viora_popup_seen";
+
+      // ── Request notification permission after login ──
+      async function requestNotificationPermission() {
+        if (!("Notification" in window)) return;
+        if (Notification.permission === "granted") return;
+        if (Notification.permission === "denied") return;
+        // Small delay so it feels natural after login
+        setTimeout(async () => {
+          const perm = await Notification.requestPermission();
+          if (perm === "granted") registerPeriodicSync();
+        }, 3000);
+      }
+
+      // ── Register periodic background sync (Chrome PWA) ──
+      async function registerPeriodicSync() {
+        if (!("serviceWorker" in navigator)) return;
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          if ("periodicSync" in reg) {
+            const status = await navigator.permissions.query({ name: "periodic-background-sync" });
+            if (status.state === "granted") {
+              await reg.periodicSync.register("check-viora-popup", { minInterval: 5 * 60 * 1000 }); // every 5 min
+            }
+          }
+        } catch {}
+      }
+
+      // ── Send notification via service worker ──
+      async function sendSwNotification(popup) {
+        if (!("serviceWorker" in navigator) || Notification.permission !== "granted") return;
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          reg.active?.postMessage({
+            type: "SHOW_NOTIFICATION",
+            title: "📢 Viora — " + (popup.title || "New Message"),
+            body: popup.message,
+            popupId: String(popup.id),
+          });
+        } catch {}
+      }
+
+      async function checkAdminPopup() {
+        try {
+          const res = await fetch("/api/popup");
+          const popup = await res.json();
+          if (!popup || !popup.message) return;
+
+          // Send native device notification regardless of whether in-app popup was seen
+          const seenNotif = localStorage.getItem("viora_notif_" + popup.id);
+          if (!seenNotif) {
+            localStorage.setItem("viora_notif_" + popup.id, "1");
+            sendSwNotification(popup);
+          }
+
+          // Only show in-app popup if not already dismissed this session
+          const seen = sessionStorage.getItem(POPUP_SEEN_KEY);
+          if (seen === String(popup.id)) return;
+
+          const icons = { info: "ℹ️", success: "✅", warning: "⚠️", error: "🚨" };
+          document.getElementById("admin-popup-icon").textContent = icons[popup.type] || "📣";
+          document.getElementById("admin-popup-title").textContent = popup.title || "Notice";
+          document.getElementById("admin-popup-msg").textContent = popup.message;
+          document.getElementById("admin-popup-card").className = "admin-popup-card " + (popup.type || "info");
+          document.getElementById("admin-popup-overlay").classList.remove("hidden");
+          sessionStorage.setItem(POPUP_SEEN_KEY, String(popup.id));
+        } catch {}
+      }
+
+      function closeAdminPopup() {
+        document.getElementById("admin-popup-overlay").classList.add("hidden");
+      }
+    </script>

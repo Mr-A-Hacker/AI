@@ -7,7 +7,6 @@ const crypto = require('crypto');
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.set('trust proxy', true);
-app.use(express.static(path.join(__dirname, 'templates')));
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 const B2_KEY_ID      = process.env.B2_KEY_ID || '';
@@ -17,6 +16,8 @@ const B2_ENDPOINT    = process.env.B2_ENDPOINT || '';
 
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin1';
+
+app.use(express.static(path.join(__dirname, 'templates')));
 
 // Active popup — persisted to B2
 let activePopup = null;

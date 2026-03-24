@@ -19,12 +19,16 @@ This project provides a simple web UI for interacting with an AI model through a
 AI/
 │
 ├── templates/
-│   └── ai-chat.html        # Main chat UI
+│   ├── index.html                  # Built full landing/chat page
+│   ├── index-split/                # Editable split index parts
+│   └── ai-chat.html                # Standalone AI chat page
 │
-├── app.js                  # Express backend server
-├── package.json            # Node.js dependencies
-├── requirements.txt        # Python dependencies (optional)
-└── README.md               # Project documentation
+├── scripts/
+│   └── build-index.js              # Rebuild/check templates/index.html
+├── app.js                          # Express backend server
+├── package.json                    # Node.js dependencies + scripts
+├── requirements.txt                # Python dependencies (optional)
+└── README.md                       # Project documentation
 ```
 
 ---
@@ -60,6 +64,18 @@ OPENAI_API_KEY=your_key_here
 ### 4. Start the server
 ```bash
 node app.js
+```
+
+
+### 4.5 Rebuild `templates/index.html` after editing split parts
+If you edit files inside `templates/index-split/`, regenerate `templates/index.html` with:
+```bash
+npm run build:index
+```
+
+(Optional check mode):
+```bash
+npm run check:index
 ```
 
 ### 5. Open in browser

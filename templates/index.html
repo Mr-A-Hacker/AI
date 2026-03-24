@@ -112,6 +112,11 @@
       body.dark .other-ai-card:hover {
         background: #221d35;
       }
+      body.dark .auth-card {
+        background: #1a1625;
+        border-color: #2d2640;
+        box-shadow: 0 10px 36px rgba(0, 0, 0, 0.35);
+      }
       body.dark #memory-panel {
         background: #1a1625;
         border-color: #2d2640;
@@ -3337,6 +3342,9 @@
         text-align: center;
         padding: 20px;
         max-width: 700px;
+        border-radius: 28px;
+        backdrop-filter: blur(6px);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16));
       }
       .landing-badge {
         display: inline-flex;
@@ -3433,6 +3441,13 @@
         color: var(--violet);
         transform: translateY(-2px);
         box-shadow: 0 6px 24px rgba(124, 58, 237, 0.1);
+      }
+      .landing-btn-primary:focus-visible,
+      .landing-btn-outline:focus-visible,
+      .btn-primary:focus-visible,
+      .btn-try:focus-visible {
+        outline: 3px solid rgba(124, 58, 237, 0.35);
+        outline-offset: 2px;
       }
       .landing-features {
         display: flex;
@@ -3814,6 +3829,7 @@
     </style>
   </head>
   <body>
+
     <div class="mesh"></div>
     <div class="blob blob-1"></div>
     <div class="blob blob-2"></div>

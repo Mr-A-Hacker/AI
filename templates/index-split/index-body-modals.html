@@ -1,0 +1,920 @@
+
+
+    <!-- ADMIN POPUP -->
+    <div id="admin-popup-overlay" class="hidden">
+      <div class="admin-popup-card" id="admin-popup-card">
+        <div class="admin-popup-icon" id="admin-popup-icon">📣</div>
+        <div class="admin-popup-title" id="admin-popup-title">Notice</div>
+        <div class="admin-popup-msg" id="admin-popup-msg"></div>
+        <button class="btn-close-popup" onclick="closeAdminPopup()">Got it</button>
+      </div>
+    </div>
+
+    <!-- ADMIN POPUP -->
+    <div id="admin-popup">
+      <span class="popup-icon" id="popup-icon">ℹ️</span>
+      <div class="popup-body">
+        <div class="popup-title" id="popup-title">Notice</div>
+        <div class="popup-text" id="popup-text"></div>
+      </div>
+      <button class="popup-close" onclick="dismissPopup()">✕</button>
+    </div>
+    <!-- MEMORY PANEL -->
+    <div id="memory-overlay" onclick="toggleMemoryPanel()"></div>
+    <div id="memory-panel">
+      <div class="memory-header">
+        <span class="memory-title">🧠 Viora's Memory</span>
+        <button class="memory-close" onclick="toggleMemoryPanel()">✕</button>
+      </div>
+      <div class="memory-add">
+        <div class="memory-input-row">
+          <input
+            class="memory-input"
+            id="memory-input"
+            type="text"
+            placeholder="e.g. I like spicy food"
+            maxlength="200"
+            onkeydown="if (event.key === 'Enter') addMemory();"
+          />
+          <button class="btn-add-mem" onclick="addMemory()">+ Add</button>
+        </div>
+        <div class="memory-hint">
+          💡 You can also type
+          <strong>remember: I love sushi</strong>
+          in chat and Viora will save it automatically.
+        </div>
+      </div>
+      <div class="memory-list" id="memory-list">
+        <div class="memory-empty" id="memory-empty">
+          No memories yet.
+          <br />
+          Add things you want Viora to always know about you!
+        </div>
+      </div>
+      <div class="memory-footer">
+        <button class="btn-clear-mem" onclick="clearAllMemories()">🗑 Clear All Memories</button>
+      </div>
+    </div>
+
+    <!-- IMAGE LIGHTBOX -->
+    <div class="img-lightbox" id="img-lightbox" onclick="closeLightbox()">
+      <button class="img-lightbox-close" onclick="closeLightbox()">✕</button>
+      <img id="lightbox-img" src="" alt="Generated image" onclick="event.stopPropagation()" />
+    </div>
+
+    <!-- ── AI TOOLS MODAL ── -->
+    <div id="ai-modal">
+      <div class="aim-card">
+        <div class="aim-head">
+          <div class="aim-title">🤖 Our AI Tools</div>
+          <button class="aim-close" onclick="closeAiModal()">✕</button>
+        </div>
+        <div class="aim-tabs">
+          <button class="aim-tab active" id="aim-tab-tools"     onclick="switchAimTab('tools')">🛠 Tools</button>
+          <button class="aim-tab"        id="aim-tab-humanizer" onclick="switchAimTab('humanizer')">✍️ Humanizer</button>
+          <button class="aim-tab"        id="aim-tab-weather"   onclick="switchAimTab('weather')">🌦️ Weather</button>
+          <button class="aim-tab"        id="aim-tab-devagent"  onclick="switchAimTab('devagent')">💻 Dev Agent</button>
+          <button class="aim-tab"        id="aim-tab-homework"  onclick="switchAimTab('homework')">📚 Homework</button>
+       </div>
+        <div class="aim-body">
+          <!-- TOOLS GRID -->
+          <div id="aim-panel-tools" class="aim-panel show">
+            <p style="font-size: 0.78rem; color: var(--text-mid); margin: 0 0 14px">
+              Viora-powered tools — more coming soon.
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
+              <div class="other-ai-card" onclick="openSubChat('humanizer')" style="cursor: pointer">
+                <div class="oac-logo" style="background: rgba(124, 58, 237, 0.12)">✍️</div>
+                <div class="oac-name">AI Humanizer</div>
+                <div class="oac-desc">Make AI-written text sound natural and human.</div>
+                <span class="oac-tag" style="background: rgba(124, 58, 237, 0.1); color: var(--violet-light)">
+                  Free · Viora
+                </span>
+              </div>
+              <div class="other-ai-card" onclick="openSubChat('weather')" style="cursor: pointer">
+                <div class="oac-logo" style="background: rgba(56, 189, 248, 0.12)">🌦️</div>
+                <div class="oac-name">AI Weather</div>
+                <div class="oac-desc">Get a detailed weather forecast for any city.</div>
+                <span class="oac-tag" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8">Free · Viora</span>
+              </div>
+              <div class="other-ai-card" onclick="openSubChat('devagent')" style="cursor: pointer; grid-column: 1/-1">
+                <div style="display: flex; align-items: center; gap: 12px">
+                  <div
+                    class="oac-logo"
+                    style="
+                      background: rgba(16, 185, 129, 0.12);
+                      width: 48px;
+                      height: 48px;
+                      border-radius: 14px;
+                      font-size: 1.6rem;
+                    "
+                  >
+                    💻
+                  </div>
+                  <div style="flex: 1">
+                    <div class="oac-name" style="font-size: 0.95rem">AI Developer Agent</div>
+                    <div class="oac-desc" style="margin-top: 2px">
+                      Expert coder. Reads zip files, debugs code, writes full apps, explains anything.
+                    </div>
+                  </div>
+                  <span
+                    class="oac-tag"
+                    style="background: rgba(16, 185, 129, 0.1); color: #10b981; white-space: nowrap"
+                  >
+                    Free · Viora
+                  </span>
+                </div>
+              </div>
+              <div class="other-ai-card" onclick="openSubChat('homework')" style="cursor: pointer; grid-column: 1/-1">
+                <div style="display: flex; align-items: center; gap: 12px">
+                  <div
+                    class="oac-logo"
+                    style="
+                      background: rgba(245, 158, 11, 0.12);
+                      width: 48px;
+                      height: 48px;
+                      border-radius: 14px;
+                      font-size: 1.6rem;
+                    "
+                  >
+                    📚
+                  </div>
+                  <div style="flex: 1">
+                    <div class="oac-name" style="font-size: 0.95rem">Homework Helper</div>
+                    <div class="oac-desc" style="margin-top: 2px">
+                      Math, ELA, Science &amp; more. Upload a photo of your homework and get step-by-step help.
+                    </div>
+                  </div>
+                  <span
+                    class="oac-tag"
+                    style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; white-space: nowrap"
+                  >
+                    Free · Viora
+                  </span>
+                </div>
+              </div>
+              <div class="other-ai-card" onclick="openSubChat('slideshow')" style="cursor: pointer; grid-column: 1/-1">
+                <div style="display: flex; align-items: center; gap: 12px">
+                  <div
+                    class="oac-logo"
+                    style="
+                      background: rgba(234, 88, 12, 0.12);
+                      width: 48px;
+                      height: 48px;
+                      border-radius: 14px;
+                      font-size: 1.6rem;
+                    "
+                  >
+                    🎨
+                  </div>
+                  <div style="flex: 1">
+                    <div class="oac-name" style="font-size: 0.95rem">AI Slideshow Maker</div>
+                    <div class="oac-desc" style="margin-top: 2px">
+                      Type a topic, get a beautiful slideshow with real images. Download as PDF instantly.
+                    </div>
+                  </div>
+                  <span class="oac-tag" style="background: rgba(234, 88, 12, 0.1); color: #ea580c; white-space: nowrap">
+                    Free · Viora
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="aim-panel" id="aim-panel-humanizer">
+            <div class="hum-wrap">
+              <div>
+                <div class="hum-label">Paste AI-generated text to humanize</div>
+                <textarea class="hum-ta" id="hum-input" placeholder="Paste your AI-written text here…"></textarea>
+              </div>
+              <div>
+                <div class="hum-label">Style</div>
+                <div class="hum-opts">
+                  <button class="hum-opt sel" onclick="selectHumOpt(this)">Casual</button>
+                  <button class="hum-opt" onclick="selectHumOpt(this)">Professional</button>
+                  <button class="hum-opt" onclick="selectHumOpt(this)">Academic</button>
+                  <button class="hum-opt" onclick="selectHumOpt(this)">Creative</button>
+                  <button class="hum-opt" onclick="selectHumOpt(this)">Conversational</button>
+                </div>
+              </div>
+              <button class="btn-humanize" id="btn-humanize" onclick="runHumanizer()">✨ Humanize</button>
+              <div class="hum-result-wrap" id="hum-result-wrap">
+                <div class="hum-label">Humanized Result</div>
+                <div class="hum-result" id="hum-result"></div>
+                <button class="hum-copy" onclick="copyHumanized()">📋 Copy to clipboard</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- WEATHER PANEL -->
+          <div class="aim-panel" id="aim-panel-weather">
+            <div style="display: flex; flex-direction: column; gap: 12px">
+              <button
+                id="btn-gps-weather"
+                onclick="fetchWeatherGPS()"
+                style="
+                  width: 100%;
+                  padding: 13px;
+                  border: none;
+                  border-radius: 14px;
+                  background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+                  color: #fff;
+                  font-family: var(--font-head);
+                  font-size: 0.9rem;
+                  font-weight: 700;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 8px;
+                  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.4);
+                  transition: all 0.2s;
+                "
+              >
+                📍 Use My Location
+              </button>
+              <div style="display: flex; align-items: center; gap: 10px">
+                <div style="flex: 1; height: 1px; background: var(--border)"></div>
+                <span style="font-size: 0.72rem; color: var(--text-light); font-weight: 600">or search a city</span>
+                <div style="flex: 1; height: 1px; background: var(--border)"></div>
+              </div>
+              <div style="display: flex; gap: 8px">
+                <input
+                  id="weather-city-input"
+                  type="text"
+                  placeholder="New York, Tokyo, London…"
+                  style="
+                    flex: 1;
+                    padding: 10px 14px;
+                    border-radius: 12px;
+                    border: 1.5px solid var(--border);
+                    background: var(--bg);
+                    color: var(--text);
+                    font-family: var(--font-body);
+                    font-size: 0.85rem;
+                    outline: none;
+                    transition: border-color 0.2s;
+                  "
+                  onkeydown="if (event.key === 'Enter') fetchWeatherForCity();"
+                  onfocus="this.style.borderColor = 'var(--violet-light)'"
+                  onblur="this.style.borderColor = 'var(--border)'"
+                />
+                <button
+                  onclick="fetchWeatherForCity()"
+                  id="btn-weather-search"
+                  style="
+                    padding: 10px 16px;
+                    border-radius: 12px;
+                    border: none;
+                    background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+                    color: #fff;
+                    font-weight: 700;
+                    cursor: pointer;
+                    font-size: 0.85rem;
+                    transition: all 0.2s;
+                  "
+                >
+                  🔍
+                </button>
+              </div>
+              <div id="weather-tool-result"></div>
+            </div>
+          </div>
+
+         <!-- DEV AGENT PANEL -->
+          <div class="aim-panel" id="aim-panel-devagent">
+            <div style="display: flex; flex-direction: column; height: 100%">
+              <!-- Header bar -->
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px">
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <div
+                    style="
+                      width: 32px;
+                      height: 32px;
+                      border-radius: 10px;
+                      background: linear-gradient(135deg, #10b981, #059669);
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 1rem;
+                    "
+                  >
+                    💻
+                  </div>
+                  <div>
+                    <div style="font-family: var(--font-head); font-size: 0.9rem; font-weight: 800; color: var(--text)">
+                      Dev Agent
+                    </div>
+                    <div style="font-size: 0.65rem; color: #10b981; font-weight: 600">● Online · Expert Coder</div>
+                  </div>
+                </div>
+                <button
+                  onclick="devAgentClear()"
+                  title="Clear chat"
+                  style="
+                    padding: 5px 10px;
+                    border-radius: 8px;
+                    border: 1.5px solid var(--border);
+                    background: none;
+                    font-size: 0.72rem;
+                    color: var(--text-mid);
+                    cursor: pointer;
+                    font-family: var(--font-body);
+                  "
+                >
+                  🗑 Clear
+                </button>
+              </div>
+
+              <!-- Capabilities chips -->
+              <div id="dev-caps" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px">
+                <span
+                  style="
+                    font-size: 0.68rem;
+                    padding: 4px 9px;
+                    border-radius: 20px;
+                    background: rgba(16, 185, 129, 0.1);
+                    color: #10b981;
+                    font-weight: 600;
+                    border: 1px solid rgba(16, 185, 129, 0.2);
+                  "
+                >
+                  📦 Reads ZIP files
+                </span>
+                <span
+                  style="
+                    font-size: 0.68rem;
+                    padding: 4px 9px;
+                    border-radius: 20px;
+                    background: rgba(99, 102, 241, 0.1);
+                    color: #6366f1;
+                    font-weight: 600;
+                    border: 1px solid rgba(99, 102, 241, 0.2);
+                  "
+                >
+                  🐛 Debugs code
+                </span>
+                <span
+                  style="
+                    font-size: 0.68rem;
+                    padding: 4px 9px;
+                    border-radius: 20px;
+                    background: rgba(245, 158, 11, 0.1);
+                    color: #f59e0b;
+                    font-weight: 600;
+                    border: 1px solid rgba(245, 158, 11, 0.2);
+                  "
+                >
+                  🏗 Builds full apps
+                </span>
+                <span
+                  style="
+                    font-size: 0.68rem;
+                    padding: 4px 9px;
+                    border-radius: 20px;
+                    background: rgba(236, 72, 153, 0.1);
+                    color: #ec4899;
+                    font-weight: 600;
+                    border: 1px solid rgba(236, 72, 153, 0.2);
+                  "
+                >
+                  🔍 Reviews &amp; explains
+                </span>
+              </div>
+
+              <!-- Chat window -->
+              <div
+                id="dev-chat"
+                style="
+                  flex: 1;
+                  overflow-y: auto;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  min-height: 220px;
+                  max-height: 320px;
+                  padding: 4px 2px;
+                  scrollbar-width: thin;
+                  scrollbar-color: var(--border) transparent;
+                  margin-bottom: 10px;
+                "
+              >
+                <div class="dev-msg dev-ai">
+                  <div class="dev-bubble-ai">
+                    Hey! I'm your AI Developer Agent. I know JavaScript, Python, TypeScript, React, Node.js, SQL, Rust,
+                    Go — basically everything. Drop a ZIP file, paste code, or ask me anything.
+                  </div>
+                </div>
+              </div>
+
+              <!-- File preview bar -->
+              <!-- FIX: removed duplicate display:none -->
+              <div
+                id="dev-file-bar"
+                style="
+                  display: none;
+                  background: rgba(16, 185, 129, 0.07);
+                  border: 1.5px solid rgba(16, 185, 129, 0.2);
+                  border-radius: 10px;
+                  padding: 8px 12px;
+                  margin-bottom: 8px;
+                  align-items: center;
+                  gap: 8px;
+                "
+              >
+                <span id="dev-file-name" style="font-size: 0.78rem; font-weight: 600; color: #10b981; flex: 1"></span>
+                <button
+                  onclick="devClearFile()"
+                  style="border: none; background: none; cursor: pointer; color: var(--text-light); font-size: 0.8rem"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <!-- Input row -->
+              <div style="display: flex; gap: 8px; align-items: flex-end">
+                <label
+                  for="dev-file-input"
+                  title="Upload file / ZIP"
+                  style="
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 10px;
+                    border: 1.5px solid var(--border);
+                    background: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    flex-shrink: 0;
+                    font-size: 1rem;
+                    transition: all 0.2s;
+                  "
+                  onmouseover="this.style.borderColor = '#10b981'"
+                  onmouseout="this.style.borderColor = 'var(--border)'"
+                >
+                  📎
+                  <input
+                    type="file"
+                    id="dev-file-input"
+                    style="display: none"
+                    onchange="devHandleFile(event)"
+                    accept=".zip,.js,.ts,.py,.html,.css,.json,.txt,.md,.jsx,.tsx,.java,.cpp,.c,.go,.rs,.php,.rb,.swift,.kt,.sh,.yaml,.yml,.env,.sql"
+                  />
+                </label>
+                <textarea
+                  id="dev-input"
+                  rows="1"
+                  placeholder="Ask anything about code… or drop a ZIP 📦"
+                  style="
+                    flex: 1;
+                    padding: 9px 13px;
+                    border-radius: 12px;
+                    border: 1.5px solid var(--border);
+                    background: var(--bg);
+                    color: var(--text);
+                    font-family: var(--font-body);
+                    font-size: 0.85rem;
+                    outline: none;
+                    resize: none;
+                    max-height: 100px;
+                    line-height: 1.5;
+                    transition: border-color 0.2s;
+                  "
+                  onfocus="this.style.borderColor = '#10b981'"
+                  onblur="this.style.borderColor = 'var(--border)'"
+                  onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();devSend();}this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"
+                ></textarea>
+                <button
+                  onclick="devSend()"
+                  id="dev-send-btn"
+                  style="
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 10px;
+                    border: none;
+                    background: linear-gradient(135deg, #10b981, #059669);
+                    color: white;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    transition: all 0.2s;
+                    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4);
+                  "
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </div>
+              <div style="font-size: 0.6rem; color: var(--text-light); margin-top: 5px; text-align: center">
+                Shift+Enter for new line · Supports ZIP, JS, Python, HTML and 20+ more
+              </div>
+            </div>
+          </div>
+
+          <!-- HOMEWORK HELPER PANEL -->
+          <div class="aim-panel" id="aim-panel-homework">
+            <div style="display: flex; flex-direction: column; height: 100%">
+              <!-- Header -->
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px">
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <div
+                    style="
+                      width: 32px;
+                      height: 32px;
+                      border-radius: 10px;
+                      background: linear-gradient(135deg, #f59e0b, #ef4444);
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 1rem;
+                    "
+                  >
+                    📚
+                  </div>
+                  <div>
+                    <div style="font-family: var(--font-head); font-size: 0.9rem; font-weight: 800; color: var(--text)">
+                      Homework Helper
+                    </div>
+                    <div style="font-size: 0.65rem; color: #f59e0b; font-weight: 600">
+                      ● Ready · Step-by-step answers
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onclick="hwClear()"
+                  style="
+                    padding: 5px 10px;
+                    border-radius: 8px;
+                    border: 1.5px solid var(--border);
+                    background: none;
+                    font-size: 0.72rem;
+                    color: var(--text-mid);
+                    cursor: pointer;
+                    font-family: var(--font-body);
+                  "
+                >
+                  🗑 Clear
+                </button>
+              </div>
+
+              <!-- Subject pills -->
+              <div id="hw-subjects" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 11px">
+                <button class="hw-subj active" onclick="hwSetSubject(this, 'math')">🔢 Math</button>
+                <button class="hw-subj" onclick="hwSetSubject(this, 'ela')">📝 ELA</button>
+                <button class="hw-subj" onclick="hwSetSubject(this, 'science')">🔬 Science</button>
+                <button class="hw-subj" onclick="hwSetSubject(this, 'history')">🏛 History</button>
+                <button class="hw-subj" onclick="hwSetSubject(this, 'any')">✨ Any Subject</button>
+              </div>
+
+              <!-- Chat window -->
+              <div
+                id="hw-chat"
+                style="
+                  flex: 1;
+                  overflow-y: auto;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  min-height: 200px;
+                  max-height: 300px;
+                  padding: 4px 2px;
+                  scrollbar-width: thin;
+                  scrollbar-color: var(--border) transparent;
+                  margin-bottom: 10px;
+                "
+              >
+                <div class="hw-msg hw-ai">
+                  <div class="hw-av">📚</div>
+                  <div class="hw-bubble-ai">
+                    Hi! I'm your Homework Helper 👋 I can solve math problems step-by-step, help with essays and
+                    grammar, explain science, history, and more.
+                    <br />
+                    <br />
+                    Type your question or
+                    <strong>upload a photo</strong>
+                    of your homework!
+                  </div>
+                </div>
+              </div>
+
+              <!-- Image preview -->
+              <div
+                id="hw-img-bar"
+                style="
+                  display: none;
+                  background: rgba(245, 158, 11, 0.07);
+                  border: 1.5px solid rgba(245, 158, 11, 0.25);
+                  border-radius: 10px;
+                  padding: 8px 12px;
+                  margin-bottom: 8px;
+                  align-items: center;
+                  gap: 10px;
+                "
+              >
+                <img
+                  id="hw-img-preview"
+                  src=""
+                  style="
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 8px;
+                    object-fit: cover;
+                    border: 1.5px solid rgba(245, 158, 11, 0.3);
+                  "
+                />
+                <span id="hw-img-name" style="font-size: 0.78rem; font-weight: 600; color: #f59e0b; flex: 1"></span>
+                <button
+                  onclick="hwClearImage()"
+                  style="border: none; background: none; cursor: pointer; color: var(--text-light); font-size: 0.9rem"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <!-- Input row -->
+              <div style="display: flex; gap: 8px; align-items: flex-end">
+                <label
+                  for="hw-img-input"
+                  title="Upload homework photo"
+                  style="
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 10px;
+                    border: 1.5px solid var(--border);
+                    background: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    flex-shrink: 0;
+                    font-size: 1rem;
+                    transition: all 0.2s;
+                  "
+                  onmouseover="this.style.borderColor = '#f59e0b'"
+                  onmouseout="this.style.borderColor = 'var(--border)'"
+                >
+                  📷
+                  <input
+                    type="file"
+                    id="hw-img-input"
+                    style="display: none"
+                    onchange="hwHandleImage(event)"
+                    accept="image/*"
+                  />
+                </label>
+                <textarea
+                  id="hw-input"
+                  rows="1"
+                  placeholder="Ask a question or describe what you need help with…"
+                  style="
+                    flex: 1;
+                    padding: 9px 13px;
+                    border-radius: 12px;
+                    border: 1.5px solid var(--border);
+                    background: var(--bg);
+                    color: var(--text);
+                    font-family: var(--font-body);
+                    font-size: 0.85rem;
+                    outline: none;
+                    resize: none;
+                    max-height: 100px;
+                    line-height: 1.5;
+                    transition: border-color 0.2s;
+                  "
+                  onfocus="this.style.borderColor = '#f59e0b'"
+                  onblur="this.style.borderColor = 'var(--border)'"
+                  onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();hwSend();}this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"
+                ></textarea>
+                <button
+                  onclick="hwSend()"
+                  id="hw-send-btn"
+                  style="
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 10px;
+                    border: none;
+                    background: linear-gradient(135deg, #f59e0b, #ef4444);
+                    color: white;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    box-shadow: 0 3px 10px rgba(245, 158, 11, 0.4);
+                  "
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </div>
+              <div style="font-size: 0.6rem; color: var(--text-light); margin-top: 5px; text-align: center">
+                📷 Upload a photo of your homework · Shift+Enter for new line
+              </div>
+            </div>
+          </div>
+
+          <!-- sub-chat injected by JS -->
+
+        </div><!-- /.aim-body -->
+      </div><!-- /.aim-card -->
+    </div><!-- /#ai-modal -->
+
+  <!-- ── PWA Download App Button ── (moved outside modal) -->
+  <div
+    id="pwa-btn"
+    style="
+      display: flex;
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      z-index: 50;
+      align-items: flex-end;
+      flex-direction: column;
+      gap: 8px;
+    "
+  >
+    <!-- Mini + dot (shown after dismiss) -->
+    <button
+      id="pwa-dot"
+      onclick="pwaBtnExpand()"
+      title="Download App"
+      style="
+        display: none;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: white;
+        font-size: 1.1rem;
+        line-height: 1;
+        cursor: pointer;
+        box-shadow: 0 3px 14px rgba(124, 58, 237, 0.5);
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      +
+    </button>
+
+    <!-- Full pill button -->
+    <div
+      id="pwa-full"
+      style="
+        display: flex;
+        align-items: stretch;
+        border-radius: 50px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(124, 58, 237, 0.45);
+      "
+    >
+      <button
+        onclick="pwaTriggerInstall()"
+        style="
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 11px 16px 11px 18px;
+          border: none;
+          background: linear-gradient(135deg, #7c3aed, #a855f7);
+          color: white;
+          font-family: var(--font-body);
+          font-size: 0.8rem;
+          font-weight: 700;
+          cursor: pointer;
+          white-space: nowrap;
+        "
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download App
+      </button>
+      <button
+        onclick="pwaBtnDismiss()"
+        title="Hide"
+        style="
+          padding: 11px 13px;
+          border: none;
+          border-left: 1px solid rgba(255, 255, 255, 0.25);
+          background: linear-gradient(135deg, #7c3aed, #a855f7);
+          color: rgba(255, 255, 255, 0.75);
+          font-size: 0.8rem;
+          cursor: pointer;
+          line-height: 1;
+        "
+        onmouseover="this.style.color = 'white'"
+        onmouseout="this.style.color = 'rgba(255,255,255,.75)'"
+      >
+        ✕
+      </button>
+    </div>
+  </div>
+
+  <!-- iOS install instructions popup (moved outside modal) -->
+  <div
+    id="pwa-ios-popup"
+    style="
+      display: none;
+      position: fixed;
+      bottom: 80px;
+      right: 16px;
+      z-index: 51;
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      padding: 18px 20px;
+      max-width: 270px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+      animation: fadeUp 0.3s ease both;
+    "
+  >
+    <div
+      style="
+        font-family: var(--font-head);
+        font-weight: 800;
+        font-size: 0.92rem;
+        color: var(--text);
+        margin-bottom: 6px;
+      "
+    >
+      Install Viora AI 📲
+    </div>
+    <div style="font-size: 0.78rem; color: var(--text-mid); line-height: 1.6">
+      Tap
+      <strong>Share</strong>
+      <span style="font-size: 1rem">⎙</span>
+      at the bottom of Safari, then tap
+      <strong>"Add to Home Screen"</strong>
+    </div>
+    <div style="margin-top: 10px; display: flex; justify-content: flex-end">
+      <button
+        onclick="document.getElementById('pwa-ios-popup').style.display = 'none'"
+        style="
+          padding: 6px 14px;
+          border-radius: 20px;
+          border: 1.5px solid var(--border);
+          background: none;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--text-mid);
+          cursor: pointer;
+        "
+      >
+        Got it
+      </button>
+    </div>
+    <!-- Arrow pointing down to button -->
+    <div
+      style="
+        position: absolute;
+        bottom: -9px;
+        right: 32px;
+        width: 16px;
+        height: 16px;
+        background: white;
+        border-right: 1.5px solid var(--border);
+        border-bottom: 1.5px solid var(--border);
+        transform: rotate(45deg);
+      "
+    ></div>
+  </div>
+
+  <!-- ── All scripts consolidated into one block, just before </body> ── -->
+  
