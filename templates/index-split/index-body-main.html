@@ -1,0 +1,721 @@
+
+    <div class="mesh"></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <!-- AUTH SCREEN -->
+    <div id="landing-screen">
+      <!-- Particle stars -->
+      <canvas
+        id="landing-canvas"
+        style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none"
+      ></canvas>
+
+      <!-- Top nav -->
+      <nav
+        style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          padding: 20px 40px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          z-index: 3;
+        "
+      >
+        <div style="display: flex; align-items: center; gap: 10px">
+          <div
+            style="
+              width: 32px;
+              height: 32px;
+              border-radius: 10px;
+              background: linear-gradient(135deg, #7c3aed, #ec4899);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 900;
+              color: white;
+              font-size: 0.9rem;
+            "
+          >
+            V
+          </div>
+          <span style="font-family: var(--font-head); font-weight: 800; font-size: 1rem; color: var(--text)">
+            Viora AI
+          </span>
+        </div>
+        <button
+          onclick="showAuth('login')"
+          style="
+            padding: 8px 20px;
+            border-radius: 12px;
+            border: 1.5px solid var(--border);
+            background: white;
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+          "
+          onmouseenter="
+            this.style.borderColor = '#7c3aed';
+            this.style.color = '#7c3aed';
+          "
+          onmouseleave="
+            this.style.borderColor = 'var(--border)';
+            this.style.color = 'var(--text-mid)';
+          "
+        >
+          Log in
+        </button>
+      </nav>
+
+      <!-- Main content -->
+      <div class="landing-content">
+        <!-- Badge -->
+        <div class="landing-badge" style="margin-bottom: 24px">
+          <span class="landing-badge-dot"></span>
+          Free to use · No credit card
+        </div>
+
+        <!-- Glowing ring behind V -->
+        <div style="position: relative; margin-bottom: 28px">
+          <div
+            style="
+              position: absolute;
+              inset: -20px;
+              border-radius: 50%;
+              background: radial-gradient(circle, rgba(124, 58, 237, 0.3) 0%, transparent 70%);
+              animation: orbFloat 4s ease-in-out infinite;
+            "
+          ></div>
+          <div
+            style="
+              width: 80px;
+              height: 80px;
+              border-radius: 24px;
+              background: linear-gradient(135deg, #7c3aed, #ec4899);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-family: var(--font-head);
+              font-size: 2.2rem;
+              font-weight: 900;
+              color: white;
+              box-shadow: 0 16px 48px rgba(124, 58, 237, 0.5);
+              position: relative;
+            "
+          >
+            V
+          </div>
+        </div>
+
+        <!-- Headline -->
+        <h1 class="landing-h1" style="font-size: clamp(2.4rem, 7vw, 4.2rem); margin-bottom: 16px">
+          The AI that actually
+          <br />
+          <span class="grad">gets you.</span>
+        </h1>
+
+        <!-- Emotional hook -->
+        <p class="landing-sub" style="max-width: 460px; margin-bottom: 10px">
+          Most AI forgets you the moment you close the tab.
+          <br />
+          <strong style="color: var(--text)">Viora remembers.</strong>
+        </p>
+
+        <!-- What makes it different -->
+        <p
+          class="landing-sub"
+          style="
+            font-size: clamp(0.84rem, 1.8vw, 0.98rem);
+            max-width: 440px;
+            margin-bottom: 36px;
+            color: var(--text-light);
+          "
+        >
+          Chat, create images, search the web, solve homework, write code — all in one place. No switching apps. No
+          losing context. Just results.
+        </p>
+
+        <!-- CTAs -->
+        <div class="landing-btns">
+          <button
+            class="landing-btn-primary"
+            onclick="showAuth('signup')"
+            style="
+              font-size: 1rem;
+              padding: 15px 36px;
+              border-radius: 18px;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            "
+          >
+            <span>Try Viora free</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+          <button
+            class="landing-btn-outline"
+            onclick="showAuth('login')"
+            style="font-size: 1rem; padding: 15px 36px; border-radius: 18px"
+          >
+            Log in
+          </button>
+        </div>
+
+        <!-- Differentiator icons -->
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 44px">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 7px;
+              font-size: 0.74rem;
+              font-weight: 600;
+              color: var(--text-mid);
+            "
+          >
+            <span
+              style="
+                width: 24px;
+                height: 24px;
+                border-radius: 8px;
+                background: rgba(124, 58, 237, 0.1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              🧠
+            </span>
+            Remembers you
+          </div>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 7px;
+              font-size: 0.74rem;
+              font-weight: 600;
+              color: var(--text-mid);
+            "
+          >
+            <span
+              style="
+                width: 24px;
+                height: 24px;
+                border-radius: 8px;
+                background: rgba(236, 72, 153, 0.1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              🎨
+            </span>
+            Generates images
+          </div>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 7px;
+              font-size: 0.74rem;
+              font-weight: 600;
+              color: var(--text-mid);
+            "
+          >
+            <span
+              style="
+                width: 24px;
+                height: 24px;
+                border-radius: 8px;
+                background: rgba(56, 189, 248, 0.1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              🔍
+            </span>
+            Searches the web
+          </div>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 7px;
+              font-size: 0.74rem;
+              font-weight: 600;
+              color: var(--text-mid);
+            "
+          >
+            <span
+              style="
+                width: 24px;
+                height: 24px;
+                border-radius: 8px;
+                background: rgba(16, 185, 129, 0.1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              💻
+            </span>
+            Codes anything
+          </div>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 7px;
+              font-size: 0.74rem;
+              font-weight: 600;
+              color: var(--text-mid);
+            "
+          >
+            <span
+              style="
+                width: 24px;
+                height: 24px;
+                border-radius: 8px;
+                background: rgba(245, 158, 11, 0.1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              📚
+            </span>
+            Homework helper
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom tagline -->
+      <div
+        style="position: absolute; bottom: 24px; font-size: 0.72rem; color: var(--text-light); letter-spacing: 0.04em"
+      >
+        Built with ❤️ · Viora AI
+      </div>
+    </div>
+
+    <div class="screen" id="auth-screen" style="display: none">
+      <div class="auth-card">
+        <div class="auth-logo">
+          <div class="auth-logo-mark">V</div>
+          <span class="auth-logo-name">Viora AI</span>
+        </div>
+        <div class="auth-tabs">
+          <button class="auth-tab active" onclick="switchTab('login')">Log In</button>
+          <button class="auth-tab" onclick="switchTab('signup')">Sign Up</button>
+        </div>
+        <div class="auth-form" id="login-form">
+          <div>
+            <label class="field-label">Email</label>
+            <input class="field-input" type="email" id="login-email" placeholder="you@example.com" />
+          </div>
+          <div>
+            <label class="field-label">Password</label>
+            <input class="field-input" type="password" id="login-password" placeholder="••••••••" />
+          </div>
+          <div class="auth-error" id="login-error"></div>
+          <button class="btn-primary" onclick="doLogin()">Log In →</button>
+          <div class="divider">or</div>
+          <button class="btn-try" onclick="startTrial()">
+            ⚡ Try for free
+            <span class="try-badge">5 min</span>
+          </button>
+        </div>
+        <div class="auth-form hidden" id="signup-form">
+          <div>
+            <label class="field-label">Your Name</label>
+            <input class="field-input" type="text" id="signup-name" placeholder="Jane Doe" />
+          </div>
+          <div>
+            <label class="field-label">Email</label>
+            <input class="field-input" type="email" id="signup-email" placeholder="you@example.com" />
+          </div>
+          <div>
+            <label class="field-label">Password</label>
+            <input class="field-input" type="password" id="signup-password" placeholder="Min. 6 characters" />
+          </div>
+          <div class="auth-error" id="signup-error"></div>
+          <button class="btn-primary" onclick="doSignup()">Create Account →</button>
+          <div class="divider">or</div>
+          <button class="btn-try" onclick="startTrial()">
+            ⚡ Try for free
+            <span class="try-badge">5 min</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT SCREEN -->
+    <div id="chat-screen" class="hidden">
+      <!-- Sidebar overlay (mobile) -->
+      <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+      <!-- SIDEBAR -->
+      <div id="sidebar" class="collapsed">
+        <div class="sidebar-header">
+          <div class="sidebar-logo-mark">V</div>
+          <span class="sidebar-logo-name">Viora AI</span>
+        </div>
+        <button class="btn-new-chat" onclick="newChat()">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          New Chat
+        </button>
+        <div class="sidebar-section-label">Recent Chats</div>
+        <div id="chat-history-list">
+          <div class="sidebar-empty" id="history-empty">
+            No chats yet.
+            <br />
+            Start a conversation!
+          </div>
+        </div>
+        <div style="padding: 0 0 4px; display: flex; flex-direction: column; gap: 6px">
+          <button class="btn-other-ais" id="sidebar-memory-btn" onclick="toggleMemoryPanel()" style="display: none">
+            🧠 Memory
+          </button>
+          <button class="btn-other-ais" onclick="openAiModal()">🤖 View other AIs</button>
+        </div>
+        <div class="sidebar-footer">
+          <div class="sidebar-user">
+            <div class="sidebar-user-av" id="sidebar-av">U</div>
+            <span class="sidebar-user-name" id="sidebar-username">User</span>
+            <button class="btn-settings-gear" onclick="openSettings()" title="Settings">⚙️</button>
+            <button class="btn-sidebar-logout" onclick="doLogout()" title="Log out">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="14"
+                height="14"
+              >
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN PANEL -->
+      <div id="main-panel">
+        <header>
+          <div class="header-left">
+            <button class="btn-toggle-sidebar" onclick="toggleSidebar()" title="Toggle sidebar">
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+            <div class="logo">
+              <div class="logo-mark">V</div>
+              <span class="logo-name">Viora AI</span>
+            </div>
+          </div>
+          <div class="header-right">
+            <div id="timer-pill">
+              <span>⏱</span>
+              <span id="timer-display">5:00</span>
+            </div>
+            <div class="status-badge">
+              <div class="status-dot"></div>
+              <span id="user-label">Online</span>
+            </div>
+            <button class="btn-logout" id="header-logout-btn" onclick="doLogout()">Log out</button>
+          </div>
+        </header>
+
+        <div id="chat-window">
+          <div id="welcome">
+            <div class="welcome-orb">V</div>
+            <h1>Hey, I'm Viora ✦</h1>
+            <p id="welcome-sub">Your AI assistant — ask me anything.</p>
+            <div class="chips-grid">
+              <button class="chip" onclick="quickSend(this)">✍️ Write a short story opening</button>
+              <button class="chip" onclick="quickSend(this)">💡 Give me a creative business idea</button>
+              <button class="chip" onclick="quickSend(this)">🐍 Explain Python list comprehensions</button>
+              <button class="chip" onclick="quickSend(this)">🎯 Best productivity tips?</button>
+            </div>
+          </div>
+          <div id="typing">
+            <div
+              class="av"
+              style="
+                background: linear-gradient(135deg, #7c3aed, #ec4899);
+                color: white;
+                font-size: 0.68rem;
+                font-weight: 700;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+              "
+            >
+              V
+            </div>
+            <div class="typing-bubble">
+              <div class="td"></div>
+              <div class="td"></div>
+              <div class="td"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="input-area">
+          <div id="img-preview-wrap">
+            <img id="img-preview-thumb" class="img-preview-thumb" src="" alt="preview" />
+            <div>
+              <div class="img-preview-label">Image attached</div>
+              <button class="img-preview-remove" onclick="removeImage()">✕</button>
+            </div>
+          </div>
+          <div class="input-card" id="input-card">
+            <div class="input-actions">
+              <button
+                class="btn-upload"
+                onclick="document.getElementById('img-file-input').click()"
+                title="Upload image"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+              </button>
+              <button class="btn-deep" id="btn-deep" onclick="toggleDeepSearch()" title="Deep Search mode">
+                <div class="btn-deep-dot"></div>
+                Deep
+              </button>
+            </div>
+            <textarea id="user-input" rows="1" placeholder="Ask Viora anything…" maxlength="4000"></textarea>
+            <button id="send-btn" onclick="sendMessage()">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+          <div class="input-footer">
+            <span class="input-hint" id="input-hint-text">Enter to send · Shift+Enter for new line</span>
+            <span id="char-count">0 / 4000</span>
+          </div>
+        </div>
+        <input
+          type="file"
+          id="img-file-input"
+          accept="image/*"
+          style="display: none"
+          onchange="handleImageUpload(event)"
+        />
+      </div>
+    </div>
+
+    <!-- TRIAL EXPIRED -->
+    <div id="expired-overlay">
+      <div class="expired-card">
+        <div class="expired-icon">⏰</div>
+        <h2>Trial Ended</h2>
+        <p>Your 5-minute free trial is up! Sign up for a free account to keep chatting with Viora.</p>
+        <button class="btn-primary" onclick="goToSignup()" style="margin-bottom: 12px">Create Free Account →</button>
+        <button class="btn-try" onclick="doLogout()">Back to Login</button>
+      </div>
+    </div>
+
+    <!-- ══ SETTINGS MODAL ══ -->
+    <div id="settings-overlay" class="hidden" onclick="if (event.target === this) closeSettings();">
+      <div class="settings-card">
+        <div class="settings-header">
+          <span class="settings-title">⚙️ Settings</span>
+          <button class="settings-close" onclick="closeSettings()">✕</button>
+        </div>
+        <div class="settings-tabs">
+          <button class="settings-tab active" id="stab-profile" onclick="switchSettingsTab('profile')">
+            👤 Profile
+          </button>
+          <button class="settings-tab" id="stab-security" onclick="switchSettingsTab('security')">🔒 Security</button>
+          <button class="settings-tab" id="stab-appearance" onclick="switchSettingsTab('appearance')">
+            🎨 Appearance
+          </button>
+          <button class="settings-tab" id="stab-danger" onclick="switchSettingsTab('danger')">⚠️ Account</button>
+        </div>
+        <div class="settings-body">
+          <!-- PROFILE TAB -->
+          <div class="settings-panel show" id="spanel-profile">
+            <div class="avatar-row">
+              <div class="avatar-preview" id="settings-avatar-preview">U</div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+                <div class="btn-avatar-upload" onclick="document.getElementById('avatar-file-input').click()">
+                  📷 Upload profile picture
+                </div>
+                <input
+                  type="file"
+                  id="avatar-file-input"
+                  accept="image/*"
+                  style="display: none"
+                  onchange="handleAvatarUpload(event)"
+                />
+                <span style="font-size: 0.72rem; color: var(--text-light)">JPG, PNG or GIF · Max 2MB</span>
+              </div>
+            </div>
+            <div class="settings-field">
+              <label>Display Name</label>
+              <input class="settings-input" id="settings-name" type="text" placeholder="Your name" />
+            </div>
+            <div id="settings-profile-msg" class="settings-msg"></div>
+            <div class="settings-field">
+              <label>Confirm with current password</label>
+              <input
+                class="settings-input"
+                id="settings-profile-pass"
+                type="password"
+                placeholder="Enter current password"
+              />
+            </div>
+            <button class="btn-settings-save" onclick="saveProfile()">Save Changes</button>
+          </div>
+          <!-- SECURITY TAB -->
+          <div class="settings-panel" id="spanel-security">
+            <div class="settings-section-label">Change Email</div>
+            <div class="settings-field">
+              <label>New Email Address</label>
+              <input class="settings-input" id="settings-new-email" type="email" placeholder="new@email.com" />
+            </div>
+            <div class="settings-section-label" style="margin-top: 4px">Change Password</div>
+            <div class="settings-field">
+              <label>New Password</label>
+              <input class="settings-input" id="settings-new-pass" type="password" placeholder="Min. 6 characters" />
+            </div>
+            <div class="settings-field">
+              <label>Confirm New Password</label>
+              <input
+                class="settings-input"
+                id="settings-confirm-pass"
+                type="password"
+                placeholder="Repeat new password"
+              />
+            </div>
+            <div id="settings-security-msg" class="settings-msg"></div>
+            <div class="settings-field">
+              <label>Current Password (required)</label>
+              <input
+                class="settings-input"
+                id="settings-security-pass"
+                type="password"
+                placeholder="Enter current password"
+              />
+            </div>
+            <button class="btn-settings-save" onclick="saveSecurity()">Update Security</button>
+          </div>
+          <!-- APPEARANCE TAB -->
+          <div class="settings-panel" id="spanel-appearance">
+            <div class="settings-section-label">Theme</div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 14px 16px;
+                background: var(--bg);
+                border: 1.5px solid var(--border);
+                border-radius: 13px;
+              "
+            >
+              <div>
+                <div style="font-size: 0.88rem; font-weight: 700; color: var(--text)">🌙 Dark Mode</div>
+                <div style="font-size: 0.75rem; color: var(--text-mid); margin-top: 2px">
+                  Switch to a dark colour scheme
+                </div>
+              </div>
+              <label class="dm-toggle" title="Toggle dark mode">
+                <input type="checkbox" id="dark-mode-toggle" onchange="setDarkMode(this.checked)" />
+                <span class="dm-slider"></span>
+              </label>
+            </div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 14px 16px;
+                background: var(--bg);
+                border: 1.5px solid var(--border);
+                border-radius: 13px;
+              "
+            >
+              <div>
+                <div style="font-size: 0.88rem; font-weight: 700; color: var(--text)">💻 Match System</div>
+                <div style="font-size: 0.75rem; color: var(--text-mid); margin-top: 2px">
+                  Follow your device's light/dark setting
+                </div>
+              </div>
+              <label class="dm-toggle" title="Follow system theme">
+                <input type="checkbox" id="system-theme-toggle" onchange="setSystemTheme(this.checked)" />
+                <span class="dm-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- DANGER TAB -->
+          <div class="settings-panel" id="spanel-danger">
+            <div class="danger-zone">
+              <div class="danger-title">🗑️ Delete Account</div>
+              <div class="danger-desc">
+                This permanently deletes your account, all chats, memories, and profile data. This action cannot be
+                undone.
+              </div>
+              <div class="settings-field" style="margin-bottom: 12px">
+                <label>Enter your password to confirm</label>
+                <input class="settings-input" id="settings-delete-pass" type="password" placeholder="Your password" />
+              </div>
+              <div id="settings-danger-msg" class="settings-msg"></div>
+              <button class="btn-danger" onclick="confirmDeleteAccount()">Delete My Account Forever</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    

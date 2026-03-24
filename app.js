@@ -3,11 +3,11 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const crypto = require('crypto');
+const fs = require('fs/promises');
 
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.set('trust proxy', true);
-app.use(express.static(path.join(__dirname, 'templates')));
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 const B2_KEY_ID      = process.env.B2_KEY_ID || '';
@@ -17,6 +17,42 @@ const B2_ENDPOINT    = process.env.B2_ENDPOINT || '';
 
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin1';
+
+
+const indexSplitFiles = [
+  'index-head.html',
+  'index-body-main.html',
+  'index-script-main.html',
+  'index-body-modals.html',
+  'index-script-extras.html',
+  'index-tail.html',
+].map((file) => path.join(__dirname, 'templates', 'index-split', file));
+
+let indexSplitCache = null;
+let indexSplitCacheMtime = 0;
+
+async function renderSplitIndex() {
+  try {
+    const stats = await Promise.all(indexSplitFiles.map((file) => fs.stat(file)));
+    const latestMtime = Math.max(...stats.map((stat) => stat.mtimeMs));
+    if (!indexSplitCache || latestMtime > indexSplitCacheMtime) {
+      const chunks = await Promise.all(indexSplitFiles.map((file) => fs.readFile(file, 'utf8')));
+      indexSplitCache = chunks.join('');
+      indexSplitCacheMtime = latestMtime;
+    }
+    return indexSplitCache;
+  } catch {
+    return null;
+  }
+}
+
+app.get(['/', '/index.html'], async (req, res, next) => {
+  const html = await renderSplitIndex();
+  if (!html) return next();
+  res.type('html').send(html);
+});
+
+app.use(express.static(path.join(__dirname, 'templates')));
 
 // Active popup — persisted to B2
 let activePopup = null;
